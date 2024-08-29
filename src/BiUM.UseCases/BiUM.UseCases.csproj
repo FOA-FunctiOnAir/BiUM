@@ -9,9 +9,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="1.0.0" />
-		<PackageReference Include="BiUM.Infrastructure" Version="1.0.0" />
-		<PackageReference Include="BiUM.Specialized" Version="1.0.0" />
+		<PackageReference Include="BiUM.Core" Version="1.0.31" />
+		<PackageReference Include="BiUM.Infrastructure" Version="1.0.31" />
+		<PackageReference Include="BiUM.Specialized" Version="1.0.31" />
 
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.3" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />

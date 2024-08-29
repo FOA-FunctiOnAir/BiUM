@@ -3,7 +3,7 @@
 		<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
 	</ItemGroup> -->
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="1.0.0" />
+		<PackageReference Include="BiUM.Core" Version="1.0.31" />
 		<PackageReference Include="StackExchange.Redis" Version="2.6.90" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />

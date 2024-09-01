@@ -37,7 +37,7 @@ jobs:
     - name: Pack BiUM.Core
       run: dotnet pack ./src/BiUM.Core/BiUM.Core.csproj -c Release -o nupkg
     - name: Publish BiUM.Core
-      run: dotnet nuget push ./src/BiUM.Core/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Core/bin/Release/BiUM.Core.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     - name: Clear NuGet cache
       run: dotnet nuget locals all --clear
@@ -56,7 +56,7 @@ jobs:
     - name: Pack BiUM.Infrastructure
       run: dotnet pack ./src/BiUM.Infrastructure/BiUM.Infrastructure.csproj -c Release -o nupkg
     - name: Publish BiUM.Infrastructure
-      run: dotnet nuget push ./src/BiUM.Infrastructure/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Infrastructure/bin/Release/BiUM.Infrastructure.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     - name: Clear NuGet cache
       run: dotnet nuget locals all --clear
@@ -75,7 +75,7 @@ jobs:
     - name: Pack BiUM.Specialized
       run: dotnet pack ./src/BiUM.Specialized/BiUM.Specialized.csproj -c Release -o nupkg
     - name: Publish BiUM.Specialized
-      run: dotnet nuget push ./src/BiUM.Specialized/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Specialized/bin/Release/BiUM.Specialized.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     # Restore dependencies after publishing internal packages
     - name: Configure NuGet source

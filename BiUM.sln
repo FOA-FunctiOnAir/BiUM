@@ -20,11 +20,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		azure-pipelines.yml = azure-pipelines.yml
 		Directory.Build.props = Directory.Build.props
-		nuget.config = nuget.config
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiUM.Specialized", "src\BiUM.Specialized\BiUM.Specialized.csproj", "{D9332084-22CD-4486-B28F-2E105CB037A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BiUM.Specialized", "src\BiUM.Specialized\BiUM.Specialized.csproj", "{D9332084-22CD-4486-B28F-2E105CB037A9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{091FCEB3-1774-4F0A-A23B-85C56D95E0D8}"
 EndProject

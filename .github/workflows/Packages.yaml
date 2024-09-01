@@ -38,7 +38,7 @@ jobs:
     - name: Pack BiUM.Core
       run: dotnet pack ./src/BiUM.Core/BiUM.Core.csproj -c Release -o nupkg /p:Version=${{ env.PACKAGE_VERSION }}
     - name: Publish BiUM.Core
-      run: dotnet nuget push ./nupkg/BiUM.Core.z${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
+      run: dotnet nuget push ./nupkg/BiUM.Core.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     - name: Clear NuGet cache
       run: dotnet nuget locals all --clear

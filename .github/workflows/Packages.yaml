@@ -13,7 +13,7 @@ jobs:
       packages: write
       contents: read
     env:
-      NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
       GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
     steps:
@@ -29,7 +29,7 @@ jobs:
     - name: Authenticate with GitHub Packages
       run: |
         nuget sources remove -name github || true
-        nuget sources add -name github -source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json -username ${GITHUB_REPOSITORY_OWNER} -password ${{ secrets.GITHUB_TOKEN }}
+        nuget sources add -name github -source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json -username ${GITHUB_REPOSITORY_OWNER} -password ${{ secrets.SECRET_KEY }}
         
     # Build and publish BiUM.Core
     - name: Build BiUM.Core
@@ -37,7 +37,7 @@ jobs:
     - name: Pack BiUM.Core
       run: dotnet pack ./src/BiUM.Core/BiUM.Core.csproj -c Release -o nupkg
     - name: Publish BiUM.Core
-      run: dotnet nuget push ./src/BiUM.Core/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Core/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     - name: Clear NuGet cache
       run: dotnet nuget locals all --clear
@@ -45,7 +45,7 @@ jobs:
     - name: Add or update GitHub Packages source
       run: |
         dotnet nuget remove source github || true
-        dotnet nuget add source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json --name github --username ${GITHUB_REPOSITORY_OWNER} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+        dotnet nuget add source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json --name github --username ${GITHUB_REPOSITORY_OWNER} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
       run: sleep 30
@@ -56,7 +56,7 @@ jobs:
     - name: Pack BiUM.Infrastructure
       run: dotnet pack ./src/BiUM.Infrastructure/BiUM.Infrastructure.csproj -c Release -o nupkg
     - name: Publish BiUM.Infrastructure
-      run: dotnet nuget push ./src/BiUM.Infrastructure/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Infrastructure/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     - name: Clear NuGet cache
       run: dotnet nuget locals all --clear
@@ -64,7 +64,7 @@ jobs:
     - name: Add or update GitHub Packages source
       run: |
         dotnet nuget remove source github || true
-        dotnet nuget add source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json --name github --username ${GITHUB_REPOSITORY_OWNER} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+        dotnet nuget add source https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json --name github --username ${GITHUB_REPOSITORY_OWNER} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
       run: sleep 30
@@ -75,18 +75,18 @@ jobs:
     - name: Pack BiUM.Specialized
       run: dotnet pack ./src/BiUM.Specialized/BiUM.Specialized.csproj -c Release -o nupkg
     - name: Publish BiUM.Specialized
-      run: dotnet nuget push ./src/BiUM.Specialized/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+      run: dotnet nuget push ./src/BiUM.Specialized/bin/Release/*.nupkg --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     # Restore dependencies after publishing internal packages
     - name: Configure NuGet source
       run: |
         dotnet nuget remove source github || true
-        dotnet nuget add source ${{ env.GITHUB_PACKAGES_URL }} --name github --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+        dotnet nuget add source ${{ env.GITHUB_PACKAGES_URL }} --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
 
     - name: Restore dependencies
       run: dotnet restore --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json
       env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
 
     - name: Build
       run: dotnet build --no-restore -c Debug --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json

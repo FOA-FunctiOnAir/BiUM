@@ -5,6 +5,7 @@ namespace BiUM.Specialized.Common.MediatR;
 public record BaseCommand<TType> : BaseRequestDto<TType>
 {
     public Guid? Id { get; set; }
+    public bool Test { get; set; }
 }
 
 public record BaseCommandDto : BaseCommand<ApiEmptyResponse>

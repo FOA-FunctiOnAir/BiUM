@@ -10,5 +10,10 @@ public partial class Ids
         {
             public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamic");
         }
+
+        public static class BiDynamicSite
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamicSite");
+        }
     }
 }

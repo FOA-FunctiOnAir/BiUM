@@ -4,8 +4,8 @@
 		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" /> -->
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="1.0.34" />
-		<PackageReference Include="BiUM.Infrastructure" Version="1.0.34" />
+		<PackageReference Include="BiUM.Core" Version="1.0.35" />
+		<PackageReference Include="BiUM.Infrastructure" Version="1.0.35" />
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.7" />
 	</ItemGroup>

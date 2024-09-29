@@ -6,6 +6,11 @@ public partial class Ids
 {
     public static class Application
     {
+        public static class System
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Application-System");
+        }
+
         public static class BiDynamic
         {
             public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamic");

@@ -1,5 +1,6 @@
 ﻿using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
+using BiUM.Infrastructure.Common.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -65,6 +66,7 @@ public static partial class ConfigureApp
         }
 
         services.AddScoped(typeof(IBoltDbContextInitialiser), typeof(TDbContextInitialiser));
+        services.AddScoped<BoltEntitySaveChangesInterceptor>();
 
         return services;
     }

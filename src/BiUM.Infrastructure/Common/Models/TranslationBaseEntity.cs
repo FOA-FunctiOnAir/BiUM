@@ -3,12 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class TranslationBaseEntity
+public class TranslationBaseEntity : BaseEntity
 {
-    [Required]
-    [Column("ID", Order = 1)]
-    public Guid Id { get; set; }
-
     [Required]
     [Column("RECORD_ID", Order = 2)]
     public Guid RecordId { get; set; }
@@ -24,5 +20,8 @@ public class TranslationBaseEntity
     [Column("TRANSLATION", Order = 5)]
     public string? Translation { get; set; }
 
-    public TranslationBaseEntity() => Id = Guid.NewGuid();
+    public TranslationBaseEntity() : base()
+    {
+        Column = string.Empty;
+    }
 }

@@ -2,6 +2,7 @@ using BiUM.Core.Models.Caching.Redis;
 using BiUM.Core.Caching.Redis;
 using StackExchange.Redis;
 using System.Text.Json;
+using BiUM.Core.Common.Configs;
 
 namespace BiUM.Infrastructure.Services.Caching.Redis;
 

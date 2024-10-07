@@ -1,6 +1,6 @@
 using StackExchange.Redis;
 
-namespace BiUM.Infrastructure.Services.Caching.Redis;
+namespace BiUM.Core.Common.Configs;
 
 public class RedisClientOptions
 {

@@ -5,6 +5,7 @@ using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 using BiUM.Core.Models.MessageBroker.RabbitMQ;
 using RabbitMQ.Client;
+using BiUM.Core.Common.Configs;
 
 namespace BiUM.Infrastructure.Tests.Services.MessageBroker.RabbitMQ;
 

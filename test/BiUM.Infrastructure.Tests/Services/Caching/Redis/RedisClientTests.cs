@@ -1,6 +1,7 @@
 using BiUM.Core.Models.Caching.Redis;
 using BiUM.Core.Caching.Redis;
 using BiUM.Infrastructure.Services.Caching.Redis;
+using BiUM.Core.Common.Configs;
 
 namespace BiUM.Infrastructure.Tests.Services.Caching.Redis;
 

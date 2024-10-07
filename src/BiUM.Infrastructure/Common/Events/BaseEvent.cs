@@ -2,6 +2,5 @@ using MediatR;
 
 namespace BiUM.Infrastructure.Common.Events;
 
-
-public class BaseEvent : INotification
+public class BaseEvent : IBaseEvent, INotification
 { }

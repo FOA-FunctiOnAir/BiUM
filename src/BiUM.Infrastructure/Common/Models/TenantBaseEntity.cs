@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class TenantBaseEntity : BaseEntity
+public class TenantBaseEntity : BaseEntity, ITenantBaseEntity
 {
     [Required]
     [Column("ID", Order = 0)]

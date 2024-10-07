@@ -1,4 +1,4 @@
-namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
+namespace BiUM.Core.Common.Configs;
 
 public class RabbitMQOptions
 {

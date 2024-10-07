@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using BiUM.Specialized.Database;
+using Microsoft.AspNetCore.Builder;
 using Serilog;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class ConfigureApp
+public static partial class ConfigureApp
 {
     public static IApplicationBuilder AddSpecializedApps(this IApplicationBuilder app)
     {
@@ -32,5 +33,13 @@ public static class ConfigureApp
         app.UseAuthorization();
 
         return app;
+    }
+
+    public static async Task SyncDatabase(this IServiceScope scope)
+    {
+        var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
+
+        await initialiser.InitialiseAsync();
+        await initialiser.SeedAsync();
     }
 }

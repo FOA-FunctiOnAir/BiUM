@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
-		<!-- <ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" /> -->
+		<!--<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />-->
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="1.0.35" />
-		<PackageReference Include="StackExchange.Redis" Version="2.6.90" />
+		<PackageReference Include="BiUM.Core" Version="1.0.37" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
@@ -12,6 +11,7 @@
 		<PackageReference Include="Serilog.Settings.Configuration" Version="4.0.0-dev-00486" />
 		<PackageReference Include="Serilog.AspNetCore" Version="6.1.1-dev-00295" />
 		<PackageReference Include="Serilog.Extensions.Logging" Version="3.1.1-dev-10338" />
+		<PackageReference Include="StackExchange.Redis" Version="2.6.90" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.7" />
 	</ItemGroup>

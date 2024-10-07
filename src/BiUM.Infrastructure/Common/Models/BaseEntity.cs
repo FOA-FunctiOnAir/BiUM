@@ -1,10 +1,10 @@
+using BiUM.Infrastructure.Common.Events;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using BiUM.Infrastructure.Common.Events;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class BaseEntity : BaseAuditableEntity
+public class BaseEntity : BaseAuditableEntity, IBaseEntity
 {
     [Required]
     [Column("ID", Order = 1)]
@@ -36,13 +36,20 @@ public class BaseEntity : BaseAuditableEntity
     [Column("TEST", Order = 9)]
     public bool Test { get; set; } = false;
 
-    public BaseEntity() => Id = Guid.NewGuid();
+    public BaseEntity()
+    {
+        Id = Guid.NewGuid();
+        _domainEvents = [];
+    }
 
     [NotMapped]
-    private readonly List<BaseEvent> DomainEvents = [];
+    private IList<IBaseEvent> _domainEvents { get; set; }
+
+    [NotMapped]
+    public IList<IBaseEvent> DomainEvents { get { return _domainEvents; } }
 
     public void AddDomainEvent(BaseEvent baseEvent)
     {
-        DomainEvents.Add(baseEvent);
+        _domainEvents.Add(baseEvent);
     }
 }

@@ -13,7 +13,7 @@ jobs:
       packages: write
       contents: read
     env:
-      PACKAGE_VERSION: 1.0.36
+      PACKAGE_VERSION: 1.0.37
       NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
       GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
@@ -77,6 +77,25 @@ jobs:
       run: dotnet pack ./src/BiUM.Specialized/BiUM.Specialized.csproj -c Release -o nupkg /p:Version=${{ env.PACKAGE_VERSION }}
     - name: Publish BiUM.Specialized
       run: dotnet nuget push ./nupkg/BiUM.Specialized.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
+
+    - name: Clear NuGet cache
+      run: dotnet nuget locals all --clear
+
+    - name: Add or update GitHub Packages source
+      run: |
+        dotnet nuget remove source github || true
+        dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
+      continue-on-error: true
+    - name: Wait for package propagation
+      run: sleep 30
+
+    # Build and publish BiUM.Bolt
+    - name: Build BiUM.Bolt
+      run: dotnet build ./src/BiUM.Bolt/BiUM.Bolt.csproj -c Release
+    - name: Pack BiUM.Bolt
+      run: dotnet pack ./src/BiUM.Bolt/BiUM.Bolt.csproj -c Release -o nupkg /p:Version=${{ env.PACKAGE_VERSION }}
+    - name: Publish BiUM.Bolt
+      run: dotnet nuget push ./nupkg/BiUM.Bolt.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
 
     # Restore dependencies after publishing internal packages
     - name: Configure NuGet source

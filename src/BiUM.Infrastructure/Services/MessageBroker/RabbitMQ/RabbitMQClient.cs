@@ -1,11 +1,10 @@
-using System.Text;
-using System.Text.Json;
-
+using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Models.MessageBroker.RabbitMQ;
-
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 

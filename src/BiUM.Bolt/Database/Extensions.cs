@@ -13,11 +13,11 @@ public static class Extensions
     {
         if (entity is null) return false;
 
-        var linqQuery = dbContext.GetType().GetProperty(name)?.GetValue(dbContext) as IQueryable<IBaseEntity>;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
 
         var existEntity = await linqQuery.AsNoTracking().Where(x => x.Id == entity.Id).ToListAsync(cancellationToken);
 
-        if (existEntity.Any())
+        if (existEntity.Count != 0)
         {
             dbContext.Update(entity);
         }
@@ -33,6 +33,7 @@ public static class Extensions
         };
 
         dbContext.Add(boltTransaction);
+
         return true;
     }
 
@@ -42,7 +43,7 @@ public static class Extensions
     {
         if (entities is null || entities.Count == 0) return false;
 
-        var linqQuery = dbContext.GetType().GetProperty(name)?.GetValue(dbContext) as IQueryable<IBaseEntity>;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => entities.Select(e => e.Id).Contains(x.Id)).ToListAsync(cancellationToken);
 

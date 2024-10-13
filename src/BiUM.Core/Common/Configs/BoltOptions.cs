@@ -8,11 +8,7 @@ public class BoltOptions
 
     public string Branch { get; set; }
 
-    public bool UseHttp { get; set; }
-
-    public string HttpUrl { get; set; }
-
-    public bool UseDbConnection { get; set; }
+    public string Server { get; set; }
 
     public string ConnectionString { get; set; }
 }

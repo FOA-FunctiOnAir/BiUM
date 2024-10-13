@@ -1,7 +1,5 @@
-using BiUM.Specialized.Common.Enums;
-using BiUM.Specialized.Common.Models;
-using BiUM.Specialized.Services;
-using Microsoft.EntityFrameworkCore;
+using BiUM.Core.Common.API;
+using BiUM.Core.Common.Enums;
 
 namespace BiUM.Specialized.Common.API;
 
@@ -12,70 +10,65 @@ public class ApiEmptyResponse : IApiResponse
         get
         {
             var success = from s in _messages
-                      where s.Severity == MessageSeverity.Error
-                      select s;
+                          where s.Severity == MessageSeverity.Error
+                          select s;
 
             return !success.Any();
         }
     }
 
-    private readonly List<ResponseMessage> _messages = [];
+    private readonly List<IResponseMessage> _messages = [];
 
-    public IReadOnlyList<ResponseMessage> Messages => _messages;
+    public IReadOnlyList<IResponseMessage> Messages => _messages;
 
-    public void AddMessage(ResponseMessage message)
+    public void AddMessage(IResponseMessage message)
     {
         _messages.Add(message);
     }
 
-    public void AddMessage(IReadOnlyList<ResponseMessage> messages)
+    public void AddMessage(IReadOnlyList<IResponseMessage> messages)
     {
         _messages.AddRange(messages);
     }
 
-    public void AddMessage(string errorMessage, MessageSeverity? severity)
+    public void AddMessage(string message, MessageSeverity? severity)
     {
         _messages.Add(new ResponseMessage
         {
-            ApiName = "",
-            ErrorCode = "",
-            ErrorMessage = errorMessage,
-            Friendly = false,
+            Code = "",
+            Message = message,
             Severity = severity ?? MessageSeverity.Error
         });
     }
 
-    public void AddMessage(string errorCode, string errorMessage, MessageSeverity? severity)
+    public void AddMessage(string code, string message, MessageSeverity? severity)
     {
         _messages.Add(new ResponseMessage
         {
-            ApiName = "",
-            ErrorCode = errorCode,
-            ErrorMessage = errorMessage,
-            Friendly = false,
+            Code = code,
+            Message = message,
             Severity = severity ?? MessageSeverity.Error
         });
     }
 
-    public void AddMessage(string apiName, string errorCode, string errorMessage, bool friendly, MessageSeverity severity)
+    public void AddMessage(string code, string message, string exception, MessageSeverity severity)
     {
         _messages.Add(new ResponseMessage
         {
-            ApiName = apiName,
-            ErrorCode = errorCode,
-            ErrorMessage = errorMessage,
-            Friendly = friendly,
+            Code = code,
+            Message = message,
+            Exception = exception,
             Severity = severity
         });
     }
 }
 
-public class ApiResponse<T> : ApiEmptyResponse
+public class ApiResponse<TType> : ApiEmptyResponse, IApiResponse<TType>
 {
-    public T? Value { get; set; }
+    public TType? Value { get; set; }
 }
 
-public class PaginatedApiResponse<T> : ApiResponse<List<T>>
+public class PaginatedApiResponse<TType> : ApiResponse<List<TType>>
 {
     public int PageNumber { get; }
 
@@ -95,7 +88,7 @@ public class PaginatedApiResponse<T> : ApiResponse<List<T>>
         Value = [];
     }
 
-    public PaginatedApiResponse(List<T> items, int count, int pageNumber, int pageSize)
+    public PaginatedApiResponse(List<TType> items, int count, int pageNumber, int pageSize)
     {
         PageNumber = pageNumber;
         TotalPages = (int)Math.Ceiling((double)count / (double)pageSize);

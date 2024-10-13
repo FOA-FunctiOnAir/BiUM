@@ -18,6 +18,7 @@ public static partial class ConfigureApp
             if (biAppOptions?.Value != null && biAppOptions.Value.Environment == "Development")
             {
                 await initialiser.InitialiseAsync();
+
                 await initialiser.SeedAsync();
             }
 

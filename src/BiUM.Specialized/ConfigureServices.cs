@@ -1,7 +1,10 @@
 ﻿using AutoMapper.Internal;
+using BiUM.Core.Common.Configs;
+using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
+using BiUM.Infrastructure.Services.HttpClients;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -38,8 +41,9 @@ public static class ConfigureServices
         services.AddControllers();
 
         // Customise default API behaviour
-        services.Configure<ApiBehaviorOptions>(options =>
-            options.SuppressModelStateInvalidFilter = true);
+        services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+        services.Configure<HttpClientsOptions>(configuration.GetSection(HttpClientsOptions.Name));
+
         services.AddEndpointsApiExplorer();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -52,6 +56,7 @@ public static class ConfigureServices
 
         services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<ICurrentUserService, CurrentUserService>();
+        services.AddTransient<IHttpClientsService, HttpClientService>();
 
         services.AddAuthentication();
 

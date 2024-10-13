@@ -1,5 +1,6 @@
 ﻿using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ConfigureApp
 {
-    public static IServiceCollection AddBolt<TDbContext, TDbContextInitialiser>(
+    public async static Task<IServiceCollection> AddBolt<TDbContext, TDbContextInitialiser>(
         this IServiceCollection services, IConfiguration configuration
     )
         where TDbContext : DbContext
@@ -20,6 +21,7 @@ public static partial class ConfigureApp
 
         var serviceProvider = services.BuildServiceProvider();
         var boltOptions = serviceProvider.GetRequiredService<IOptions<BoltOptions>>();
+        var httpClientsService = serviceProvider.GetRequiredService<IHttpClientsService>();
 
         if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {
@@ -43,7 +45,23 @@ public static partial class ConfigureApp
                 }
             }
 
-            var connectionString = string.Format(boltOptions.Value.ConnectionString, "bolt_" + (databaseName ?? "db"));
+            if (!string.IsNullOrEmpty(boltOptions.Value.Server))
+            {
+                var parameters = new Dictionary<string, dynamic>
+                {
+                    { "Branch", boltOptions.Value.Branch },
+                    { "DatabaseName", databaseName }
+                };
+
+                var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), boltOptions.Value.Server, parameters, false);
+
+                if (responseBoltDbSave == null || !responseBoltDbSave.Success)
+                {
+                    // TODO: log
+                }
+            }
+
+            var connectionString = string.Format(boltOptions.Value.ConnectionString, "bolt_" + boltOptions.Value.Branch + "_" + (databaseName ?? "db"));
 
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {

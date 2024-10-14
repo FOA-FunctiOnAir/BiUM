@@ -13,7 +13,7 @@ public static partial class ConfigureApp
 
         if (boltOptions?.Value?.Enable != null && boltOptions.Value.Enable)
         {
-            var initialiser = scope.ServiceProvider.GetRequiredService<IBoltDbContextInitialiser>();
+            var initialiser = scope.ServiceProvider.GetRequiredService<IBaseBoltDbContextInitialiser>();
 
             if (biAppOptions?.Value != null && biAppOptions.Value.Environment == "Development")
             {

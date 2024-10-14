@@ -88,7 +88,7 @@ public static partial class ConfigureApp
                     }));
         }
 
-        services.AddScoped(typeof(IBoltDbContextInitialiser), typeof(TDbContextInitialiser));
+        services.AddScoped(typeof(IBaseBoltDbContextInitialiser), typeof(TDbContextInitialiser));
         services.AddScoped<BoltEntitySaveChangesInterceptor>();
 
         return services;

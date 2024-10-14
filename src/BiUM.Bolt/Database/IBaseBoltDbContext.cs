@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BiUM.Specialized.Database;
 
-public interface IBoltDbContext : IDbContext
+public interface IBaseBoltDbContext : IDbContext
 {
     DbSet<BoltTransaction> BoltTransactions { get; }
 
@@ -12,7 +12,7 @@ public interface IBoltDbContext : IDbContext
     Task<bool> AddOrUpdate<TEntity>(string name, IList<TEntity> entities, CancellationToken cancellationToken) where TEntity : IBaseEntity;
 }
 
-public interface IDomainBoltDbContext : IDbContext
+public interface IBaseBoltDomainDbContext : IDbContext
 {
     DbSet<BoltStatus> BoltStatuses { get; }
 }

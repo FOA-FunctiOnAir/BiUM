@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace BiUM.Bolt.Database;
 
-public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextInitialiser<TDbContext>, IBoltDbContextInitialiser
+public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextInitialiser<TDbContext>, IBaseBoltDbContextInitialiser
     where TBoltDbContext : DbContext
     where TDbContext : DbContext
 {
@@ -90,7 +90,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
             foreach (var tableTransactions in grouppedTableTransactions)
             {
-                List<Guid> allIds = new List<Guid>();
+                var allIds = new List<Guid>();
 
                 foreach (var transaction in tableTransactions)
                 {
@@ -101,10 +101,15 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
                 var uniqueIds = allIds.Distinct();
                 if (!uniqueIds.Any()) continue;
+
                 var linqQuery = _boltContext.GetType().GetProperty(tableTransactions.Key)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
+                if (linqQuery is null) continue;
+
                 var entities = await linqQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 var linqTargetQuery = _context.GetType().GetProperty(tableTransactions.Key)?.GetValue(_context) as IQueryable<IBaseEntity>;
+                if (linqTargetQuery is null) continue;
+
                 var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 var insertEntities = entities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));

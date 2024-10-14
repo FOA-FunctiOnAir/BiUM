@@ -2,7 +2,7 @@
 
 namespace BiUM.Bolt.Database;
 
-public interface IBoltDbContextInitialiser : IDbContextInitialiser
+public interface IBaseBoltDbContextInitialiser : IDbContextInitialiser
 {
     Task EqualizeAsync(CancellationToken cancellationToken = default);
 }

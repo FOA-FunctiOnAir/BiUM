@@ -7,7 +7,7 @@ namespace BiUM.Bolt.Database;
 
 public static class Extensions
 {
-    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBoltDbContext boltDomainDbContext, TDbContext dbContext, string name, TEntity entity, CancellationToken cancellationToken)
+    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, string name, TEntity entity, CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IBaseEntity
     {
@@ -37,7 +37,7 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBoltDbContext boltDomainDbContext, TDbContext dbContext, string name, IList<TEntity> entities, CancellationToken cancellationToken)
+    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, string name, IList<TEntity> entities, CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IBaseEntity
     {

@@ -2,10 +2,12 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
+using BiUM.Specialized.Consts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -53,15 +55,18 @@ public static partial class ConfigureApp
                     { "DatabaseName", databaseName }
                 };
 
-                var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), boltOptions.Value.Server, parameters, false);
+                var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), default, Ids.Language.Turkish.Id, boltOptions.Value.Server, parameters, false);
+
+                Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
 
                 if (responseBoltDbSave == null || !responseBoltDbSave.Success)
                 {
                     // TODO: log
+                    Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
                 }
             }
 
-            var connectionString = string.Format(boltOptions.Value.ConnectionString, "bolt_" + boltOptions.Value.Branch + "_" + (databaseName ?? "db"));
+            var connectionString = string.Format(boltOptions.Value.ConnectionString, boltOptions.Value.Branch + "_" + (databaseName ?? "db"));
 
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {

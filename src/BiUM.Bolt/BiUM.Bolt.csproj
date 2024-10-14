@@ -5,9 +5,9 @@
 		<ProjectReference Include="..\BiUM.Specialized\BiUM.Specialized.csproj" />-->
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="1.0.40" />
-		<PackageReference Include="BiUM.Infrastructure" Version="1.0.40" />
-		<PackageReference Include="BiUM.Specialized" Version="1.0.40" />
+		<PackageReference Include="BiUM.Core" Version="$(BiUMCore)" />
+		<PackageReference Include="BiUM.Infrastructure" Version="$(BiUMInfrastructure)" />
+		<PackageReference Include="BiUM.Specialized" Version="$(BiUMSpecialized)" />
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
 		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />

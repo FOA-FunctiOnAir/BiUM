@@ -9,6 +9,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 
@@ -40,16 +41,21 @@ public static class ConfigureServices
 
         services.AddControllers();
 
+        services.Configure<BiAppOptions>(configuration.GetSection(BiAppOptions.Name));
+
         // Customise default API behaviour
         services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
         services.Configure<HttpClientsOptions>(configuration.GetSection(HttpClientsOptions.Name));
 
         services.AddEndpointsApiExplorer();
 
+        var serviceProvider = services.BuildServiceProvider();
+        var appOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>();
+
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "BiApp APIs", Version = "v1" });
+            c.SwaggerDoc(appOptions.Value.DomainVersion, new OpenApiInfo { Title = $"BiApp {appOptions.Value.Domain} APIs", Version = appOptions.Value.DomainVersion });
         });
 
         services.AddScoped<EntitySaveChangesInterceptor>();

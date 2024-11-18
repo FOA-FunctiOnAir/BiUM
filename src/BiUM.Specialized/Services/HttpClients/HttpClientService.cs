@@ -18,6 +18,12 @@ public class HttpClientService : IHttpClientsService
     private readonly HttpClientsOptions _httpClientOptions;
     private readonly IMapper _mapper;
 
+    private readonly JsonSerializerOptions _serializerSsettings = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+    };
+
     public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, IMapper mapper)
     {
         _httpClientOptions = httpClientOptions.Value;
@@ -61,7 +67,7 @@ public class HttpClientService : IHttpClientsService
 
             string resultData = await httpResponseServiceApi.Content.ReadAsStringAsync(cancellationToken);
 
-            var serviceData = JsonSerializer.Deserialize<ApiResponse<ServiceDto>>(resultData);
+            var serviceData = JsonSerializer.Deserialize<ApiResponse<ServiceDto>>(resultData, _serializerSsettings);
 
             if (!serviceData!.Success)
             {
@@ -90,7 +96,7 @@ public class HttpClientService : IHttpClientsService
             }
             else if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
             {
-                var contentSerialized = JsonSerializer.Serialize(parameters);
+                var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
                 var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
 
                 httpResponseTargetApi = await _httpClient.PostAsync(url, content, cancellationToken);
@@ -107,11 +113,11 @@ public class HttpClientService : IHttpClientsService
 
             if (serviceData.Value.IsExternal == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2);
+                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2);
+                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
 
                 if (innerResponse != null)
                 {
@@ -176,11 +182,11 @@ public class HttpClientService : IHttpClientsService
 
             if (external == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2);
+                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2);
+                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
 
                 if (innerResponse != null)
                 {
@@ -227,7 +233,7 @@ public class HttpClientService : IHttpClientsService
 
             parameters = GetParameters(parameters, tenantId, languageId);
 
-            var contentSerialized = JsonSerializer.Serialize(parameters);
+            var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
             var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
 
             var httpResponseTargetApi = await _httpClient.PostAsync(targetUrl, content, cancellationToken);
@@ -243,7 +249,7 @@ public class HttpClientService : IHttpClientsService
 
             if (external == false)
             {
-                response = JsonSerializer.Deserialize<ApiEmptyResponse>(resultData2);
+                response = JsonSerializer.Deserialize<ApiEmptyResponse>(resultData2, _serializerSsettings);
             }
 
             return response;
@@ -281,7 +287,7 @@ public class HttpClientService : IHttpClientsService
 
             parameters = GetParameters(parameters, tenantId, languageId);
 
-            var contentSerialized = JsonSerializer.Serialize(parameters);
+            var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
             var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
 
             var httpResponseTargetApi = await _httpClient.PostAsync(targetUrl, content, cancellationToken);
@@ -297,11 +303,11 @@ public class HttpClientService : IHttpClientsService
 
             if (external == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2);
+                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2);
+                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
 
                 if (innerResponse != null)
                 {

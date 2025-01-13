@@ -27,10 +27,11 @@ jobs:
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v1.0.5
 
+    # - name: Authenticate with GitHub Packages
+    #   run: nuget sources remove -name github || true
+
     - name: Authenticate with GitHub Packages
-      run: |
-        # nuget sources remove -name github || true
-        nuget sources add -name github -source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json -username ${{ github.repository_owner }} -password ${{ secrets.SECRET_KEY }}
+      run: nuget sources add -name github -source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json -username ${{ github.repository_owner }} -password ${{ secrets.SECRET_KEY }}
         
     # Build and publish BiUM.Core
     - name: Build BiUM.Core

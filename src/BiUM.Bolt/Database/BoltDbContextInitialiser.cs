@@ -72,7 +72,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         }
 
         var queryStatement = lastTransaction is null ? string.Empty : $" WHERE \"ID\" != '{lastTransaction.Id.ToString()}' AND (\"CREATED\" > '{lastTransaction.Created.ToString("yyyy-MM-dd")}' or (\"CREATED\" = '{lastTransaction.Created.ToString("yyyy-MM-dd")}' and \"CREATED_TIME\" > '{lastTransaction.CreatedTime.ToString("HH:mm:ss")}'))";
-        var query = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(queryStatement) ? "" : queryStatement) + " ORDER BY \"CREATED\" DESC, \"CREATED_TIME\" DESC";
+        var query = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(queryStatement) ? "" : queryStatement) + " ORDER BY \"CREATED\" ASC, \"CREATED_TIME\" ASC, \"SORT_ORDER\" ASC";
 
         var transactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
             _boltContext,
@@ -88,44 +88,96 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         {
             var grouppedTableTransactions = transactions.GroupBy(x => x.TableName);
 
-            foreach (var tableTransactions in grouppedTableTransactions)
+            foreach (var transaction in transactions)
             {
-                var allIds = new List<Guid>();
-
-                foreach (var transaction in tableTransactions)
-                {
-                    var ids = transaction.Ids?.Trim().Split(";");
-                    var guidIds = ids?.Select(x => new Guid(x.Trim()));
-                    allIds.AddRange(guidIds ?? []);
-                }
+                var ids = transaction.Ids?.Trim().Split(";");
+                var guidIds = ids?.Select(x => new Guid(x.Trim()));
+                var allIds = guidIds ?? [];
 
                 var uniqueIds = allIds.Distinct();
                 if (!uniqueIds.Any()) continue;
 
-                var linqQuery = _boltContext.GetType().GetProperty(tableTransactions.Key)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
-                if (linqQuery is null) continue;
+                var linqBoltQuery = _boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
+                if (linqBoltQuery is null) continue;
 
-                var entities = await linqQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+                var boltEntities = await linqBoltQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
-                var linqTargetQuery = _context.GetType().GetProperty(tableTransactions.Key)?.GetValue(_context) as IQueryable<IBaseEntity>;
+                var linqTargetQuery = _context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) as IQueryable<IBaseEntity>;
                 if (linqTargetQuery is null) continue;
 
                 var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
-                var insertEntities = entities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));
-                var updateEntities = entities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
+                if (transaction.Delete)
+                {
+                    var deleteEntities = boltEntities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
 
-                if (insertEntities.Any())
-                {
-                    _context.AddRange(insertEntities);
+                    if (deleteEntities.Any())
+                    {
+                        foreach (var entity in deleteEntities)
+                        {
+                            entity.Deleted = true;
+                        }
+
+                        _context.UpdateRange(deleteEntities);
+                    }
                 }
-                if (updateEntities.Any())
+                else
                 {
-                    _context.UpdateRange(updateEntities);
+                    var insertEntities = boltEntities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));
+                    var updateEntities = boltEntities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
+
+                    if (insertEntities.Any())
+                    {
+                        _context.AddRange(insertEntities);
+                    }
+
+                    if (updateEntities.Any())
+                    {
+                        _context.UpdateRange(updateEntities);
+                    }
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
             }
+
+            //foreach (var tableTransactions in grouppedTableTransactions)
+            //{
+            //    var allIds = new List<Guid>();
+
+            //    foreach (var transaction in tableTransactions)
+            //    {
+            //        var ids = transaction.Ids?.Trim().Split(";");
+            //        var guidIds = ids?.Select(x => new Guid(x.Trim()));
+            //        allIds.AddRange(guidIds ?? []);
+            //    }
+
+            //    var uniqueIds = allIds.Distinct();
+            //    if (!uniqueIds.Any()) continue;
+
+            //    var linqQuery = _boltContext.GetType().GetProperty(tableTransactions.Key)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
+            //    if (linqQuery is null) continue;
+
+            //    var entities = await linqQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+
+            //    var linqTargetQuery = _context.GetType().GetProperty(tableTransactions.Key)?.GetValue(_context) as IQueryable<IBaseEntity>;
+            //    if (linqTargetQuery is null) continue;
+
+            //    var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+
+            //    var insertEntities = entities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));
+            //    var updateEntities = entities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
+
+            //    if (insertEntities.Any())
+            //    {
+            //        _context.AddRange(insertEntities);
+            //    }
+            //    if (updateEntities.Any())
+            //    {
+            //        _context.UpdateRange(updateEntities);
+            //    }
+
+            //    await _context.SaveChangesAsync(cancellationToken);
+            //}
         }
         catch (Exception ex)
         {

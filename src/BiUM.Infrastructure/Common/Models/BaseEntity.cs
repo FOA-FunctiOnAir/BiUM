@@ -14,26 +14,30 @@ public class BaseEntity : BaseAuditableEntity, IBaseEntity
     [Column("ACTIVE", Order = 2)]
     public bool Active { get; set; } = true;
 
-    [Column("CREATED", Order = 3)]
+    [Required]
+    [Column("DELETED", Order = 3)]
+    public bool Deleted { get; set; } = false;
+
+    [Column("CREATED", Order = 4)]
     public DateOnly Created { get; set; }
 
-    [Column("CREATED_TIME", Order = 4)]
+    [Column("CREATED_TIME", Order = 5)]
     public TimeOnly CreatedTime { get; set; }
 
-    [Column("CREATED_BY", Order = 5)]
+    [Column("CREATED_BY", Order = 6)]
     public Guid? CreatedBy { get; set; }
 
-    [Column("UPDATED", Order = 6)]
+    [Column("UPDATED", Order = 7)]
     public DateOnly? Updated { get; set; }
 
-    [Column("UPDATED_TIME", Order = 7)]
+    [Column("UPDATED_TIME", Order = 8)]
     public TimeOnly? UpdatedTime { get; set; }
 
     [Column("UPDATED_BY", Order = 8)]
     public Guid? UpdatedBy { get; set; }
 
     [Required]
-    [Column("TEST", Order = 9)]
+    [Column("TEST", Order = 10)]
     public bool Test { get; set; } = false;
 
     public BaseEntity()

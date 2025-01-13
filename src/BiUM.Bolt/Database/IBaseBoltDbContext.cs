@@ -8,8 +8,10 @@ public interface IBaseBoltDbContext : IDbContext
 {
     DbSet<BoltTransaction> BoltTransactions { get; }
 
-    Task<bool> AddOrUpdate<TEntity>(string name, TEntity entity, CancellationToken cancellationToken) where TEntity : IBaseEntity;
-    Task<bool> AddOrUpdate<TEntity>(string name, IList<TEntity> entities, CancellationToken cancellationToken) where TEntity : IBaseEntity;
+    Task<bool> AddOrUpdate<TEntity>(int order, string name, TEntity entity, CancellationToken cancellationToken) where TEntity : IBaseEntity;
+    Task<bool> AddOrUpdate<TEntity>(int order, string name, IList<TEntity> entities, CancellationToken cancellationToken) where TEntity : IBaseEntity;
+    Task<bool> Delete<TEntity>(int order, string name, TEntity entity, CancellationToken cancellationToken) where TEntity : IBaseEntity;
+    Task<bool> Delete<TEntity>(int order, string name, IList<TEntity> entities, CancellationToken cancellationToken) where TEntity : IBaseEntity;
 }
 
 public interface IBaseBoltDomainDbContext : IDbContext

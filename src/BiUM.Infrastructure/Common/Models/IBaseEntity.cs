@@ -8,6 +8,8 @@ public interface IBaseEntity
 
     public bool Active { get; set; }
 
+    public bool Deleted { get; set; }
+
     public DateOnly Created { get; set; }
 
     public TimeOnly CreatedTime { get; set; }

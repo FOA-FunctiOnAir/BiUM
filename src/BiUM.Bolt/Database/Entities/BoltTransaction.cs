@@ -11,4 +11,10 @@ public class BoltTransaction : BaseEntity
 
     [Column("IDS")]
     public string? Ids { get; set; }
+
+    [Column("DELETE")]
+    public required bool Delete { get; set; }
+
+    [Column("SORT_ORDER")]
+    public required int SortOrder { get; set; }
 }

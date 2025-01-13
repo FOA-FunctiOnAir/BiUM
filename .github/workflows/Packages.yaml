@@ -29,7 +29,7 @@ jobs:
 
     - name: Authenticate with GitHub Packages
       run: |
-        nuget sources remove -name github || true
+        # nuget sources remove -name github || true
         nuget sources add -name github -source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json -username ${{ github.repository_owner }} -password ${{ secrets.SECRET_KEY }}
         
     # Build and publish BiUM.Core

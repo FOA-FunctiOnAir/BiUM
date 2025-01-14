@@ -17,7 +17,7 @@ public class ServiceDto : BaseDto
 public class ServiceParameterDto : BaseDto
 {
     public Guid? ServiceId { get; set; }
-    public required ParameterDirection Direction { get; set; }
-    public required string Property { get; set; }
-    public required Guid FieldId { get; set; }
+    public ParameterDirection? Direction { get; set; }
+    public string? Property { get; set; }
+    public Guid? FieldId { get; set; }
 }

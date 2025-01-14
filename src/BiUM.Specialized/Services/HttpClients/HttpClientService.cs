@@ -133,7 +133,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            response.AddMessage("HttpClientService.CallService", ex.Message, MessageSeverity.Error);
+            response.AddMessage($"HttpClientService.CallService-{ex.Message}", ex.StackTrace, MessageSeverity.Error);
         }
 
         return response;

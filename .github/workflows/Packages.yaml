@@ -13,7 +13,7 @@ jobs:
       packages: write
       contents: read
     env:
-      PACKAGE_VERSION: 1.0.46
+      PACKAGE_VERSION: 1.0.47
       NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
       GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
@@ -114,5 +114,5 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -c Debug --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json
 
-    # - name: Test
-    #   run: dotnet test --no-build --verbosity normal
+    - name: Test
+      run: dotnet test --no-build --verbosity normal

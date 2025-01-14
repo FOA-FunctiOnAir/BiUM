@@ -30,7 +30,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{2ED3F689-5189-4C75-A5F5-CB9E2979823F}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\Packages.yaml = .github\workflows\Packages.yaml
-		.github\workflows\Packages_old.yaml = .github\workflows\Packages_old.yaml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BiUM.Bolt", "src\BiUM.Bolt\BiUM.Bolt.csproj", "{75F6AAD3-EBC8-4956-B210-16B501AEFC47}"

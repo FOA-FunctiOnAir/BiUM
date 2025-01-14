@@ -54,12 +54,18 @@ public static class Extensions
 
         if (insertEntities.Any())
         {
-            dbContext.AddRange(insertEntities);
+            foreach (var entity in insertEntities)
+            {
+                dbContext.Add(entity);
+            }
         }
 
         if (updateEntities.Any())
         {
-            dbContext.UpdateRange(updateEntities);
+            foreach (var entity in updateEntities)
+            {
+                dbContext.Update(entity);
+            }
         }
 
         var boltTransaction = new BoltTransaction()
@@ -122,9 +128,9 @@ public static class Extensions
             foreach (var entity in deleteEntities)
             {
                 entity.Deleted = true;
-            }
 
-            dbContext.UpdateRange(deleteEntities);
+                dbContext.Update(entity);
+            }
 
             var boltTransaction = new BoltTransaction()
             {

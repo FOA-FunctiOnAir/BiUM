@@ -11,7 +11,7 @@ public class ServiceDto : BaseDto
     public required Guid HttpType { get; set; }
     public bool? IsExternal { get; set; }
 
-    public virtual ICollection<ServiceParameterDto>? ServiceParameters { get; set; }
+    //public virtual ICollection<ServiceParameterDto>? ServiceParameters { get; set; }
 }
 
 public class ServiceParameterDto : BaseDto

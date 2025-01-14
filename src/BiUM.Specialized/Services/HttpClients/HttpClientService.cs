@@ -62,6 +62,7 @@ public class HttpClientService : IHttpClientsService
             if (!httpResponseServiceApi.IsSuccessStatusCode)
             {
                 response.AddMessage("HttpClientService.GetServiceDefinition", httpResponseServiceApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+
                 return response;
             }
 

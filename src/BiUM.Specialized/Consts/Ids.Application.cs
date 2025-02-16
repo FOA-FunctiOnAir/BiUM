@@ -14,6 +14,9 @@ public partial class Ids
         public static class BiDynamic
         {
             public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamic");
+
+            public static Guid BiServiceId = GuidGenerator.NewGuid("Application-BiService");
+            public static Guid BiTicketId = GuidGenerator.NewGuid("Application-BiTicket");
         }
 
         public static class Bolt

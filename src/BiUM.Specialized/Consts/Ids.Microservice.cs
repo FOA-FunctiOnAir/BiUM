@@ -16,6 +16,11 @@ public partial class Ids
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Accounts");
         }
 
+        public static class Authorization
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Authorization");
+        }
+
         public static class Bpmn
         {
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Bpmn");
@@ -51,9 +56,19 @@ public partial class Ids
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Sales");
         }
 
+        public static class Services
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Services");
+        }
+
         public static class Stocks
         {
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Stocks");
+        }
+
+        public static class Tickets
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Tickets");
         }
 
         public static class Treasury

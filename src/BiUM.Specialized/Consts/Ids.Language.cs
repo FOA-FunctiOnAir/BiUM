@@ -15,5 +15,10 @@ public partial class Ids
         {
             public static Guid Id = GuidGenerator.NewGuid("Language-English");
         }
+
+        public static class Arabic
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Language-Arabic");
+        }
     }
 }

@@ -15,7 +15,7 @@ public partial class Ids
         {
             public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamic");
 
-            public static Guid BiServiceId = GuidGenerator.NewGuid("Application-BiService");
+            public static Guid BiRepairId = GuidGenerator.NewGuid("Application-BiRepair");
             public static Guid BiTicketId = GuidGenerator.NewGuid("Application-BiTicket");
         }
 

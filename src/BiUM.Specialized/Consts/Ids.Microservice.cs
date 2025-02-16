@@ -56,9 +56,9 @@ public partial class Ids
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Sales");
         }
 
-        public static class Services
+        public static class Repair
         {
-            public static Guid Id = GuidGenerator.NewGuid("Microservice-Services");
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Repair");
         }
 
         public static class Stocks

@@ -47,24 +47,24 @@ public static partial class ConfigureApp
                 }
             }
 
-            if (!string.IsNullOrEmpty(boltOptions.Value.Server))
-            {
-                var parameters = new Dictionary<string, dynamic>
-                {
-                    { "Branch", boltOptions.Value.Branch },
-                    { "DatabaseName", databaseName }
-                };
+            //if (!string.IsNullOrEmpty(boltOptions.Value.Server))
+            //{
+            //    var parameters = new Dictionary<string, dynamic>
+            //    {
+            //        { "Branch", boltOptions.Value.Branch },
+            //        { "DatabaseName", databaseName }
+            //    };
 
-                var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), default, Ids.Language.Turkish.Id, boltOptions.Value.Server, parameters, false);
+            //    var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), default, Ids.Language.Turkish.Id, boltOptions.Value.Server, parameters, false);
 
-                Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
+            //    Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
 
-                if (responseBoltDbSave == null || !responseBoltDbSave.Success)
-                {
-                    // TODO: log
-                    Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
-                }
-            }
+            //    if (responseBoltDbSave == null || !responseBoltDbSave.Success)
+            //    {
+            //        // TODO: log
+            //        Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
+            //    }
+            //}
 
             var connectionString = string.Format(boltOptions.Value.ConnectionString, boltOptions.Value.Branch + "_" + (databaseName ?? "db"));
 

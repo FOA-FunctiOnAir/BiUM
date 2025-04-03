@@ -16,9 +16,9 @@ public partial class Ids
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Accounts");
         }
 
-        public static class Authorization
+        public static class Authentication
         {
-            public static Guid Id = GuidGenerator.NewGuid("Microservice-Authorization");
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Authentication");
         }
 
         public static class Bpmn

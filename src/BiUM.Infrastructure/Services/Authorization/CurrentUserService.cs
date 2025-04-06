@@ -23,11 +23,11 @@ public class CurrentUserService : ICurrentUserService
 
     private Guid? GetTenantId()
     {
-        if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("TenantId") == true)
+        if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("Bi-TenantId") == true)
         {
-            var a = _httpContextAccessor?.HttpContext?.Request.Headers["TenantId"];
+            var tenantId = _httpContextAccessor?.HttpContext?.Request.Headers["Bi-TenantId"];
 
-            return Guid.Parse(a.ToString()!);
+            return Guid.Parse(tenantId.ToString()!);
         }
 
         return null;

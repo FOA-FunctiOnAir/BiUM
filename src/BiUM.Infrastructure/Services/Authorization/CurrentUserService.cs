@@ -23,9 +23,9 @@ public class CurrentUserService : ICurrentUserService
 
     private Guid? GetTenantId()
     {
-        if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("Bi-TenantId") == true)
+        if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("Bi-Tenant-Id") == true)
         {
-            var tenantId = _httpContextAccessor?.HttpContext?.Request.Headers["Bi-TenantId"];
+            var tenantId = _httpContextAccessor?.HttpContext?.Request.Headers["Bi-Tenant-Id"];
 
             return Guid.Parse(tenantId.ToString()!);
         }

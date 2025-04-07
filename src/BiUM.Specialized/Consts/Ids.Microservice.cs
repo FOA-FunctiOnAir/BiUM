@@ -80,5 +80,15 @@ public partial class Ids
         {
             public static Guid Id = GuidGenerator.NewGuid("Microservice-UI-Framework");
         }
+
+        public static class UiWeb
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-UI-Web");
+        }
+
+        public static class UiMobile
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-UI-Mobile");
+        }
     }
 }

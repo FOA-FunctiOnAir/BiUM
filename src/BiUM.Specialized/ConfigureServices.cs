@@ -7,13 +7,16 @@ using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.HttpClients;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using System.Text.Json.Serialization;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -74,6 +77,29 @@ public static class ConfigureServices
 
         services.AddAuthorizationBuilder()
             .AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("my secret key is galatasaray because it can happy to me all time"));
+
+        services.AddAuthentication(x =>
+        {
+            x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(x =>
+        {
+            x.RequireHttpsMetadata = false;
+            x.SaveToken = true;
+
+            x.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = false,
+            };
+        });
 
         return services;
     }

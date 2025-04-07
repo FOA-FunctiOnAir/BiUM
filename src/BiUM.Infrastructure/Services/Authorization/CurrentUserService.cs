@@ -21,6 +21,8 @@ public class CurrentUserService : ICurrentUserService
 
     public Guid? TenantId => GetTenantId();
 
+    public Guid? LanguageId => GetLanguageId();
+
     private Guid? GetTenantId()
     {
         if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("Bi-Tenant-Id") == true)
@@ -28,6 +30,18 @@ public class CurrentUserService : ICurrentUserService
             var tenantId = _httpContextAccessor?.HttpContext?.Request.Headers["Bi-Tenant-Id"];
 
             return Guid.Parse(tenantId.ToString()!);
+        }
+
+        return null;
+    }
+
+    private Guid? GetLanguageId()
+    {
+        if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey("Bi-Language-Id") == true)
+        {
+            var language = _httpContextAccessor?.HttpContext?.Request.Headers["Bi-Language-Id"];
+
+            return Guid.Parse(language.ToString()!);
         }
 
         return null;

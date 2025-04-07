@@ -7,6 +7,6 @@ public interface ICurrentUserService
     Guid? TenantId { get; }
     Guid? UserId { get; }
     string Identity { get; }
-    Guid? LanguageId { get; }
+    Guid LanguageId { get; }
     string Token { get; }
 }

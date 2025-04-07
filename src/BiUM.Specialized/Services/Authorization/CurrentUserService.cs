@@ -1,8 +1,10 @@
 using BiUM.Core.Consts;
+using BiUM.Infrastructure.Services.Authorization;
+using BiUM.Specialized.Consts;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
-namespace BiUM.Infrastructure.Services.Authorization;
+namespace BiUM.Specialized.Services.Authorization;
 
 public class CurrentUserService : ICurrentUserService
 {
@@ -25,7 +27,7 @@ public class CurrentUserService : ICurrentUserService
 
     public Guid? TenantId => GetTenantId();
 
-    public Guid? LanguageId => GetLanguageId();
+    public Guid LanguageId => GetLanguageId();
 
     public string Token => GetToken();
 
@@ -77,7 +79,7 @@ public class CurrentUserService : ICurrentUserService
         return null;
     }
 
-    private Guid? GetLanguageId()
+    private Guid GetLanguageId()
     {
         if (_httpContextAccessor?.HttpContext?.Request.Headers.ContainsKey(HeaderKeys.LanguageId) == true)
         {
@@ -90,7 +92,7 @@ public class CurrentUserService : ICurrentUserService
             catch { }
         }
 
-        return null;
+        return Ids.Language.Turkish.Id;
     }
 
     private string GetToken()

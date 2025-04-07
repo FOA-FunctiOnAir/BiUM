@@ -2,12 +2,10 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
-using BiUM.Specialized.Consts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

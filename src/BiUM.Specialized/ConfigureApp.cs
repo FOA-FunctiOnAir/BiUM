@@ -1,6 +1,5 @@
 ﻿using BiUM.Specialized.Database;
 using Microsoft.AspNetCore.Builder;
-using Serilog;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

@@ -26,13 +26,3 @@ public record BaseForValuesQueryDto<TType> : BaseQuery<ApiResponse<IList<TType>>
 public record BasePaginatedForValuesQueryDto<TType> : BasePaginatedQueryDto<TType>
 {
 }
-
-public record BaseQueryTenantDto<TType> : BaseQueryDto<TType>
-{
-    public Guid? TenantId { get; set; }
-}
-
-public record BasePaginatedQueryTenantDto<TType> : BasePaginatedQueryDto<TType>
-{
-    public Guid? TenantId { get; set; }
-}

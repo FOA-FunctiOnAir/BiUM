@@ -2,7 +2,9 @@
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
+using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
+using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
@@ -11,11 +13,12 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace BiUM.Infrastructure.Services.HttpClients;
+namespace BiUM.Specialized.Services.HttpClients;
 
 public class HttpClientService : IHttpClientsService
 {
     private readonly HttpClientsOptions _httpClientOptions;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IMapper _mapper;
 
     private readonly JsonSerializerOptions _serializerSsettings = new JsonSerializerOptions
@@ -24,17 +27,15 @@ public class HttpClientService : IHttpClientsService
         ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
     };
 
-    public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, IMapper mapper)
+    public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, IMapper mapper, ICurrentUserService currentUserService)
     {
         _httpClientOptions = httpClientOptions.Value;
+        _currentUserService = currentUserService;
         _mapper = mapper;
     }
 
     public async Task<IApiResponse<TType>> CallService<TType>(
-        Guid correlationId,
         Guid serviceId,
-        Guid tenantId,
-        Guid languageId,
         Dictionary<string, dynamic>? parameters = null,
         string? q = null,
         int? pageStart = null,
@@ -46,14 +47,18 @@ public class HttpClientService : IHttpClientsService
         try
         {
             var _httpClient = new HttpClient();
+
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Add("CorrelationId", correlationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add("LanguageId", languageId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
 
             _httpClient.Timeout = new TimeSpan(0, 5, 0);
 
-            var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]), tenantId, languageId);
+            var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
             var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
             var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters);
 
@@ -85,7 +90,7 @@ public class HttpClientService : IHttpClientsService
 
             var url = _httpClientOptions.GetFullUrl(serviceData.Value.Url);
 
-            parameters = GetParameters(parameters, tenantId, languageId, q, pageStart, pageSize);
+            parameters = GetParameters(parameters, q, pageStart, pageSize);
 
             HttpResponseMessage? httpResponseTargetApi = null;
 
@@ -141,9 +146,6 @@ public class HttpClientService : IHttpClientsService
     }
 
     public async Task<IApiResponse<TType>> Get<TType>(
-        Guid correlationId,
-        Guid tenantId,
-        Guid languageId,
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -157,16 +159,20 @@ public class HttpClientService : IHttpClientsService
         try
         {
             var _httpClient = new HttpClient();
+
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Add("CorrelationId", correlationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add("LanguageId", languageId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
 
             _httpClient.Timeout = new TimeSpan(0, 5, 0);
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
-            parameters = GetParameters(parameters, tenantId, languageId, q, pageStart, pageSize);
+            parameters = GetParameters(parameters, q, pageStart, pageSize);
 
             var targetUrlWithParameters = GetGetUrl(targetUrl, parameters);
 
@@ -210,9 +216,6 @@ public class HttpClientService : IHttpClientsService
     }
 
     public async Task<IApiResponse> Post(
-        Guid correlationId,
-        Guid tenantId,
-        Guid languageId,
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -223,16 +226,20 @@ public class HttpClientService : IHttpClientsService
         try
         {
             var _httpClient = new HttpClient();
+
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Add("CorrelationId", correlationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add("LanguageId", languageId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
 
             _httpClient.Timeout = new TimeSpan(0, 5, 0);
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
-            parameters = GetParameters(parameters, tenantId, languageId);
+            parameters = GetParameters(parameters);
 
             var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
             var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
@@ -264,9 +271,6 @@ public class HttpClientService : IHttpClientsService
     }
 
     public async Task<IApiResponse<TType>> Post<TType>(
-        Guid correlationId,
-        Guid tenantId,
-        Guid languageId,
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -277,16 +281,20 @@ public class HttpClientService : IHttpClientsService
         try
         {
             var _httpClient = new HttpClient();
+
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _httpClient.DefaultRequestHeaders.Add("CorrelationId", correlationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add("LanguageId", languageId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
 
             _httpClient.Timeout = new TimeSpan(0, 5, 0);
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
-            parameters = GetParameters(parameters, tenantId, languageId);
+            parameters = GetParameters(parameters);
 
             var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
             var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
@@ -349,12 +357,9 @@ public class HttpClientService : IHttpClientsService
         return parameterizedUrl;
     }
 
-    private static Dictionary<string, dynamic> GetParameters(Dictionary<string, dynamic>? parameters, Guid tenantId, Guid languageId, string? q = null, int? pageStart = null, int? pageSize = null)
+    private static Dictionary<string, dynamic> GetParameters(Dictionary<string, dynamic>? parameters, string? q = null, int? pageStart = null, int? pageSize = null)
     {
         parameters ??= [];
-
-        parameters.Add("TenantId", tenantId.ToString());
-        parameters.Add("LanguageId", languageId.ToString());
 
         if (!string.IsNullOrEmpty(q)) parameters.Add("Q", q);
         if (pageStart.HasValue) parameters.Add("PageStart", pageStart.Value.ToString());

@@ -4,7 +4,7 @@ using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
-using BiUM.Infrastructure.Services.HttpClients;
+using BiUM.Specialized.Services.HttpClients;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

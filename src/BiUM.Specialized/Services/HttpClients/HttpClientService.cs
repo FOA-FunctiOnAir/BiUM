@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using BiUM.Core.Common.API;
+﻿using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.Consts;
@@ -19,7 +18,6 @@ public class HttpClientService : IHttpClientsService
 {
     private readonly HttpClientsOptions _httpClientOptions;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IMapper _mapper;
 
     private readonly JsonSerializerOptions _serializerSsettings = new JsonSerializerOptions
     {
@@ -27,11 +25,10 @@ public class HttpClientService : IHttpClientsService
         ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
     };
 
-    public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, IMapper mapper, ICurrentUserService currentUserService)
+    public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, ICurrentUserService currentUserService)
     {
         _httpClientOptions = httpClientOptions.Value;
         _currentUserService = currentUserService;
-        _mapper = mapper;
     }
 
     public async Task<IApiResponse<TType>> CallService<TType>(
@@ -46,17 +43,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            var _httpClient = new HttpClient();
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
-
-            _httpClient.Timeout = new TimeSpan(0, 5, 0);
+            using var _httpClient = CreateRequest();
 
             var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
             var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
@@ -158,17 +145,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            var _httpClient = new HttpClient();
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
-
-            _httpClient.Timeout = new TimeSpan(0, 5, 0);
+            using var _httpClient = CreateRequest();
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
@@ -225,17 +202,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            var _httpClient = new HttpClient();
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
-
-            _httpClient.Timeout = new TimeSpan(0, 5, 0);
+            using var _httpClient = CreateRequest();
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
@@ -280,17 +247,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            var _httpClient = new HttpClient();
-
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
-
-            _httpClient.Timeout = new TimeSpan(0, 5, 0);
+            using var _httpClient = CreateRequest();
 
             var targetUrl = _httpClientOptions.GetFullUrl(url);
 
@@ -336,6 +293,36 @@ public class HttpClientService : IHttpClientsService
         }
 
         return response;
+    }
+
+    private HttpClient CreateRequest()
+    {
+        var _httpClient = new HttpClient();
+
+        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+
+        if (!string.IsNullOrEmpty(_currentUserService.Token))
+        {
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+        }
+
+        if (_currentUserService.ApplicationId is not null)
+        {
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
+        }
+
+        if (_currentUserService.TenantId is not null)
+        {
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
+        }
+
+        _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
+
+        _httpClient.Timeout = new TimeSpan(0, 5, 0);
+
+        return _httpClient;
     }
 
     private static string GetGetUrl(string url, Dictionary<string, dynamic>? parameters = null)

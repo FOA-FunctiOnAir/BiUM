@@ -10,9 +10,6 @@ public static partial class ConfigureApp
 {
     public static IApplicationBuilder AddSpecializedApps(this IApplicationBuilder app, IWebHostEnvironment environment)
     {
-        // Configure Serilog logging
-        app.UseSerilogRequestLogging();
-
         // Configure the HTTP request pipeline.
         if (environment.IsDevelopment())
         {

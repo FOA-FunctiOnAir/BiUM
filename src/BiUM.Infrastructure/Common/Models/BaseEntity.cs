@@ -33,7 +33,7 @@ public class BaseEntity : BaseAuditableEntity, IBaseEntity
     [Column("UPDATED_TIME", Order = 8)]
     public TimeOnly? UpdatedTime { get; set; }
 
-    [Column("UPDATED_BY", Order = 8)]
+    [Column("UPDATED_BY", Order = 9)]
     public Guid? UpdatedBy { get; set; }
 
     [Required]

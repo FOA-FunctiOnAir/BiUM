@@ -8,7 +8,7 @@ public static class ConfigureApp
     public static IApplicationBuilder AddInfrastructureApps(this IApplicationBuilder app)
     {
         // Configure Serilog logging
-        //app.UseSerilogRequestLogging();
+        app.UseSerilogRequestLogging();
         //app.UseSerilogExceptionHandler();
 
         return app;

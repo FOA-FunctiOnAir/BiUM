@@ -96,7 +96,7 @@ public static class ConfigureServices
         //    loggingBuilder.ClearProviders();
         //    loggingBuilder.AddSerilog(dispose: true);
         //});
-        services.AddScoped<ISerilogClient, SerilogClient>();
+        //services.AddScoped<ISerilogClient, SerilogClient>();
 
         return services;
     }

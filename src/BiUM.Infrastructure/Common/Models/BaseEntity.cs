@@ -11,33 +11,37 @@ public class BaseEntity : BaseAuditableEntity, IBaseEntity
     public override Guid Id { get; set; }
 
     [Required]
-    [Column("ACTIVE", Order = 2)]
+    [Column("CORRELATION_ID", Order = 2)]
+    public override Guid CorrelationId { get; set; }
+
+    [Required]
+    [Column("ACTIVE", Order = 3)]
     public bool Active { get; set; } = true;
 
     [Required]
-    [Column("DELETED", Order = 3)]
+    [Column("DELETED", Order = 4)]
     public bool Deleted { get; set; } = false;
 
-    [Column("CREATED", Order = 4)]
+    [Column("CREATED", Order = 5)]
     public DateOnly Created { get; set; }
 
-    [Column("CREATED_TIME", Order = 5)]
+    [Column("CREATED_TIME", Order = 6)]
     public TimeOnly CreatedTime { get; set; }
 
-    [Column("CREATED_BY", Order = 6)]
+    [Column("CREATED_BY", Order = 7)]
     public Guid? CreatedBy { get; set; }
 
-    [Column("UPDATED", Order = 7)]
+    [Column("UPDATED", Order = 8)]
     public DateOnly? Updated { get; set; }
 
-    [Column("UPDATED_TIME", Order = 8)]
+    [Column("UPDATED_TIME", Order = 9)]
     public TimeOnly? UpdatedTime { get; set; }
 
-    [Column("UPDATED_BY", Order = 9)]
+    [Column("UPDATED_BY", Order = 10)]
     public Guid? UpdatedBy { get; set; }
 
     [Required]
-    [Column("TEST", Order = 10)]
+    [Column("TEST", Order = 11)]
     public bool Test { get; set; } = false;
 
     public BaseEntity()

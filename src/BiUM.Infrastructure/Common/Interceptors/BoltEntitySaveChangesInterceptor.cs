@@ -51,6 +51,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
 
             if (entry.State == EntityState.Added)
             {
+                entry.Entity.CorrelationId = _currentUserService.CorrelationId;
                 entry.Entity.CreatedBy ??= _currentUserService.UserId;
                 entry.Entity.Created = entry.Entity.Created == default ? DateOnly.FromDateTime(now) : entry.Entity.Created;
                 entry.Entity.CreatedTime = entry.Entity.CreatedTime == default ? TimeOnly.FromDateTime(now) : entry.Entity.CreatedTime;

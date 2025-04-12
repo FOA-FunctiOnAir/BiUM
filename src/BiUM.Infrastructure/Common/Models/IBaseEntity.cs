@@ -2,10 +2,8 @@
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public interface IBaseEntity
+public interface IBaseEntity : IEntity
 {
-    public Guid Id { get; set; }
-
     public bool Active { get; set; }
 
     public bool Deleted { get; set; }

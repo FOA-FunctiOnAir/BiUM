@@ -9,11 +9,11 @@ public static class Extensions
 {
     public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, TEntity entity, CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IBaseEntity
+        where TEntity : IEntity
     {
         if (entity is null) return false;
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
 
         var existEntity = await linqQuery.AsNoTracking().Where(x => x.Id == entity.Id).ToListAsync(cancellationToken);
 
@@ -41,11 +41,11 @@ public static class Extensions
 
     public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, IList<TEntity> entities, CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IBaseEntity
+        where TEntity : IEntity
     {
         if (entities is null || entities.Count == 0) return false;
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => entities.Select(e => e.Id).Contains(x.Id)).ToListAsync(cancellationToken);
 
@@ -83,19 +83,22 @@ public static class Extensions
 
     public static async Task<bool> Delete<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, TEntity entity, CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IBaseEntity
+        where TEntity : IEntity
     {
         if (entity is null) return false;
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
 
         var existEntity = await linqQuery.AsNoTracking().Where(x => x.Id == entity.Id).ToListAsync(cancellationToken);
 
         if (existEntity.Count != 0)
         {
-            entity.Deleted = true;
+            if (entity is IBaseEntity baseEntity)
+            {
+                baseEntity.Deleted = true;
 
-            dbContext.Update(entity);
+                dbContext.Update(baseEntity);
+            }
 
             var boltTransaction = new BoltTransaction()
             {
@@ -113,11 +116,11 @@ public static class Extensions
 
     public static async Task<bool> Delete<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, IList<TEntity> entities, CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IBaseEntity
+        where TEntity : IEntity
     {
         if (entities is null || entities.Count == 0) return false;
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IBaseEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => entities.Select(e => e.Id).Contains(x.Id)).ToListAsync(cancellationToken);
 
@@ -127,9 +130,12 @@ public static class Extensions
         {
             foreach (var entity in deleteEntities)
             {
-                entity.Deleted = true;
+                if (entity is IBaseEntity baseEntity)
+                {
+                    baseEntity.Deleted = true;
 
-                dbContext.Update(entity);
+                    dbContext.Update(baseEntity);
+                }
             }
 
             var boltTransaction = new BoltTransaction()

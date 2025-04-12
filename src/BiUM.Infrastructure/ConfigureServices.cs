@@ -2,29 +2,22 @@
 using BiUM.Core.Logging.Serilog;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Configs;
-using BiUM.Infrastructure.Services;
-using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.Caching.Redis;
 using BiUM.Infrastructure.Services.Logging.Serilog;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
-using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
-using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration, Specialized specialized = null)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IHostBuilder host, IConfiguration configuration, Specialized specialized = null)
     {
-
         if (specialized == null)
         {
             // Load settings from appsettings.json
@@ -42,28 +35,40 @@ public static class ConfigureServices
 
         // TODO: Serilog getting Exception
         // Configure Serilog
-        //var logger = new LoggerConfiguration()
-        //    .MinimumLevel.Is(Enum.Parse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel))
-        //    .CreateLogger();
+        services.AddSingleton(specialized.SerilogOptions);
+        var logger = new LoggerConfiguration()
+            .MinimumLevel.Is(Enum.Parse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel))
+            .WriteTo.Console()
+            .CreateLogger();
 
-
-        // foreach (var writeTo in specialized.SerilogOptions.WriteTo)
-        // {
-        //     if (writeTo.Name == "Console")
-        //     {
-        //         logger.WriteTo.Console();
-        //     }
-        //     else if (writeTo.Name == "File")
-        //     {
-        //         logger.WriteTo.File(writeTo.Args["path"], rollingInterval: Enum.Parse<RollingInterval>(writeTo.Args["rollingInterval"]));
-        //     }
-        // }
-
-        //services.AddLogging(loggingBuilder =>
+        //foreach (var writeTo in specialized.SerilogOptions.WriteTo)
         //{
-        //    loggingBuilder.ClearProviders();
-        //    loggingBuilder.AddSerilog(logger, dispose: true);
-        //});
+        //    if (writeTo.Name == "Console")
+        //    {
+        //        logger = new LoggerConfiguration()
+        //            .MinimumLevel.Is(Enum.Parse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel))
+        //            .CreateLogger();
+        //    }
+        //    else if (writeTo.Name == "File")
+        //    {
+        //        logger.WriteTo.File(writeTo.Args["path"], rollingInterval: Enum.Parse<RollingInterval>(writeTo.Args["rollingInterval"]));
+
+        //        logger = new LoggerConfiguration()
+        //            .MinimumLevel.Is(Enum.Parse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel))
+        //            .WriteTo.File(writeTo.Args["path"], rollingInterval: Enum.Parse<RollingInterval>(writeTo.Args["rollingInterval"]))
+        //            .CreateLogger();
+        //    }
+        //}
+
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingBuilder.AddSerilog(logger, dispose: true);
+        });
+
+        services.AddScoped<ISerilogClient, SerilogClient>();
+
+        host.UseSerilog(logger);
 
         services.AddHealthChecks();
 
@@ -86,11 +91,11 @@ public static class ConfigureServices
         // services.AddScoped<IRabbitMQClient, RabbitMQClient>();
 
         // // Add Serilog logging
-        services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.AddSerilog(dispose: true);
-        });
+        //services.AddLogging(loggingBuilder =>
+        //{
+        //    loggingBuilder.ClearProviders();
+        //    loggingBuilder.AddSerilog(dispose: true);
+        //});
         services.AddScoped<ISerilogClient, SerilogClient>();
 
         return services;

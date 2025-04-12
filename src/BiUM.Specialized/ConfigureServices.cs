@@ -25,8 +25,6 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddSpecializedServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var BiAppOrigins = "BiAppOrigins";
-
         services.AddHttpContextAccessor();
 
         services.AddControllersWithViews();
@@ -35,13 +33,21 @@ public static class ConfigureServices
 
         services.AddCors(options =>
         {
-            options.AddPolicy(name: BiAppOrigins,
+            options.AddPolicy(
+                name: BiUM.Specialized.Consts.Application.BiAppOrigins,
                 policy =>
                 {
                     policy
-                    .WithOrigins("http://localhost:3000")
+                    .WithOrigins(
+                        "http://localhost:3000",
+                        "http://dev.bidyno.com",
+                        "https://dev.bidyno.com",
+                        "http://app.bidyno.com",
+                        "https://app.bidyno.com"
+                    )
+                    .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowCredentials();
                 });
         });
 

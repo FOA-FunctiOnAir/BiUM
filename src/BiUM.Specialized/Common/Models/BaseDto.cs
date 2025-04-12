@@ -3,6 +3,7 @@ namespace BiUM.Specialized.Common.Models;
 public class BaseDto
 {
     public Guid Id { get; set; }
+    public Guid CorrelationId { get; set; }
     public bool Active { get; set; }
     public DateOnly Created { get; set; }
     public TimeOnly CreatedTime { get; set; }

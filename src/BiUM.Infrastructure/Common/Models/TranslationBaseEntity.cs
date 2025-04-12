@@ -3,8 +3,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class TranslationBaseEntity : BaseEntity
+public class TranslationBaseEntity : BaseAuditableEntity
 {
+    [Required]
+    [Column("ID", Order = 1)]
+    public override Guid Id { get; set; }
+
     [Required]
     [Column("RECORD_ID", Order = 2)]
     public Guid RecordId { get; set; }
@@ -22,6 +26,7 @@ public class TranslationBaseEntity : BaseEntity
 
     public TranslationBaseEntity() : base()
     {
+        Id = Guid.NewGuid();
         Column = string.Empty;
     }
 }

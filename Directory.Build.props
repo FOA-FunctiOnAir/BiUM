@@ -10,9 +10,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-		<BiUMBolt>1.0.66</BiUMBolt>
-		<BiUMCore>1.0.66</BiUMCore>
-		<BiUMInfrastructure>1.0.66</BiUMInfrastructure>
-		<BiUMSpecialized>1.0.66</BiUMSpecialized>
+		<BiUMBolt>1.0.67</BiUMBolt>
+		<BiUMCore>1.0.67</BiUMCore>
+		<BiUMInfrastructure>1.0.67</BiUMInfrastructure>
+		<BiUMSpecialized>1.0.67</BiUMSpecialized>
 	</PropertyGroup>
 </Project>

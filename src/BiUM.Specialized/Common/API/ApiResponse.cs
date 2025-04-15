@@ -88,6 +88,11 @@ public class PaginatedApiResponse<TType> : ApiResponse<List<TType>>
         Value = [];
     }
 
+    public static PaginatedApiResponse<TType> Empty()
+    {
+        return new PaginatedApiResponse<TType>();
+    }
+
     public PaginatedApiResponse(List<TType> items, int count, int pageNumber, int pageSize)
     {
         PageNumber = pageNumber;

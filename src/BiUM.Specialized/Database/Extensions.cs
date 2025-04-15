@@ -53,6 +53,7 @@ public static class Extensions
         return services;
     }
 
+    [Obsolete("Obsuleted, use ToPaginatedListAsync or ToListAsync", true)]
     public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TDestination>(this IQueryable<TDestination> queryable, int? pageStart = 0, int? pageSize = 10, CancellationToken cancellationToken = default) where TDestination : class
     {
         var query = queryable.AsNoTracking();
@@ -68,7 +69,13 @@ public static class Extensions
         );
     }
 
-    public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TSource, TDestination>(this IQueryable<TSource> queryable, IMapper mapper, int? pageStart = 0, int? pageSize = 10, CancellationToken cancellationToken = default)
+    public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        int? pageStart = 0,
+        int? pageSize = 10,
+        CancellationToken cancellationToken = default
+    )
         where TSource : class
         where TDestination : class
     {
@@ -85,5 +92,20 @@ public static class Extensions
             pageNumber: (_pageStart == 0 ? 0 : _pageStart / _pageSize) + 1,
             pageSize: _pageSize
         );
+    }
+
+    public static async Task<IList<TDestination>> ToListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var items = mapper.Map<IList<TDestination>>(await query.ToListAsync(cancellationToken));
+
+        return items;
     }
 }

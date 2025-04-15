@@ -1,17 +1,18 @@
 ﻿using BiUM.Specialized.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Hosting;
-using Serilog;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ConfigureApp
 {
-    public static IApplicationBuilder AddSpecializedApps(this IApplicationBuilder app, IWebHostEnvironment environment)
+    public static WebApplication AddSpecializedApps(this WebApplication app)
     {
         // Configure the HTTP request pipeline.
-        if (environment.IsDevelopment())
+        if (app.Environment.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
         }
@@ -32,6 +33,13 @@ public static partial class ConfigureApp
         });
 
         app.UseHealthChecks("/health");
+        app.MapGet("/version", () =>
+        {
+            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+
+            return Results.Ok(new { version });
+        });
+
         //app.UseHttpsRedirection();
         app.UseStaticFiles();
 

@@ -30,7 +30,7 @@ var app = builder.Build();
 {
     app.AddCoreApps();
     app.AddInfrastructureApps();
-    app.AddSpecializedApps(app.Environment);
+    app.AddSpecializedApps();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())

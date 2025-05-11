@@ -52,6 +52,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
             if (entry.State == EntityState.Added)
             {
+                entry.Entity.CorrelationId = _currentUserService.CorrelationId;
                 entry.Entity.CreatedBy = _currentUserService.UserId;
                 entry.Entity.Created = DateOnly.FromDateTime(now);
                 entry.Entity.CreatedTime = TimeOnly.FromDateTime(now);

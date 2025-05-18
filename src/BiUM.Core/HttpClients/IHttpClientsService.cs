@@ -4,6 +4,11 @@ namespace BiUM.Core.HttpClients;
 
 public interface IHttpClientsService
 {
+    Task<IApiResponse> CallService(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default);
+
     Task<IApiResponse<TType>> CallService<TType>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,

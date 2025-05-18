@@ -31,6 +31,99 @@ public class HttpClientService : IHttpClientsService
         _currentUserService = currentUserService;
     }
 
+    public async Task<IApiResponse> CallService(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = new ApiEmptyResponse();
+
+        try
+        {
+            using var _httpClient = CreateRequest();
+
+            var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
+            var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
+            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters);
+
+            var httpResponseServiceApi = await _httpClient.GetAsync(targetServiceUrlWithParameters, cancellationToken);
+
+            if (!httpResponseServiceApi.IsSuccessStatusCode)
+            {
+                response.AddMessage("HttpClientService.GetServiceDefinition", httpResponseServiceApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+
+                return response;
+            }
+
+            string resultData = await httpResponseServiceApi.Content.ReadAsStringAsync(cancellationToken);
+
+            var serviceData = JsonSerializer.Deserialize<ApiResponse<ServiceDto>>(resultData, _serializerSsettings);
+
+            if (!serviceData!.Success)
+            {
+                response.AddMessage(serviceData.Messages);
+
+                return response;
+            }
+            else if (serviceData?.Value == null)
+            {
+                response.AddMessage("Api Response value error", MessageSeverity.Error);
+
+                return response;
+            }
+
+            var url = _httpClientOptions.GetFullUrl(serviceData.Value.Url);
+
+            parameters = GetParameters(parameters);
+
+            HttpResponseMessage? httpResponseTargetApi = null;
+
+            if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
+            {
+                var targetUrl = GetGetUrl(url, parameters);
+
+                httpResponseTargetApi = await _httpClient.GetAsync(targetUrl, cancellationToken);
+            }
+            else if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
+            {
+                var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
+                var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
+
+                httpResponseTargetApi = await _httpClient.PostAsync(url, content, cancellationToken);
+            }
+
+            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
+            {
+                response.AddMessage("GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+
+                return response;
+            }
+
+            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
+
+            if (serviceData.Value.IsExternal == true)
+            {
+            }
+            else
+            {
+                var innerResponse = JsonSerializer.Deserialize<ApiEmptyResponse>(resultData2, _serializerSsettings);
+
+                if (innerResponse != null)
+                {
+                    response = innerResponse;
+                }
+            }
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            response.AddMessage($"HttpClientService.CallService-{ex.Message}", ex.StackTrace, MessageSeverity.Error);
+        }
+
+        return response;
+    }
+
     public async Task<IApiResponse<TType>> CallService<TType>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,

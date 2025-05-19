@@ -58,6 +58,7 @@ public static class ConfigureServices
         });
 
         services.Configure<BiAppOptions>(configuration.GetSection(BiAppOptions.Name));
+        services.Configure<BiMailOptions>(configuration.GetSection(BiMailOptions.Name));
 
         // Customise default API behaviour
         services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);

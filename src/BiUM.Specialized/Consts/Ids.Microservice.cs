@@ -36,6 +36,11 @@ public partial class Ids
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Customers");
         }
 
+        public static class Information
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Microservice-Information");
+        }
+
         public static class Parameters
         {
             public static Guid Id = GuidGenerator.NewGuid("Microservice-Parameters");

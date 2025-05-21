@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
 		<LangVersion>latest</LangVersion>
-		<Version>1.0.57</Version>
+		<Version>1.0.76</Version>
 		<Authors>FunctiOnAir</Authors>
 		<Company>FunctiOnAir</Company>
 		<Copyright>FunctiOnAir</Copyright>
@@ -10,9 +10,6 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-		<BiUMBolt>1.0.75</BiUMBolt>
-		<BiUMCore>1.0.75</BiUMCore>
-		<BiUMInfrastructure>1.0.75</BiUMInfrastructure>
-		<BiUMSpecialized>1.0.75</BiUMSpecialized>
+		<BiUMVersion>1.0.76</BiUMVersion>
 	</PropertyGroup>
 </Project>

@@ -3,7 +3,7 @@
 		<!--<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />-->
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="$(BiUMCore)" />
+		<PackageReference Include="BiUM.Core" Version="$(BiUMVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />

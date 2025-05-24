@@ -51,11 +51,17 @@ public static partial class ConfigureApp
         return app;
     }
 
-    public static async Task SyncDatabase(this IServiceScope scope)
+    public static async Task InitialiseDatabase(this IServiceScope scope)
     {
         var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
 
         await initialiser.InitialiseAsync();
+    }
+
+    public static async Task SyncDatabase(this IServiceScope scope)
+    {
+        var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
+
         await initialiser.SeedAsync();
     }
 }

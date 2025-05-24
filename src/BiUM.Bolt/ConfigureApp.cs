@@ -15,7 +15,7 @@ public static partial class ConfigureApp
         {
             var initialiser = scope.ServiceProvider.GetRequiredService<IBaseBoltDbContextInitialiser>();
 
-            if (biAppOptions?.Value != null && biAppOptions.Value.Environment == "Development")
+            if (biAppOptions?.Value != null && (biAppOptions.Value.Environment == "Development" || biAppOptions.Value.Environment == "Production"))
             {
                 await initialiser.InitialiseAsync();
 

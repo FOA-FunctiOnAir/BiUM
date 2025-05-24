@@ -1,4 +1,5 @@
 ﻿using BiUM.Bolt.Database.Entities;
+using BiUM.Core.Common.Configs;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
@@ -7,10 +8,19 @@ namespace BiUM.Bolt.Database;
 
 public static class Extensions
 {
-    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, TEntity entity, CancellationToken cancellationToken)
+    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
+        TEntity entity,
+        CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IEntity
     {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
         if (entity is null) return false;
 
         if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
@@ -39,10 +49,19 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, IList<TEntity> entities, CancellationToken cancellationToken)
+    public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
+        IList<TEntity> entities,
+        CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IEntity
     {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
         if (entities is null || entities.Count == 0) return false;
 
         if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
@@ -81,10 +100,19 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> Delete<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, TEntity entity, CancellationToken cancellationToken)
+    public static async Task<bool> Delete<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
+        TEntity entity,
+        CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IEntity
     {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
         if (entity is null) return false;
 
         if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
@@ -114,10 +142,19 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> Delete<TDbContext, TEntity>(this IBaseBoltDbContext boltDomainDbContext, TDbContext dbContext, int order, string name, IList<TEntity> entities, CancellationToken cancellationToken)
+    public static async Task<bool> Delete<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
+        IList<TEntity> entities,
+        CancellationToken cancellationToken)
         where TDbContext : DbContext
         where TEntity : IEntity
     {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
         if (entities is null || entities.Count == 0) return false;
 
         if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;

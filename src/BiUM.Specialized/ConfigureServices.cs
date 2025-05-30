@@ -38,12 +38,11 @@ public static class ConfigureServices
                 policy =>
                 {
                     policy
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
                     .WithOrigins(
                         "http://localhost:3000",
-                        "http://dev.bidyno.com",
-                        "https://dev.bidyno.com",
-                        "http://app.bidyno.com",
-                        "https://app.bidyno.com"
+                        "http://*.bidyno.com",
+                        "https://*.bidyno.com"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()

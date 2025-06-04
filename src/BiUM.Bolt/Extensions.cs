@@ -64,7 +64,14 @@ public static partial class ConfigureApp
             //    }
             //}
 
-            var connectionString = string.Format(boltOptions.Value.ConnectionString, boltOptions.Value.Branch + "_" + (databaseName ?? "db"));
+            var boltDbName = databaseName ?? "db";
+
+            //if (boltOptions.Value.Branch == "Local")
+            //{
+            //    boltDbName = boltOptions.Value.Branch + "_" + (databaseName ?? "db");
+            //}
+
+            var connectionString = string.Format(boltOptions.Value.ConnectionString, boltDbName);
 
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {

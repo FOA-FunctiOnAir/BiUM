@@ -66,10 +66,10 @@ public static partial class ConfigureApp
 
             var boltDbName = databaseName ?? "db";
 
-            //if (boltOptions.Value.Branch == "Local")
-            //{
-            //    boltDbName = boltOptions.Value.Branch + "_" + (databaseName ?? "db");
-            //}
+            if (boltOptions.Value.Branch == "Local")
+            {
+                boltDbName = boltOptions.Value.Branch + "_" + (databaseName ?? "db");
+            }
 
             var connectionString = string.Format(boltOptions.Value.ConnectionString, boltDbName);
 

@@ -72,7 +72,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         }
 
         var queryStatement = lastTransaction is null ? string.Empty : $" WHERE \"ID\" != '{lastTransaction.Id.ToString()}' AND (\"CREATED\" > '{lastTransaction.Created.ToString("yyyy-MM-dd")}' or (\"CREATED\" = '{lastTransaction.Created.ToString("yyyy-MM-dd")}' and \"CREATED_TIME\" > '{lastTransaction.CreatedTime.ToString("HH:mm:ss")}'))";
-        var query = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(queryStatement) ? "" : queryStatement) + " ORDER BY \"CREATED\" ASC, \"CREATED_TIME\" ASC, \"SORT_ORDER\" ASC";
+        var query = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(queryStatement) ? "" : queryStatement) + " ORDER BY \"CREATED\" ASC, \"SORT_ORDER\" ASC, \"CREATED_TIME\" ASC";
 
         var transactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
             _boltContext,

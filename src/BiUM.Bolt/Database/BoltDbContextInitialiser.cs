@@ -97,12 +97,12 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 var uniqueIds = allIds.Distinct();
                 if (!uniqueIds.Any()) continue;
 
-                var linqBoltQuery = _boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
+                var linqBoltQuery = _boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) as IQueryable<IEntity>;
                 if (linqBoltQuery is null) continue;
 
                 var boltEntities = await linqBoltQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
-                var linqTargetQuery = _context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) as IQueryable<IBaseEntity>;
+                var linqTargetQuery = _context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) as IQueryable<IEntity>;
                 if (linqTargetQuery is null) continue;
 
                 var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
@@ -115,7 +115,10 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                     {
                         foreach (var entity in deleteEntities)
                         {
-                            entity.Deleted = true;
+                            if (entity is IBaseEntity)
+                            {
+                                (entity as IBaseEntity).Deleted = true;
+                            }
                         }
 
                         _context.UpdateRange(deleteEntities);
@@ -207,7 +210,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         {
             if (!isError)
             {
-                var last = transactions.First();
+                var last = transactions.Last();
 
                 if (boltStatus == null)
                 {

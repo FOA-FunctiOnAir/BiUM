@@ -210,7 +210,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         {
             if (!isError)
             {
-                var last = transactions.Last();
+                var last = transactions.OrderByDescending(x => new { x.Created, x.CreatedTime, x.SortOrder }).First();
 
                 if (boltStatus == null)
                 {

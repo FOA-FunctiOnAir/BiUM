@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Json;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -33,12 +34,17 @@ public static class ConfigureServices
         services.AddSingleton(specialized.RabbitMQOptions);
         services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
 
+        if (!Enum.TryParse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel, out var level))
+        {
+            level = LogEventLevel.Information;
+        }
+
         // TODO: Serilog getting Exception
         // Configure Serilog
         services.AddSingleton(specialized.SerilogOptions);
         var logger = new LoggerConfiguration()
-            .MinimumLevel.Is(Enum.Parse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel))
-            .WriteTo.Console()
+            .MinimumLevel.Is(level)
+            .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 
         //foreach (var writeTo in specialized.SerilogOptions.WriteTo)

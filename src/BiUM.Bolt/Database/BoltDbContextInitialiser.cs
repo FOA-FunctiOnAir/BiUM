@@ -210,14 +210,18 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         {
             if (!isError)
             {
-                var last = transactions.OrderByDescending(x => new { x.Created, x.CreatedTime, x.SortOrder }).First();
+                var last = transactions
+                    .OrderByDescending(x => x.Created)
+                    .ThenByDescending(x => x.CreatedTime)
+                    .ThenByDescending(x => x.SortOrder)
+                    .First();
 
                 if (boltStatus == null)
                 {
                     boltStatus = new BoltStatus()
                     {
                         Id = boltStatusId,
-                        LastTransactionId = last.Id,
+                        LastTransactionId = last?.Id,
                         Error = null
                     };
 
@@ -225,7 +229,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 }
                 else
                 {
-                    boltStatus.LastTransactionId = last.Id;
+                    boltStatus.LastTransactionId = last?.Id;
 
                     _context.Update(boltStatus);
                 }

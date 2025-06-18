@@ -90,7 +90,7 @@ public static class Extensions
         var boltTransaction = new BoltTransaction()
         {
             TableName = name,
-            Ids = string.Join(";", entities.Select(e => e.Id.ToString())),
+            Ids = string.Join(";", entities.Select(e => e.Id.ToString()).Distinct()),
             Delete = false,
             SortOrder = order
         };
@@ -148,6 +148,50 @@ public static class Extensions
         BoltOptions boltOptions,
         int order,
         string name,
+        Guid id,
+        CancellationToken cancellationToken)
+        where TDbContext : DbContext
+        where TEntity : IEntity
+    {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
+        if (id == Guid.Empty) return false;
+
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+
+        var existEntities = await linqQuery.AsNoTracking().Where(x => x.Id == id).ToListAsync(cancellationToken);
+
+        if (existEntities.Count > 0)
+        {
+            var existEntity = existEntities.FirstOrDefault();
+
+            if (existEntity is IBaseEntity baseEntity)
+            {
+                baseEntity.Deleted = true;
+
+                dbContext.Update(baseEntity);
+            }
+
+            var boltTransaction = new BoltTransaction()
+            {
+                TableName = name,
+                Ids = id.ToString(),
+                Delete = true,
+                SortOrder = order
+            };
+
+            dbContext.Add(boltTransaction);
+        }
+
+        return true;
+    }
+
+    public static async Task<bool> Delete<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
         IList<TEntity> entities,
         CancellationToken cancellationToken)
         where TDbContext : DbContext
@@ -178,7 +222,52 @@ public static class Extensions
             var boltTransaction = new BoltTransaction()
             {
                 TableName = name,
-                Ids = string.Join(";", entities.Select(e => e.Id.ToString())),
+                Ids = string.Join(";", entities.Select(e => e.Id.ToString()).Distinct()),
+                Delete = true,
+                SortOrder = order
+            };
+
+            dbContext.Add(boltTransaction);
+        }
+
+        return true;
+    }
+
+    public static async Task<bool> Delete<TDbContext, TEntity>(
+        this IBaseBoltDbContext boltDomainDbContext,
+        TDbContext dbContext,
+        BoltOptions boltOptions,
+        int order,
+        string name,
+        IList<Guid> ids,
+        CancellationToken cancellationToken)
+        where TDbContext : DbContext
+        where TEntity : IEntity
+    {
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+
+        if (ids is null || ids.Count == 0) return false;
+
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+
+        var existEntities = await linqQuery.AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync(cancellationToken);
+
+        if (existEntities.Any())
+        {
+            foreach (var entity in existEntities)
+            {
+                if (entity is IBaseEntity baseEntity)
+                {
+                    baseEntity.Deleted = true;
+
+                    dbContext.Update(baseEntity);
+                }
+            }
+
+            var boltTransaction = new BoltTransaction()
+            {
+                TableName = name,
+                Ids = string.Join(";", existEntities.Select(e => e.Id.ToString()).Distinct()),
                 Delete = true,
                 SortOrder = order
             };

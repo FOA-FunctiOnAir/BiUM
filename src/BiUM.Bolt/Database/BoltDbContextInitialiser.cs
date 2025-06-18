@@ -113,15 +113,16 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
                     if (deleteEntities.Any())
                     {
-                        foreach (var entity in deleteEntities)
-                        {
-                            if (entity is IBaseEntity)
-                            {
-                                (entity as IBaseEntity).Deleted = true;
-                            }
-                        }
+                        //foreach (var entity in deleteEntities)
+                        //{
+                        //    if (entity is IBaseEntity)
+                        //    {
+                        //        (entity as IBaseEntity).Deleted = true;
+                        //    }
+                        //}
 
-                        _context.UpdateRange(deleteEntities);
+                        //_context.UpdateRange(deleteEntities);
+                        _context.RemoveRange(deleteEntities);
                     }
                 }
                 else

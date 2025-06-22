@@ -142,7 +142,7 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> Delete<TDbContext, TEntity>(
+    public static async Task<bool> Delete<TDbContext>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
         BoltOptions boltOptions,
@@ -151,7 +151,6 @@ public static class Extensions
         Guid id,
         CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IEntity
     {
         if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
 
@@ -233,7 +232,7 @@ public static class Extensions
         return true;
     }
 
-    public static async Task<bool> Delete<TDbContext, TEntity>(
+    public static async Task<bool> Delete<TDbContext>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
         BoltOptions boltOptions,
@@ -242,7 +241,6 @@ public static class Extensions
         IList<Guid> ids,
         CancellationToken cancellationToken)
         where TDbContext : DbContext
-        where TEntity : IEntity
     {
         if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
 

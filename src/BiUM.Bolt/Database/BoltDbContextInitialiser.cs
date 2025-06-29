@@ -142,6 +142,8 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
+
+                _context.ChangeTracker.Clear();
             }
 
             //foreach (var tableTransactions in grouppedTableTransactions)

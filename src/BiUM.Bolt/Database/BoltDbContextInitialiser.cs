@@ -83,6 +83,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
         //var dbTransaction = _context.Database.BeginTransaction();
         var isError = false;
+        var transactionId = Guid.Empty;
 
         try
         {
@@ -90,6 +91,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
             foreach (var transaction in transactions)
             {
+                transactionId = transaction.Id;
                 var ids = transaction.Ids?.Trim().Split(";");
                 var guidIds = ids?.Select(x => new Guid(x.Trim()));
                 var allIds = guidIds ?? [];
@@ -100,7 +102,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 var linqBoltQuery = _boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) as IQueryable<IEntity>;
                 if (linqBoltQuery is null) continue;
 
-                var boltEntities = await linqBoltQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+                var boltEntities = await linqBoltQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 var linqTargetQuery = _context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) as IQueryable<IEntity>;
                 if (linqTargetQuery is null) continue;
@@ -189,6 +191,8 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         {
             isError = true;
 
+            _context.ChangeTracker.Clear();
+
             if (boltStatus == null)
             {
                 boltStatus = new BoltStatus()
@@ -202,7 +206,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
             }
             else
             {
-                boltStatus.Error = ex.Message;
+                boltStatus.Error = $"TransactionId:{transactionId}, Message:{ex.Message}, StackTrace:{ex.StackTrace}";
 
                 _context.Update(boltStatus);
             }

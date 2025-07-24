@@ -8,6 +8,11 @@ public record BaseCommand<TType> : BaseRequestDto<TType>
     public bool Test { get; set; }
 }
 
+public record BaseSchedulerCommand : BaseRequestDto<ApiEmptyResponse>
+{
+    public required string Key { get; set; }
+}
+
 public record BaseCommandDto : BaseCommand<ApiEmptyResponse>
 {
 }

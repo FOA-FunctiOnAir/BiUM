@@ -1,8 +1,11 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Models.MessageBroker.RabbitMQ;
+using BiUM.Infrastructure.Common.Events;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
@@ -10,19 +13,16 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 public partial class RabbitMQClient : IRabbitMQClient
 {
-    private readonly RabbitMQOptions _options;
+    private readonly string _queueTemplate = "{{assembly}}__{{message}}";
+    private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IConnection? _connection;
     private readonly IModel? _channel;
 
-    public RabbitMQClient()
-    {
-    }
-
     public RabbitMQClient(RabbitMQOptions options)
     {
-        _options = options;
+        _rabbitMQOptions = options;
 
-        if (!_options.Enable)
+        if (!_rabbitMQOptions.Enable)
         {
             // throw new InvalidOperationException("RabbitMQ is not enabled.");
 
@@ -37,6 +37,46 @@ public partial class RabbitMQClient : IRabbitMQClient
         _channel = _connection.CreateModel();
     }
 
+    public RabbitMQClient(IOptions<RabbitMQOptions> rabbitMQOptions)
+    {
+        _rabbitMQOptions = rabbitMQOptions.Value;
+
+        if (!_rabbitMQOptions.Enable)
+        {
+            return;
+        }
+
+        var factory = new ConnectionFactory
+        {
+            Uri = new Uri($"amqp://{_rabbitMQOptions.UserName}:{_rabbitMQOptions.Password}@{_rabbitMQOptions.Hostname}:{_rabbitMQOptions.Port}/{_rabbitMQOptions.VirtualHost}"),
+            DispatchConsumersAsync = true
+        };
+
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+    }
+
+    public Task PublishAsync<T>(T message)
+    {
+        var queueName = GetQueueName(typeof(T));
+
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+
+        var json = JsonSerializer.Serialize(message);
+        var body = Encoding.UTF8.GetBytes(json);
+
+        var properties = _channel.CreateBasicProperties();
+        properties.Persistent = true;
+
+        _channel.BasicPublish(
+            exchange: "",
+            routingKey: queueName,
+            basicProperties: properties,
+            body: body);
+
+        return Task.CompletedTask;
+    }
+
     public void SendMessage(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
     {
         // Declare a queue
@@ -49,6 +89,78 @@ public partial class RabbitMQClient : IRabbitMQClient
 
         // Publish the message to the queue
         _channel.BasicPublish(exchange: exchangeName, routingKey: queueName, basicProperties: properties, body: body);
+    }
+
+    public Task<T?> ReceiveMessageAsync<T>(CancellationToken token)
+    {
+        var queueName = GetQueueName(typeof(T));
+
+        var tcs = new TaskCompletionSource<T?>();
+
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+        consumer.Received += async (model, ea) =>
+        {
+            try
+            {
+                var body = ea.Body.ToArray();
+                var json = Encoding.UTF8.GetString(body);
+                var message = JsonSerializer.Deserialize<T>(json);
+
+                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+                tcs.TrySetResult(message);
+            }
+            catch (Exception ex)
+            {
+                // Hata durumunda reject et
+                _channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: true);
+                tcs.TrySetException(ex);
+            }
+
+            await Task.Yield();
+        };
+
+        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+
+        // Cancellation destekle
+        token.Register(() => tcs.TrySetCanceled(token));
+
+        return tcs.Task;
+    }
+
+    public Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token)
+    {
+        var queueName = GetQueueName(eventType);
+
+        var tcs = new TaskCompletionSource<object?>();
+
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+
+        consumer.Received += async (model, ea) =>
+        {
+            try
+            {
+                var json = Encoding.UTF8.GetString(ea.Body.ToArray());
+                var obj = JsonSerializer.Deserialize(json, eventType);
+
+                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+                tcs.TrySetResult(obj);
+            }
+            catch (Exception ex)
+            {
+                _channel.BasicNack(ea.DeliveryTag, false, requeue: true);
+                tcs.TrySetException(ex);
+            }
+            await Task.Yield();
+        };
+
+        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+        token.Register(() => tcs.TrySetCanceled(token));
+
+        return tcs.Task;
     }
 
     public async Task<Message> ReceiveMessageAsync(string queueName = "")
@@ -77,6 +189,20 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public void Dispose()
     {
-        _channel.Dispose();
+        _channel?.Close();
+        _connection?.Close();
+    }
+
+    private string GetQueueName(Type type)
+    {
+        var attribute = type.GetCustomAttribute<EventAttribute>();
+        var message = type.Name;
+
+        var queue =
+            _queueTemplate
+                .Replace("{{assembly}}", attribute?.Microservice)
+                .Replace("{{message}}", message);
+
+        return queue;
     }
 }

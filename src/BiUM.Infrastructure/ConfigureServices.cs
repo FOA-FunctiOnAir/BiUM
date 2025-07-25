@@ -1,4 +1,5 @@
 ﻿using BiUM.Core.Caching.Redis;
+using BiUM.Core.Common.Configs;
 using BiUM.Core.Logging.Serilog;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Configs;
@@ -31,8 +32,7 @@ public static class ConfigureServices
         services.AddSingleton<IRedisClient, RedisClient>();
 
         // Configure RabbitMQ
-        services.AddSingleton(specialized.RabbitMQOptions);
-        services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
+        services.AddRabbitMQServices(configuration);
 
         if (!Enum.TryParse<LogEventLevel>(specialized.SerilogOptions.MinimumLevel, out var level))
         {
@@ -103,6 +103,16 @@ public static class ConfigureServices
         //    loggingBuilder.AddSerilog(dispose: true);
         //});
         //services.AddScoped<ISerilogClient, SerilogClient>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddRabbitMQServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
+        services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
+        services.AddHostedService<RabbitMQListenerService>();
+        services.AddRabbitMQEventHandlers();
 
         return services;
     }

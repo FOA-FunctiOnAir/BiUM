@@ -10,7 +10,6 @@ public record BaseCommand<TType> : BaseRequestDto<TType>
 
 public record BaseSchedulerCommand : BaseRequestDto<ApiEmptyResponse>
 {
-    public required string Key { get; set; }
 }
 
 public record BaseCommandDto : BaseCommand<ApiEmptyResponse>

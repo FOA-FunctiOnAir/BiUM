@@ -3,10 +3,17 @@
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 public class EventAttribute : Attribute
 {
-    public string Microservice { get; }
+    public string Owner { get; }
+    public string Target { get; }
 
-    public EventAttribute(string microservice)
+    public EventAttribute(string owner)
     {
-        Microservice = microservice;
+        Owner = owner;
+    }
+
+    public EventAttribute(string owner, string target)
+    {
+        Owner = owner;
+        Target = target;
     }
 }

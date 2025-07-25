@@ -13,7 +13,7 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 public partial class RabbitMQClient : IRabbitMQClient
 {
-    private readonly string _queueTemplate = "{{assembly}}__{{message}}";
+    private readonly string _queueTemplate = "{{owner}}/{{message}}";
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IConnection? _connection;
     private readonly IModel? _channel;
@@ -59,6 +59,27 @@ public partial class RabbitMQClient : IRabbitMQClient
     public Task PublishAsync<T>(T message)
     {
         var queueName = GetQueueName(typeof(T));
+
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+
+        var json = JsonSerializer.Serialize(message);
+        var body = Encoding.UTF8.GetBytes(json);
+
+        var properties = _channel.CreateBasicProperties();
+        properties.Persistent = true;
+
+        _channel.BasicPublish(
+            exchange: "",
+            routingKey: queueName,
+            basicProperties: properties,
+            body: body);
+
+        return Task.CompletedTask;
+    }
+
+    public Task PublishAsync<T>(string target, T message)
+    {
+        var queueName = GetQueueName(typeof(T), target);
 
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
@@ -193,16 +214,32 @@ public partial class RabbitMQClient : IRabbitMQClient
         _connection?.Close();
     }
 
-    private string GetQueueName(Type type)
+    private string GetQueueName(Type type, string? target = null)
     {
         var attribute = type.GetCustomAttribute<EventAttribute>();
-        var message = type.Name;
+        var message = SnakeCase(type.Name);
+
+        var owner = attribute?.Owner ?? "BiApp.Error";
+
+        if (!string.IsNullOrEmpty(attribute?.Target))
+        {
+            owner += "__" + attribute.Target;
+        }
+        else if (!string.IsNullOrEmpty(target))
+        {
+            owner += "__" + target;
+        }
 
         var queue =
             _queueTemplate
-                .Replace("{{assembly}}", attribute?.Microservice)
+                .Replace("{{owner}}", owner)
                 .Replace("{{message}}", message);
 
         return queue;
     }
+
+    private static string SnakeCase(string value)
+        => string.Concat(value.Select((x, i) =>
+                i > 0 && value[i - 1] != '.' && value[i - 1] != '/' && char.IsUpper(x) ? "_" + x : x.ToString()))
+            .ToLowerInvariant();
 }

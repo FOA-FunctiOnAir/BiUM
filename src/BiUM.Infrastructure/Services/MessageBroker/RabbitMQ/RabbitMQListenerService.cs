@@ -36,16 +36,18 @@ public class RabbitMQListenerService : BackgroundService
         {
             var eventType = handlerType.GetInterface("IEventHandler`1")!.GenericTypeArguments[0];
 
+            var handlerGenericType = typeof(IEventHandler<>).MakeGenericType(eventType);
+
             _client.StartConsuming(eventType, async (obj) =>
             {
                 using var scope = _serviceProvider.CreateScope();
 
                 try
                 {
-                    var handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                    var handler = scope.ServiceProvider.GetRequiredService(handlerGenericType);
                     var method = handlerType.GetMethod("HandleAsync")!;
 
-                    await (Task)method.Invoke(handler, [obj, CancellationToken.None])!;
+                    await (Task)method.Invoke(handler, [obj, stoppingToken])!;
                 }
                 catch (Exception ex)
                 {

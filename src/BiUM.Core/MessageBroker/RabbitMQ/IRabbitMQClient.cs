@@ -10,5 +10,6 @@ public interface IRabbitMQClient
     Task<T?> ReceiveMessageAsync<T>(CancellationToken token);
     Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token);
     Task<Message> ReceiveMessageAsync(string queueName = "");
+    void StartConsuming(Type eventType, Func<object, Task> callback);
     void Dispose();
 }

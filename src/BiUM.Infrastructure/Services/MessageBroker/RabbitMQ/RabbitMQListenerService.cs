@@ -23,15 +23,12 @@ public class RabbitMQListenerService : BackgroundService
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_rabbitMQOptions.Enable)
-        {
-            return;
-        }
+            return Task.CompletedTask;
 
         var handlerTypes = GetAllHandlerTypes();
-
 
         Console.WriteLine("ExecuteAsync " + handlerTypes.Count.ToString() + " adet");
 
@@ -39,42 +36,25 @@ public class RabbitMQListenerService : BackgroundService
         {
             var eventType = handlerType.GetInterface("IEventHandler`1")!.GenericTypeArguments[0];
 
-            _ = Task.Run(() => ListenToEvent(eventType, stoppingToken), stoppingToken);
-        }
-    }
-
-    private async Task ListenToEvent(Type eventType, CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
+            _client.StartConsuming(eventType, async (obj) =>
             {
-                var message = await _client.ReceiveMessageAsync(eventType, stoppingToken);
-
-
-                Console.WriteLine("ListenToEvent ReceiveMessageAsync");
-
                 using var scope = _serviceProvider.CreateScope();
-                var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
-                var handler = scope.ServiceProvider.GetRequiredService(handlerType);
 
-                var method = handlerType.GetMethod("HandleAsync")!;
+                try
+                {
+                    var handler = scope.ServiceProvider.GetRequiredService(handlerType);
+                    var method = handlerType.GetMethod("HandleAsync")!;
 
-                await (Task)method.Invoke(handler, new[] { message, stoppingToken })!;
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("ListenToEvent cancelled"); break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("ListenToEvent error" + ex.Message);
-
-                _logger.LogError(ex, "Failed to process event from {FullName}", eventType.FullName);
-
-                await Task.Delay(1000);
-            }
+                    await (Task)method.Invoke(handler, [obj, CancellationToken.None])!;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Event handler failed for {EventType}", eventType.FullName);
+                }
+            });
         }
+
+        return Task.CompletedTask;
     }
 
     private static List<Type> GetAllHandlerTypes()

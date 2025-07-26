@@ -2,6 +2,7 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Models.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Events;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -17,6 +18,7 @@ public partial class RabbitMQClient : IRabbitMQClient
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IConnection? _connection;
     private readonly IModel? _channel;
+    private readonly ILogger<RabbitMQClient> _logger;
 
     public RabbitMQClient(RabbitMQOptions options)
     {
@@ -37,9 +39,10 @@ public partial class RabbitMQClient : IRabbitMQClient
         _channel = _connection.CreateModel();
     }
 
-    public RabbitMQClient(IOptions<RabbitMQOptions> rabbitMQOptions)
+    public RabbitMQClient(IOptions<RabbitMQOptions> rabbitMQOptions, ILogger<RabbitMQClient> logger)
     {
         _rabbitMQOptions = rabbitMQOptions.Value;
+        _logger = logger;
 
         if (!_rabbitMQOptions.Enable)
         {
@@ -208,6 +211,38 @@ public partial class RabbitMQClient : IRabbitMQClient
         await tcs.Task; // Wait for the message to be received before returning
 
         return tcs.Task.Result;
+    }
+
+    public void StartConsuming(Type eventType, Func<object, Task> callback)
+    {
+        var queueName = GetQueueName(eventType);
+
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+
+        consumer.Received += async (model, ea) =>
+        {
+            try
+            {
+                var json = Encoding.UTF8.GetString(ea.Body.ToArray());
+                var obj = JsonSerializer.Deserialize(json, eventType);
+
+                await callback(obj);
+
+                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+            }
+            catch (Exception ex)
+            {
+                _channel.BasicNack(ea.DeliveryTag, false, true);
+
+                _logger.LogError(ex, "Error handling {EventType}", eventType.Name);
+            }
+        };
+
+        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+
+        _logger.LogInformation("Started listening to {Queue}", queueName);
     }
 
     public void Dispose()

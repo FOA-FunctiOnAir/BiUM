@@ -32,6 +32,9 @@ public class RabbitMQListenerService : BackgroundService
 
         var handlerTypes = GetAllHandlerTypes();
 
+
+        Console.WriteLine("ExecuteAsync " + handlerTypes.Count.ToString() + " adet");
+
         foreach (var handlerType in handlerTypes)
         {
             var eventType = handlerType.GetInterface("IEventHandler`1")!.GenericTypeArguments[0];
@@ -48,6 +51,9 @@ public class RabbitMQListenerService : BackgroundService
             {
                 var message = await _client.ReceiveMessageAsync(eventType, stoppingToken);
 
+
+                Console.WriteLine("ListenToEvent ReceiveMessageAsync");
+
                 using var scope = _serviceProvider.CreateScope();
                 var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
                 var handler = scope.ServiceProvider.GetRequiredService(handlerType);
@@ -56,9 +62,14 @@ public class RabbitMQListenerService : BackgroundService
 
                 await (Task)method.Invoke(handler, new[] { message, stoppingToken })!;
             }
-            catch (OperationCanceledException) { break; }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("ListenToEvent cancelled"); break;
+            }
             catch (Exception ex)
             {
+                Console.WriteLine("ListenToEvent error" + ex.Message);
+
                 _logger.LogError(ex, "Failed to process event from {FullName}", eventType.FullName);
 
                 await Task.Delay(1000);

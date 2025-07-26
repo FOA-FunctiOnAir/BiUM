@@ -10,6 +10,7 @@ public record BaseCommand<TType> : BaseRequestDto<TType>
 
 public record BaseSchedulerCommand : BaseRequestDto<ApiEmptyResponse>
 {
+    public Guid? TenantId { get; set; }
 }
 
 public record BaseCommandDto : BaseCommand<ApiEmptyResponse>

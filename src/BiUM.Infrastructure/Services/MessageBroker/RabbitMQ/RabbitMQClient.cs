@@ -95,6 +95,8 @@ public partial class RabbitMQClient : IRabbitMQClient
             basicProperties: properties,
             body: body);
 
+        Console.WriteLine("PublishAsync sent");
+
         return Task.CompletedTask;
     }
 

@@ -1,10 +1,7 @@
 using AutoMapper;
+using BiUM.Core.Database;
 
 namespace BiUM.Specialized.Database;
-
-public interface IBaseRepository
-{
-}
 
 public class BaseRepository : IBaseRepository
 {

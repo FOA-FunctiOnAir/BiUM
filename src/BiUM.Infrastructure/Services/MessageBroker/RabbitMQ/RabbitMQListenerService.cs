@@ -69,4 +69,14 @@ public class RabbitMQListenerService : BackgroundService
                 i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>)))
             .ToList();
     }
+
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        return base.StopAsync(cancellationToken);
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+    }
 }

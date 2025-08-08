@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using System.Linq.Expressions;
 
 namespace BiUM.Specialized.Database;
 
@@ -94,7 +95,43 @@ public static class Extensions
         );
     }
 
-    public static async Task<IList<TDestination>> ToListAsync<TSource, TDestination>(
+    public static async Task<List<TDestination>> WhereToListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable
+            .AsNoTracking()
+            .Where(predicate);
+
+        var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
+
+        return items;
+    }
+
+    public static async Task<List<TDestination>> WhereToListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, int, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable
+            .AsNoTracking()
+            .Where(predicate);
+
+        var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
+
+        return items;
+    }
+
+    public static async Task<List<TDestination>> ToListAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,
         CancellationToken cancellationToken = default
@@ -104,8 +141,49 @@ public static class Extensions
     {
         var query = queryable.AsNoTracking();
 
-        var items = mapper.Map<IList<TDestination>>(await query.ToListAsync(cancellationToken));
+        var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
 
         return items;
+    }
+
+    public static async Task<IList<TDestination>> ToIListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        return await queryable.ToListAsync<TSource, TDestination>(mapper, cancellationToken);
+    }
+
+    public static async Task<TDestination> FirstOrDefaultAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.FirstOrDefaultAsync(cancellationToken));
+
+        return item;
+    }
+
+    public static async Task<TDestination> LastOrDefaultAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.LastOrDefaultAsync(cancellationToken));
+
+        return item;
     }
 }

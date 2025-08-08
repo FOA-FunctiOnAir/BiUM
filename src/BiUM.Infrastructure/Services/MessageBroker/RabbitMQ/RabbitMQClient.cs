@@ -15,6 +15,7 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 public partial class RabbitMQClient : IRabbitMQClient
 {
     private readonly string _queueTemplate = "{{owner}}/{{message}}";
+    private readonly BiAppOptions _biAppOptions;
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IConnection? _connection;
     private readonly IModel? _channel;
@@ -39,8 +40,9 @@ public partial class RabbitMQClient : IRabbitMQClient
         _channel = _connection.CreateModel();
     }
 
-    public RabbitMQClient(IOptions<RabbitMQOptions> rabbitMQOptions, ILogger<RabbitMQClient> logger)
+    public RabbitMQClient(IOptions<BiAppOptions> biAppOptions, IOptions<RabbitMQOptions> rabbitMQOptions, ILogger<RabbitMQClient> logger)
     {
+        _biAppOptions = biAppOptions.Value;
         _rabbitMQOptions = rabbitMQOptions.Value;
         _logger = logger;
 
@@ -55,7 +57,9 @@ public partial class RabbitMQClient : IRabbitMQClient
             DispatchConsumersAsync = true
         };
 
-        _connection = factory.CreateConnection();
+        var appName = $"{_biAppOptions.Environment}-{_biAppOptions.Domain}";
+
+        _connection = factory.CreateConnection(appName);
         _channel = _connection.CreateModel();
     }
 
@@ -86,6 +90,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
+        _logger.LogInformation("Connection open: {Open}, Channel open: {ChOpen}", _connection.IsOpen, _channel.IsOpen);
+
         var json = JsonSerializer.Serialize(message);
         var body = Encoding.UTF8.GetBytes(json);
 
@@ -98,7 +104,7 @@ public partial class RabbitMQClient : IRabbitMQClient
             basicProperties: properties,
             body: body);
 
-        Console.WriteLine("PublishAsync sent");
+        _logger.LogInformation("PublishAsync sent");
 
         return Task.CompletedTask;
     }
@@ -106,7 +112,7 @@ public partial class RabbitMQClient : IRabbitMQClient
     public void SendMessage(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
     {
         // Declare a queue
-        _channel.QueueDeclare(queue: queueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
         // Convert the message to bytes
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
@@ -192,7 +198,7 @@ public partial class RabbitMQClient : IRabbitMQClient
     public async Task<Message> ReceiveMessageAsync(string queueName = "")
     {
         // Declare the queue to consume from
-        _channel.QueueDeclare(queue: queueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
+        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
         var consumer = new EventingBasicConsumer(_channel);
         Message? receivedMessage = new();
@@ -225,6 +231,8 @@ public partial class RabbitMQClient : IRabbitMQClient
         {
             try
             {
+                _logger.LogInformation("Event received {EventType}", eventType.Name);
+
                 var json = Encoding.UTF8.GetString(ea.Body.ToArray());
                 var obj = JsonSerializer.Deserialize(json, eventType);
 
@@ -247,6 +255,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public void Dispose()
     {
+        _logger.LogInformation("RabbitMQClient disposed");
+
         _channel?.Close();
         _connection?.Close();
     }

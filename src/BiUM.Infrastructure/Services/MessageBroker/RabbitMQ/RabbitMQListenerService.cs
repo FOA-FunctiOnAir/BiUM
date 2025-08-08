@@ -40,10 +40,12 @@ public class RabbitMQListenerService : BackgroundService
 
             _client.StartConsuming(eventType, async (obj) =>
             {
-                using var scope = _serviceProvider.CreateScope();
+                _logger.LogWarning("Event StartConsuming started for {EventType}", eventType.FullName);
 
                 try
                 {
+                    using var scope = _serviceProvider.CreateScope();
+
                     var handler = scope.ServiceProvider.GetRequiredService(handlerGenericType);
                     var method = handlerType.GetMethod("HandleAsync")!;
 

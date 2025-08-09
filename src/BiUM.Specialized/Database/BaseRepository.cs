@@ -133,12 +133,13 @@ public class BaseRepository : IBaseRepository
         return response;
     }
 
-    public virtual async Task SaveTranslations(
-        DbSet<ITranslationBaseEntity> dbSetTranslationEntity,
+    public virtual async Task SaveTranslations<TTranslationBaseEntity>(
+        DbSet<TTranslationBaseEntity> dbSetTranslationEntity,
         Guid recordId,
         string columnName,
         IReadOnlyList<BaseTranslationDto> translations,
         CancellationToken cancellationToken)
+        where TTranslationBaseEntity : class, ITranslationBaseEntity, new()
     {
         if (translations is null || translations.Count == 0)
         {
@@ -149,7 +150,7 @@ public class BaseRepository : IBaseRepository
         {
             if (translation._rowStatus == RowStatuses.New)
             {
-                var applicationTranslation = translation.ToTranslationEntity(recordId, columnName);
+                var applicationTranslation = translation.ToTranslationEntity<TTranslationBaseEntity>(recordId, columnName);
 
                 dbSetTranslationEntity.Add(applicationTranslation);
             }

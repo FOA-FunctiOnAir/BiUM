@@ -157,6 +157,37 @@ public static class Extensions
         return await queryable.ToListAsync<TSource, TDestination>(mapper, cancellationToken);
     }
 
+    public static async Task<TDestination> FirstAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.FirstAsync(cancellationToken));
+
+        return item;
+    }
+
+    public static async Task<TDestination> FirstAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.FirstAsync(predicate, cancellationToken));
+
+        return item;
+    }
+
     public static async Task<TDestination> FirstOrDefaultAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,
@@ -172,6 +203,53 @@ public static class Extensions
         return item;
     }
 
+    public static async Task<TDestination> FirstOrDefaultAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.FirstOrDefaultAsync(predicate, cancellationToken));
+
+        return item;
+    }
+
+    public static async Task<TDestination> LastAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.LastAsync(cancellationToken));
+
+        return item;
+    }
+
+    public static async Task<TDestination> LastAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.LastAsync(predicate, cancellationToken));
+
+        return item;
+    }
+
     public static async Task<TDestination> LastOrDefaultAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,
@@ -183,6 +261,22 @@ public static class Extensions
         var query = queryable.AsNoTracking();
 
         var item = mapper.Map<TDestination>(await query.LastOrDefaultAsync(cancellationToken));
+
+        return item;
+    }
+
+    public static async Task<TDestination> LastOrDefaultAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var item = mapper.Map<TDestination>(await query.LastOrDefaultAsync(predicate, cancellationToken));
 
         return item;
     }

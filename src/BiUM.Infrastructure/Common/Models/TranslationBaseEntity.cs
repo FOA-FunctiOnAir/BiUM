@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class TranslationBaseEntity : BaseAuditableEntity, IEntity
+public class TranslationBaseEntity : BaseAuditableEntity, ITranslationBaseEntity
 {
     [Required]
     [Column("ID", Order = 1)]

@@ -134,12 +134,11 @@ public class BaseRepository : IBaseRepository
     }
 
     public virtual async Task SaveTranslations(
-        DbSet<TranslationBaseEntity> dbSetTranslationEntity,
+        DbSet<ITranslationBaseEntity> dbSetTranslationEntity,
         Guid recordId,
         string columnName,
         IReadOnlyList<BaseTranslationDto> translations,
         CancellationToken cancellationToken)
-
     {
         if (translations is null || translations.Count == 0)
         {
@@ -150,7 +149,7 @@ public class BaseRepository : IBaseRepository
         {
             if (translation._rowStatus == RowStatuses.New)
             {
-                var applicationTranslation = translation.ToTranslationEntity<TranslationBaseEntity>(recordId, columnName);
+                var applicationTranslation = translation.ToTranslationEntity(recordId, columnName);
 
                 dbSetTranslationEntity.Add(applicationTranslation);
             }
@@ -158,15 +157,21 @@ public class BaseRepository : IBaseRepository
             {
                 var applicationTranslation = await dbSetTranslationEntity.FirstOrDefaultAsync(f => f.Id == translation.Id, cancellationToken);
 
-                applicationTranslation!.Translation = translation.Translation;
+                if (applicationTranslation is not null)
+                {
+                    applicationTranslation!.Translation = translation.Translation;
 
-                dbSetTranslationEntity.Update(applicationTranslation);
+                    dbSetTranslationEntity.Update(applicationTranslation);
+                }
             }
             else if (translation._rowStatus == RowStatuses.Deleted)
             {
                 var applicationTranslation = await dbSetTranslationEntity.FirstOrDefaultAsync(f => f.Id == translation.Id, cancellationToken);
 
-                dbSetTranslationEntity.Remove(applicationTranslation!);
+                if (applicationTranslation is not null)
+                {
+                    dbSetTranslationEntity.Remove(applicationTranslation!);
+                }
             }
         }
     }

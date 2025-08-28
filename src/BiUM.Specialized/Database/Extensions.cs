@@ -186,19 +186,6 @@ public static class Extensions
         return items;
     }
 
-    public static async Task<List<TSource>> ToListAsync<TSource>(
-        this IQueryable<TSource> queryable,
-        CancellationToken cancellationToken = default
-    )
-        where TSource : class
-    {
-        var query = queryable.AsNoTracking();
-
-        var items = await query.ToListAsync(cancellationToken);
-
-        return items;
-    }
-
     public static async Task<List<TDestination>> ToListAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,

@@ -54,16 +54,23 @@ public static class Extensions
         return services;
     }
 
-    [Obsolete("Obsuleted, use ToPaginatedListAsync or ToListAsync", true)]
-    public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TDestination>(this IQueryable<TDestination> queryable, int? pageStart = 0, int? pageSize = 10, CancellationToken cancellationToken = default) where TDestination : class
+    public static async Task<PaginatedApiResponse<TSource>> ToPaginatedListAsync<TSource>(
+        this IQueryable<TSource> queryable,
+        int? pageStart = 0,
+        int? pageSize = 10,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
     {
         var query = queryable.AsNoTracking();
 
         var _pageStart = !pageStart.HasValue || pageStart.Value < 0 ? 0 : pageStart.Value;
         var _pageSize = !pageSize.HasValue || pageSize.Value < 0 ? 10 : pageSize.Value;
 
-        return new PaginatedApiResponse<TDestination>(
-            items: await query.Skip(_pageStart).Take(_pageSize).ToListAsync(cancellationToken),
+        var items = await query.Skip(_pageStart).Take(_pageSize).ToListAsync(cancellationToken);
+
+        return new PaginatedApiResponse<TSource>(
+            items: items,
             count: await query.CountAsync(cancellationToken),
             pageNumber: (_pageStart == 0 ? 0 : _pageStart / _pageSize) + 1,
             pageSize: _pageSize
@@ -175,6 +182,19 @@ public static class Extensions
         var query = queryable.AsNoTracking().Where(predicate);
 
         var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
+
+        return items;
+    }
+
+    public static async Task<List<TSource>> ToListAsync<TSource>(
+        this IQueryable<TSource> queryable,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var items = await query.ToListAsync(cancellationToken);
 
         return items;
     }

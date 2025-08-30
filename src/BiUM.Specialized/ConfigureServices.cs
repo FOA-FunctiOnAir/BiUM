@@ -4,7 +4,9 @@ using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
+using BiUM.Infrastructure.Services.File;
 using BiUM.Specialized.Services.Authorization;
+using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
 using FluentValidation;
 using MediatR;
@@ -14,6 +16,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SimpleHtmlToPdf;
+using SimpleHtmlToPdf.Interfaces;
+using SimpleHtmlToPdf.UnmanagedHandler;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -76,8 +81,8 @@ public static class ConfigureServices
 
         services.AddScoped<EntitySaveChangesInterceptor>();
 
-        services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<ICurrentUserService, CurrentUserService>();
+        services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<IHttpClientsService, HttpClientService>();
 
         services.AddAuthentication();
@@ -116,6 +121,15 @@ public static class ConfigureServices
         services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
         services.AddValidatorsFromAssembly(assembly);
         services.AddMediatR(assembly);
+
+        return services;
+    }
+
+    public static IServiceCollection AddFileServices(this IServiceCollection services, IConfiguration configuration, Assembly assembly)
+    {
+        services.AddSingleton<BindingWrapper>();
+        services.AddSingleton<IConverter, HtmlConverter>();
+        services.AddTransient<IFileService, FileService>();
 
         return services;
     }

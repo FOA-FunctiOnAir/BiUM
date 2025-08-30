@@ -23,6 +23,18 @@ public static class ExportHelper
         return response;
     }
 
+    public static ExportDto ExportObject(string name, string mimeType, byte[] bytes)
+    {
+        string val = Convert.ToBase64String(bytes, Base64FormattingOptions.InsertLineBreaks);
+
+        return new ExportDto
+        {
+            Name = name,
+            MimeType = mimeType,
+            Content = val
+        };
+    }
+
     public static TType? ImportObject<TType>(string content)
     {
         var base64EncodedBytes = Convert.FromBase64String(content);

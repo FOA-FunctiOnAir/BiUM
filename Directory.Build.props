@@ -10,6 +10,6 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-		<BiUMVersion>1.0.106</BiUMVersion>
+		<BiUMVersion>1.0.107</BiUMVersion>
 	</PropertyGroup>
 </Project>

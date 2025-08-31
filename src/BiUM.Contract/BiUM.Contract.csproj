@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>BiUM.Contract</AssemblyName>
+		<RootNamespace>BiUM.Contract</RootNamespace>
+		<PackageId>BiUM.Contract</PackageId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.*" />
+		<PackageReference Include="Grpc.Tools" Version="2.*" PrivateAssets="All" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="common.proto" GrpcServices="Both" />
+	</ItemGroup>
+</Project>

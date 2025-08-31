@@ -125,7 +125,7 @@ public static class ConfigureServices
         return services;
     }
 
-    public static IServiceCollection AddFileServices(this IServiceCollection services, IConfiguration configuration, Assembly assembly)
+    public static IServiceCollection AddFileServices(this IServiceCollection services)
     {
         services.AddSingleton<BindingWrapper>();
         services.AddSingleton<IConverter, HtmlConverter>();

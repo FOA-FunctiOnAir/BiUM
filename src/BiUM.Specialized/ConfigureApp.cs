@@ -14,6 +14,7 @@ public static partial class ConfigureApp
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
+            app.MapGrpcReflectionService();
             app.UseDeveloperExceptionPage();
         }
         else

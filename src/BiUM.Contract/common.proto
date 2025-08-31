@@ -1,0 +1,25 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "BiUM.Contract";
+
+package bium;
+
+message GrpcRequestMeta {
+}
+
+message GrpcResponseMeta {
+  bool success								= 1;
+  repeated GrpcResponseMessage messages		= 2;
+}
+
+message GrpcResponseMessage {
+  string code           = 1;
+  string message        = 2;
+  string exception      = 3;
+  int32 severity		= 4;
+}
+
+message GrpcIdNameMessage {
+  string id     = 1;
+  string name	= 2;
+}

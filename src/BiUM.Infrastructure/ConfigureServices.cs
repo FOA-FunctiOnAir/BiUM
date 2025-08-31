@@ -3,6 +3,7 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.Logging.Serilog;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Configs;
+using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Services.Caching.Redis;
 using BiUM.Infrastructure.Services.Logging.Serilog;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
@@ -26,6 +28,10 @@ public static class ConfigureServices
             specialized = new Specialized();
             configuration.Bind(specialized);
         }
+
+        // Configure Grpc
+        services.AddGrpc();
+        services.AddGrpcReflection();
 
         // Configure Redis
         services.AddSingleton(specialized.RedisClientOptions);
@@ -113,6 +119,24 @@ public static class ConfigureServices
         services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
         services.AddHostedService<RabbitMQListenerService>();
         services.AddRabbitMQEventHandlers();
+
+        return services;
+    }
+
+    public static IServiceCollection AddGrpcClients<TClient>(this IServiceCollection services, string microserviceName)
+        where TClient : class
+    {
+        var serviceProvider = services.BuildServiceProvider();
+        var grpcOptions = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
+
+        var url = grpcOptions.Value.GetDomain(microserviceName);
+
+        services.AddTransient<ForwardHeadersGrpcInterceptor>();
+
+        services.AddGrpcClient<TClient>(o =>
+        {
+            o.Address = new Uri(url);
+        }).AddInterceptor<ForwardHeadersGrpcInterceptor>();
 
         return services;
     }

@@ -1,9 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>BiUM.Bolt</AssemblyName>
+		<RootNamespace>BiUM.Bolt</RootNamespace>
+		<PackageId>BiUM.Bolt</PackageId>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!--<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
 		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
 		<ProjectReference Include="..\BiUM.Specialized\BiUM.Specialized.csproj" />-->
 	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="BiUM.Core" Version="$(BiUMVersion)" />
 		<PackageReference Include="BiUM.Infrastructure" Version="$(BiUMVersion)" />
@@ -19,9 +26,4 @@
 		<PackageReference Include="StackExchange.Redis" Version="2.6.90" />
 		<PackageReference Include="System.Text.Json" Version="8.0.5" />
 	</ItemGroup>
-	<PropertyGroup>
-		<AssemblyName>BiUM.Bolt</AssemblyName>
-		<RootNamespace>BiUM.Bolt</RootNamespace>
-		<PackageId>BiUM.Bolt</PackageId>
-	</PropertyGroup>
 </Project>

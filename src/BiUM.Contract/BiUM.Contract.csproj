@@ -16,6 +16,6 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<Content Include="common.proto" Pack="true" PackagePath="protos\" />
+		<Content Include="common.proto" Pack="true" PackagePath="contentFiles/any/any/protos/" />
 	</ItemGroup>
 </Project>

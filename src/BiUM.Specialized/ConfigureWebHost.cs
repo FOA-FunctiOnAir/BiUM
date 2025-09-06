@@ -17,7 +17,7 @@ public static class ConfigureWebHost
 
         var appPort = appOptions.Value.Port > 0 ? appOptions.Value.Port : 8080;
         var grpcPort = 0;
-        HttpProtocols grpcProtocol = HttpProtocols.Http2;
+        var grpcProtocol = HttpProtocols.Http2;
 
         if (grpcOptions.Value.Enable)
         {

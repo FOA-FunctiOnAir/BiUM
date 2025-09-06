@@ -3,6 +3,7 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Common.Services;
+using BiUM.Infrastructure.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.File;
 using BiUM.Specialized.Services.Authorization;
@@ -84,6 +85,7 @@ public static class ConfigureServices
         services.AddTransient<ICurrentUserService, CurrentUserService>();
         services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<IHttpClientsService, HttpClientService>();
+        services.AddTransient<ITranslationService, TranslationService>();
 
         services.AddAuthentication();
 

@@ -27,6 +27,16 @@ public static class Extensions
         return stringArray;
     }
 
+    public static TSource[] ToArray<TSource>(this TSource source)
+    {
+        if (source is null || source.GetType().IsArray)
+        {
+            return [];
+        }
+
+        return [source];
+    }
+
     public static TResult[] ToArray<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
     {
         var stringArray = source.Select(selector).ToArray();

@@ -93,7 +93,7 @@ public class TranslationService : ITranslationService
             return response;
         }
 
-        var message = translation.DomainTranslationDetails.First().Text;
+        var message = translation.DomainTranslationDetails!.First().Text;
 
         response.AddMessage(new ResponseMessage
         {
@@ -163,7 +163,7 @@ public class TranslationService : ITranslationService
             return meta;
         }
 
-        var message = translation.DomainTranslationDetails.First().Text;
+        var message = translation.DomainTranslationDetails!.First().Text;
 
         meta.Messages.Add(new GrpcResponseMessage()
         {
@@ -176,11 +176,11 @@ public class TranslationService : ITranslationService
         return meta;
     }
 
-    private async Task<DomainTranslation> GetTranslation(string code, CancellationToken cancellationToken)
+    private async Task<DomainTranslation?> GetTranslation(string code, CancellationToken cancellationToken)
     {
         var translation = await _baseContext.DomainTranslations
             .AsNoTracking()
-            .Include(dt => dt.DomainTranslationDetails.Where(dtd => dtd.LanguageId == _currentUserService.LanguageId))
+            .Include(dt => dt.DomainTranslationDetails!.Where(dtd => dtd.LanguageId == _currentUserService.LanguageId))
             .Where(x => x.Code.Equals(code) && x.ApplicationId == _currentUserService.ApplicationId)
             .FirstOrDefaultAsync(cancellationToken);
 

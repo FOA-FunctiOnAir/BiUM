@@ -108,6 +108,6 @@ public class CurrentUserService : ICurrentUserService
             catch { }
         }
 
-        return null;
+        return string.Empty;
     }
 }

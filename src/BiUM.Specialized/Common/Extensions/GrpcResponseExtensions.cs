@@ -1,8 +1,7 @@
-using BiUM.Contract;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
 
-namespace BiUM;
+namespace BiUM.Contract;
 
 public static partial class Extensions
 {

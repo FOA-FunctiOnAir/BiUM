@@ -65,6 +65,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public Task PublishAsync<T>(T message)
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         var queueName = GetQueueName(typeof(T));
 
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
@@ -86,6 +88,9 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public Task PublishAsync<T>(string target, T message)
     {
+        ArgumentNullException.ThrowIfNull(_connection);
+        ArgumentNullException.ThrowIfNull(_channel);
+
         var queueName = GetQueueName(typeof(T), target);
 
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
@@ -111,6 +116,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public void SendMessage(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         // Declare a queue
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
@@ -125,6 +132,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public Task<T?> ReceiveMessageAsync<T>(CancellationToken token)
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         var queueName = GetQueueName(typeof(T));
 
         var tcs = new TaskCompletionSource<T?>();
@@ -163,6 +172,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token)
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         var queueName = GetQueueName(eventType);
 
         var tcs = new TaskCompletionSource<object?>();
@@ -197,6 +208,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public async Task<Message> ReceiveMessageAsync(string queueName = "")
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         // Declare the queue to consume from
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
@@ -221,6 +234,8 @@ public partial class RabbitMQClient : IRabbitMQClient
 
     public void StartConsuming(Type eventType, Func<object, Task> callback)
     {
+        ArgumentNullException.ThrowIfNull(_channel);
+
         var queueName = GetQueueName(eventType);
 
         _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);

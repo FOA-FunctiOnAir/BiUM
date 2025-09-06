@@ -9,6 +9,21 @@ public static partial class Extensions
 {
     public static void AddMessage(this IApiResponse response, GrpcResponseMeta meta)
     {
+        SetMessages(response, meta);
+    }
+
+    public static void AddMessage(this ApiEmptyResponse response, GrpcResponseMeta meta)
+    {
+        SetMessages(response, meta);
+    }
+
+    public static void AddMessage<TType>(this ApiResponse<TType> response, GrpcResponseMeta meta)
+    {
+        SetMessages(response, meta);
+    }
+
+    private static void SetMessages(IApiResponse response, GrpcResponseMeta meta)
+    {
         var messages = meta?.Messages;
 
         if (messages?.Count > 0)

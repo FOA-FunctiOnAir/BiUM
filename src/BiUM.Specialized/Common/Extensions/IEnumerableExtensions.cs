@@ -3,7 +3,7 @@ using BiUM.Specialized.Common.Models;
 
 namespace System.Linq;
 
-public static class Extensions
+public static partial class Extensions
 {
     public static List<Guid> ToGuidList(this IEnumerable<string> source)
     {

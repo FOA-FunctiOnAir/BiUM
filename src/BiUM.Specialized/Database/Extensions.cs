@@ -13,7 +13,7 @@ public static class Extensions
     public static IServiceCollection AddDatabase<TDbContext, TDbContextInitialiser>(
         this IServiceCollection services, IConfiguration configuration
     )
-        where TDbContext : DbContext
+        where TDbContext : DbContext, IDbContext
         where TDbContextInitialiser : class
     {
         if (configuration.GetValue<string>("DatabaseType") == "InMemory")
@@ -49,6 +49,7 @@ public static class Extensions
                     }));
         }
 
+        services.AddScoped<IDbContext>(provider => provider.GetRequiredService<TDbContext>());
         services.AddScoped(typeof(IDbContextInitialiser), typeof(TDbContextInitialiser));
 
         return services;

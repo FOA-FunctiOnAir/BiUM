@@ -63,6 +63,7 @@ public static class ConfigureServices
         });
 
         services.Configure<BiAppOptions>(configuration.GetSection(BiAppOptions.Name));
+        services.Configure<BiGrpcOptions>(configuration.GetSection(BiGrpcOptions.Name));
         services.Configure<BiMailOptions>(configuration.GetSection(BiMailOptions.Name));
 
         // Customise default API behaviour

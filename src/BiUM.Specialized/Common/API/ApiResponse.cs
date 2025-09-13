@@ -1,5 +1,6 @@
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
+using FluentValidation;
 
 namespace BiUM.Specialized.Common.API;
 

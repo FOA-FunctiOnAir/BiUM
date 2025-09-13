@@ -1,8 +1,8 @@
-﻿namespace System.Linq;
+﻿namespace System;
 
 public static partial class Extensions
 {
-    public static Guid? ToGuidList(this string source)
+    public static Guid? ToGuid(this string source)
     {
         if (Guid.TryParse(source, out var guid))
         {

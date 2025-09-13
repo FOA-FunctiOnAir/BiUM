@@ -3,7 +3,7 @@ using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
 
-namespace BiUM;
+namespace System;
 
 public static partial class Extensions
 {

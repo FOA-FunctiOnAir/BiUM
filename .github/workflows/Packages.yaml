@@ -13,7 +13,7 @@ jobs:
       packages: write
       contents: read
     env:
-      PACKAGE_VERSION: 1.1.0
+      PACKAGE_VERSION: 1.1.1
       NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
       GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
@@ -50,7 +50,7 @@ jobs:
         dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
-      run: sleep 10
+      run: sleep 5
         
     # Build and publish BiUM.Core
     - name: Build BiUM.Core
@@ -69,7 +69,7 @@ jobs:
         dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
-      run: sleep 10
+      run: sleep 5
       
     # Build and publish BiUM.Infrastructure
     - name: Build BiUM.Infrastructure
@@ -88,7 +88,7 @@ jobs:
         dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
-      run: sleep 10
+      run: sleep 5
 
     # Build and publish BiUM.Specialized
     - name: Build BiUM.Specialized
@@ -107,7 +107,7 @@ jobs:
         dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
       continue-on-error: true
     - name: Wait for package propagation
-      run: sleep 10
+      run: sleep 5
 
     # Build and publish BiUM.Bolt
     - name: Build BiUM.Bolt
@@ -117,7 +117,7 @@ jobs:
     - name: Publish BiUM.Bolt
       run: dotnet nuget push ./nupkg/BiUM.Bolt.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
     - name: Wait for package propagation
-      run: sleep 10
+      run: sleep 5
 
     # Restore dependencies after publishing internal packages
     - name: Configure NuGet source

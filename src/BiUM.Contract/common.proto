@@ -7,6 +7,10 @@ package bium;
 message GrpcRequestMeta {
 }
 
+message GrpcEmptyResponse {
+  GrpcResponseMeta Meta						= 1;
+}
+
 message GrpcResponseMeta {
   bool success								= 1;
   repeated GrpcResponseMessage messages		= 2;

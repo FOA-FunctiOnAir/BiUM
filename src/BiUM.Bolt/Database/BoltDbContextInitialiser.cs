@@ -202,7 +202,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 {
                     Id = boltStatusId,
                     LastTransactionId = lastTransactionId,
-                    Error = ex.Message
+                    Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
                 };
 
                 _context.Add(boltStatus);
@@ -241,6 +241,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 else
                 {
                     boltStatus.LastTransactionId = last?.Id;
+                    boltStatus.Error = null;
 
                     _context.Update(boltStatus);
                 }

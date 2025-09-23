@@ -84,6 +84,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
         //var dbTransaction = _context.Database.BeginTransaction();
         var isError = false;
         var transactionId = Guid.Empty;
+        Guid? lastTransactionId = null;
 
         try
         {
@@ -145,6 +146,8 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
 
                 await _context.SaveChangesAsync(cancellationToken);
 
+                lastTransactionId = transactionId;
+
                 _context.ChangeTracker.Clear();
             }
 
@@ -198,7 +201,7 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
                 boltStatus = new BoltStatus()
                 {
                     Id = boltStatusId,
-                    LastTransactionId = null,
+                    LastTransactionId = lastTransactionId,
                     Error = ex.Message
                 };
 
@@ -206,7 +209,8 @@ public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbCo
             }
             else
             {
-                boltStatus.Error = $"TransactionId:{transactionId}, Message:{ex.Message}, StackTrace:{ex.StackTrace}";
+                boltStatus.LastTransactionId = lastTransactionId ?? boltStatus.LastTransactionId;
+                boltStatus.Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}";
 
                 _context.Update(boltStatus);
             }

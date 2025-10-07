@@ -10,13 +10,22 @@ public class BaseDbContext : DbContext, IDbContext
     public bool HardDelete = false;
 
     private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
+    private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
 
     public BaseDbContext(
-        DbContextOptions<DbContext> options,
+        DbContextOptions options,
         EntitySaveChangesInterceptor entitySaveChangesInterceptor
     ) : base(options)
     {
         _entitySaveChangesInterceptor = entitySaveChangesInterceptor;
+    }
+
+    public BaseDbContext(
+        DbContextOptions options,
+        BoltEntitySaveChangesInterceptor boltEntitySaveChangesInterceptor
+    ) : base(options)
+    {
+        _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
     }
 
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
@@ -53,6 +62,8 @@ public class BaseDbContext : DbContext, IDbContext
     {
         if (_entitySaveChangesInterceptor != null)
             optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
+        if (_boltEntitySaveChangesInterceptor != null)
+            optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
 
         base.OnConfiguring(optionsBuilder);
     }

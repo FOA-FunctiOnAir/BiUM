@@ -1,11 +1,11 @@
 ﻿using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
-using BiUM.Infrastructure.Common.Interceptors;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.File;
+using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services.Authorization;
 using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
@@ -133,6 +133,24 @@ public static class ConfigureServices
         services.AddSingleton<BindingWrapper>();
         services.AddSingleton<IConverter, HtmlConverter>();
         services.AddTransient<IFileService, FileService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddGrpcClients<TClient>(this IServiceCollection services, string microserviceName)
+        where TClient : class
+    {
+        var serviceProvider = services.BuildServiceProvider();
+        var grpcOptions = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
+
+        var url = grpcOptions.Value.GetDomain(microserviceName);
+
+        services.AddTransient<ForwardHeadersGrpcInterceptor>();
+
+        services.AddGrpcClient<TClient>(o =>
+        {
+            o.Address = new Uri(url);
+        }).AddInterceptor<ForwardHeadersGrpcInterceptor>();
 
         return services;
     }

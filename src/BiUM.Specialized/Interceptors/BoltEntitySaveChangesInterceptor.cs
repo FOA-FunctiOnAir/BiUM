@@ -2,17 +2,16 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace BiUM.Infrastructure.Common.Interceptors;
+namespace BiUM.Specialized.Interceptors;
 
-public class EntitySaveChangesInterceptor : SaveChangesInterceptor
+public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUserService _currentUserService;
     private readonly IDateTimeService _dateTimeService;
 
-    public EntitySaveChangesInterceptor(ICurrentUserService currentUserService, IDateTimeService dateTimeService)
+    public BoltEntitySaveChangesInterceptor(ICurrentUserService currentUserService, IDateTimeService dateTimeService)
     {
         _currentUserService = currentUserService;
         _dateTimeService = dateTimeService;
@@ -42,11 +41,11 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void UpdateEntities(DbContext? AuthDbContext)
+    private void UpdateEntities(DbContext? dbContext)
     {
-        if (AuthDbContext is null) return;
+        if (dbContext is null) return;
 
-        Parallel.ForEach(AuthDbContext.ChangeTracker.Entries<BaseEntity>(), entry =>
+        foreach (var entry in dbContext.ChangeTracker.Entries<BaseEntity>())
         {
             var now = _dateTimeService.Now.ToUniversalTime();
 
@@ -63,15 +62,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
-        });
+        };
     }
-}
-
-public static class Extensions
-{
-    public static bool HasChangedOwnedEntities(this EntityEntry entry) =>
-        entry.References.Any(r =>
-            r.TargetEntry != null &&
-            r.TargetEntry.Metadata.IsOwned() &&
-            (r.TargetEntry.State == EntityState.Modified));
 }

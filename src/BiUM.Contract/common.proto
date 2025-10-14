@@ -4,6 +4,8 @@ option csharp_namespace = "BiUM.Contract";
 
 package bium;
 
+import "google/protobuf/wrappers.proto";
+
 message GrpcRequestMeta {
 }
 
@@ -17,13 +19,13 @@ message GrpcResponseMeta {
 }
 
 message GrpcResponseMessage {
-  string code           = 1;
-  string message        = 2;
-  string exception      = 3;
-  int32 severity		= 4;
+  google.protobuf.StringValue code			= 1;
+  google.protobuf.StringValue message		= 2;
+  google.protobuf.StringValue exception		= 3;
+  int32 severity							= 4;
 }
 
 message GrpcIdNameMessage {
-  string id     = 1;
-  string name	= 2;
+  google.protobuf.StringValue id			= 1;
+  google.protobuf.StringValue name			= 2;
 }

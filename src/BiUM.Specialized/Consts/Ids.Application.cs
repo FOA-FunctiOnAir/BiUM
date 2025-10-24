@@ -19,14 +19,19 @@ public partial class Ids
             public static Guid BiTicketId = GuidGenerator.NewGuid("Application-BiTicket");
         }
 
+        public static class BiDynamicPortal
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamicPortal");
+        }
+
+        public static class BiDynamicBazaar
+        {
+            public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamicBazaar");
+        }
+
         public static class Bolt
         {
             public static Guid Id = GuidGenerator.NewGuid("Application-Bolt");
-        }
-
-        public static class BiDynamicSite
-        {
-            public static Guid Id = GuidGenerator.NewGuid("Application-BiDynamicSite");
         }
     }
 }

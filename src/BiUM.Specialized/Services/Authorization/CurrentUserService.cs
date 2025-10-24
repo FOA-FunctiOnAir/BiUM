@@ -18,8 +18,9 @@ public class CurrentUserService : ICurrentUserService
     private string? userId => _httpContextAccessor?.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
     private string? identity => _httpContextAccessor?.HttpContext?.User?.FindFirstValue(ClaimTypes.SerialNumber);
 
-    public Guid? UserId => !string.IsNullOrWhiteSpace(userId) ? Guid.Parse(userId) : null;
     public string Identity => identity ?? string.Empty;
+
+    public Guid UserId => GetUserId();
 
     public Guid CorrelationId => GetCorrelationId();
 
@@ -93,6 +94,16 @@ public class CurrentUserService : ICurrentUserService
         }
 
         return Ids.Language.Turkish.Id;
+    }
+
+    private Guid GetUserId()
+    {
+        if (!string.IsNullOrWhiteSpace(userId) && Guid.TryParse(userId, out var _userId) && _userId != Guid.Empty)
+        {
+            return _userId;
+        }
+
+        return Ids.Customer.Public.Id;
     }
 
     private string GetToken()

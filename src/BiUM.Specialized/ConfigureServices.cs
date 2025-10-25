@@ -61,29 +61,29 @@ public static class ConfigureServices
         services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-            options.JsonSerializerOptions.Converters.Insert(0, new JsonBoolConverter());
-            options.JsonSerializerOptions.Converters.Insert(1, new JsonIntConverter());
-            options.JsonSerializerOptions.Converters.Insert(2, new JsonLongConverter());
-            options.JsonSerializerOptions.Converters.Insert(3, new JsonShortConverter());
-            options.JsonSerializerOptions.Converters.Insert(4, new JsonByteConverter());
-            options.JsonSerializerOptions.Converters.Insert(5, new JsonSByteConverter());
-            options.JsonSerializerOptions.Converters.Insert(6, new JsonUIntConverter());
-            options.JsonSerializerOptions.Converters.Insert(7, new JsonULongConverter());
-            options.JsonSerializerOptions.Converters.Insert(8, new JsonUShortConverter());
-            options.JsonSerializerOptions.Converters.Insert(9, new JsonFloatConverter());
-            options.JsonSerializerOptions.Converters.Insert(10, new JsonDoubleConverter());
-            options.JsonSerializerOptions.Converters.Insert(11, new JsonDecimalConverter());
-            options.JsonSerializerOptions.Converters.Insert(12, new JsonDateTimeLenientConverter());
-            options.JsonSerializerOptions.Converters.Insert(13, new JsonDateTimeOffsetLenientConverter());
-#if NET6_0_OR_GREATER
-            options.JsonSerializerOptions.Converters.Add(new JsonDateOnlyLenientConverter());
-            options.JsonSerializerOptions.Converters.Add(new JsonTimeOnlyLenientConverter());
-#endif
-            options.JsonSerializerOptions.Converters.Add(new JsonGuidConverter());
-            options.JsonSerializerOptions.Converters.Add(new JsonEnumNullConverterFactory());
-            options.JsonSerializerOptions.Converters.Add(new JsonTimeSpanConverter());
-            options.JsonSerializerOptions.Converters.Add(new JsonNullToEmptyListConverterFactory());
-            options.JsonSerializerOptions.Converters.Add(new JsonNullableBoolConverter());
+//            options.JsonSerializerOptions.Converters.Insert(0, new JsonBoolConverter());
+//            options.JsonSerializerOptions.Converters.Insert(1, new JsonIntConverter());
+//            options.JsonSerializerOptions.Converters.Insert(2, new JsonLongConverter());
+//            options.JsonSerializerOptions.Converters.Insert(3, new JsonShortConverter());
+//            options.JsonSerializerOptions.Converters.Insert(4, new JsonByteConverter());
+//            options.JsonSerializerOptions.Converters.Insert(5, new JsonSByteConverter());
+//            options.JsonSerializerOptions.Converters.Insert(6, new JsonUIntConverter());
+//            options.JsonSerializerOptions.Converters.Insert(7, new JsonULongConverter());
+//            options.JsonSerializerOptions.Converters.Insert(8, new JsonUShortConverter());
+//            options.JsonSerializerOptions.Converters.Insert(9, new JsonFloatConverter());
+//            options.JsonSerializerOptions.Converters.Insert(10, new JsonDoubleConverter());
+//            options.JsonSerializerOptions.Converters.Insert(11, new JsonDecimalConverter());
+//            options.JsonSerializerOptions.Converters.Insert(12, new JsonDateTimeLenientConverter());
+//            options.JsonSerializerOptions.Converters.Insert(13, new JsonDateTimeOffsetLenientConverter());
+//#if NET6_0_OR_GREATER
+//            options.JsonSerializerOptions.Converters.Add(new JsonDateOnlyLenientConverter());
+//            options.JsonSerializerOptions.Converters.Add(new JsonTimeOnlyLenientConverter());
+//#endif
+//            options.JsonSerializerOptions.Converters.Add(new JsonGuidConverter());
+//            options.JsonSerializerOptions.Converters.Add(new JsonEnumNullConverterFactory());
+//            options.JsonSerializerOptions.Converters.Add(new JsonTimeSpanConverter());
+//            options.JsonSerializerOptions.Converters.Add(new JsonNullToEmptyListConverterFactory());
+//            options.JsonSerializerOptions.Converters.Add(new JsonNullableBoolConverter());
 
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;

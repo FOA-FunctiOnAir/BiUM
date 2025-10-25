@@ -48,6 +48,7 @@ public static class ConfigureServices
         services.AddSingleton(specialized.SerilogOptions);
         var logger = new LoggerConfiguration()
             .MinimumLevel.Is(level)
+            .Enrich.FromLogContext()
             .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 

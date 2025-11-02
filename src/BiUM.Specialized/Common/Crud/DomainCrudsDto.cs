@@ -10,7 +10,6 @@ public class DomainCrudsDto : BaseDto, IMapFrom<DomainCrud>
     public Guid MicroserviceId { get; set; }
     public string? Name { get; set; }
     public string? Code { get; set; }
-    public string? EntityName { get; set; }
     public string? TableName { get; set; }
 
     public void Mapping(Profile profile)

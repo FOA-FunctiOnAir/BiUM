@@ -12,7 +12,6 @@ public class DomainCrudDto : BaseDto, IMapFrom<DomainCrud>
     public string? Name { get; set; }
     public List<BaseEntityTranslationDto>? NameTr { get; set; }
     public string? Code { get; set; }
-    public string? EntityName { get; set; }
     public string? TableName { get; set; }
 
     public virtual ICollection<DomainCrudColumnDto>? DomainCrudColumns { get; set; }

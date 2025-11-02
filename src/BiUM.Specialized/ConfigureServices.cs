@@ -5,9 +5,10 @@ using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.File;
-using BiUM.Specialized.Common.Mapper;
 using BiUM.Specialized.Interceptors;
+using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Authorization;
+using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
 using FluentValidation;
@@ -25,7 +26,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using static Azure.Core.HttpHeader;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -58,7 +58,10 @@ public static class ConfigureServices
                 });
         });
 
-        services.AddControllers().AddJsonOptions(options =>
+        services.AddControllers()
+            .AddApplicationPart(typeof(BiUM.Specialized.Common.API.CrudController).Assembly)
+            .AddControllersAsServices()
+            .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 //            options.JsonSerializerOptions.Converters.Insert(0, new JsonBoolConverter());
@@ -110,6 +113,7 @@ public static class ConfigureServices
 
         services.AddScoped<EntitySaveChangesInterceptor>();
 
+        services.AddTransient<ICrudService, CrudService>();
         services.AddTransient<ICurrentUserService, CurrentUserService>();
         services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<IHttpClientsService, HttpClientService>();

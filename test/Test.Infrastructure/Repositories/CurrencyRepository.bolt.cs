@@ -1,0 +1,29 @@
+﻿using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Database;
+using Microsoft.EntityFrameworkCore;
+
+namespace BiUM.Test.Infrastructure.Repositories;
+
+public partial class CurrencyRepository
+{
+    public async Task<ApiEmptyResponse> UpdateBoltCurrency(Guid id, CancellationToken cancellationToken)
+    {
+        var returnObject = new ApiEmptyResponse();
+
+        var currency = await _context.Currencies.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
+
+        if (currency != null)
+        {
+            var currencyTranslations = await _context.CurrencyTranslations.AsNoTracking()
+                .Where(f => f.RecordId == currency!.Id)
+                .ToListAsync(cancellationToken);
+
+            await _boltContext.AddOrUpdate(1, nameof(_boltContext.Currencies), currency, cancellationToken);
+            await _boltContext.AddOrUpdate(2, nameof(_boltContext.CurrencyTranslations), currencyTranslations, cancellationToken);
+
+            await _boltContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return returnObject;
+    }
+}

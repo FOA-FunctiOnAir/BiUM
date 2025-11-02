@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace BiUM.Specialized.Services.Authorization;
+namespace BiUM.Specialized.Services;
 
 public class TranslationService : ITranslationService
 {

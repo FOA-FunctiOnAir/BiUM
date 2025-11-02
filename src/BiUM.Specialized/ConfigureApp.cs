@@ -21,33 +21,32 @@ public static partial class ConfigureApp
         }
         else
         {
-            app.UseExceptionHandler(o => { });
-            app.UseExceptionHandler(errorApp =>
-            {
-                errorApp.Run(async context =>
-                {
-                    var er = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-
-                    if (er != null)
-                        Log.Error(er, "Unhandled exception");
-
-                    context.Response.StatusCode = 500;
-
-                    await context.Response.WriteAsync("Something went wrong.");
-                });
-            });
-
-            AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Fatal((Exception)e.ExceptionObject!, "Unhandled exception");
-
-            TaskScheduler.UnobservedTaskException += (s, e) =>
-            {
-                Log.Error(e.Exception, "Unobserved task exception");
-                e.SetObserved();
-            };
-
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
+
+        app.UseExceptionHandler(errorApp =>
+        {
+            errorApp.Run(async context =>
+            {
+                var er = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+                if (er != null)
+                    Log.Error(er, "Unhandled exception");
+
+                context.Response.StatusCode = 500;
+
+                await context.Response.WriteAsync("Something went wrong.");
+            });
+        });
+
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Fatal((Exception)e.ExceptionObject!, "Unhandled exception");
+
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            Log.Error(e.Exception, "Unobserved task exception");
+            e.SetObserved();
+        };
 
         app.UseCors(BiUM.Specialized.Consts.Application.BiAppOrigins);
 

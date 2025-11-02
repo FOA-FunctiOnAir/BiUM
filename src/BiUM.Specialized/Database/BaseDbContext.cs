@@ -1,6 +1,7 @@
 ﻿using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Linq.Expressions;
 
 namespace BiUM.Specialized.Database;
@@ -8,6 +9,8 @@ namespace BiUM.Specialized.Database;
 public class BaseDbContext : DbContext, IDbContext
 {
     public bool HardDelete = false;
+
+    private DatabaseFacade Database => base.Database;
 
     private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
@@ -28,6 +31,11 @@ public class BaseDbContext : DbContext, IDbContext
         _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
     }
 
+    public DbSet<DomainCrud> DomainCruds => Set<DomainCrud>();
+    public DbSet<DomainCrudColumn> DomainCrudColumns => Set<DomainCrudColumn>();
+    public DbSet<DomainCrudTranslation> DomainCrudTranslations => Set<DomainCrudTranslation>();
+    public DbSet<DomainCrudVersion> DomainCrudVersions => Set<DomainCrudVersion>();
+    public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
@@ -43,6 +51,13 @@ public class BaseDbContext : DbContext, IDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(IBaseEntity).IsAssignableFrom(entityType.ClrType))

@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>BiUM.Test.Domain</RootNamespace>
+		<AssemblyName>BiUM.Test.Domain</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="11.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\src\BiUM.Core\BiUM.Core.csproj" />
+	  <ProjectReference Include="..\..\src\BiUM.Specialized\BiUM.Specialized.csproj" />
+	</ItemGroup>
+</Project>

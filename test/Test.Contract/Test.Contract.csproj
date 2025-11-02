@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>BiUM.Test.Contract</RootNamespace>
+		<AssemblyName>BiUM.Test.Contract</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.*" />
+		<PackageReference Include="Grpc.Tools" Version="2.*" PrivateAssets="All" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\src\BiUM.Contract\BiUM.Contract.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="test.proto" GrpcServices="Both" AdditionalImportDirs="$(MSBuildProjectDirectory)/../../src/BiUM.Contract" />
+	</ItemGroup>
+</Project>

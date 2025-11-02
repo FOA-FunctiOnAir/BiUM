@@ -1,0 +1,45 @@
+﻿syntax = "proto3";
+option csharp_namespace = "BiUM.Test.Contract";
+
+package test;
+
+import "google/protobuf/wrappers.proto";
+import "common.proto";
+
+service TestApi
+{
+    rpc GetCurrencyNames(GetCurrencyNamesRequest) returns (GetCurrencyNamesResponse);
+    rpc GetCurrency(GetCurrencyRequest) returns (GetCurrencyResponse);
+}
+
+message GetCurrencyNamesRequest
+{
+    bium.GrpcRequestMeta Meta                           = 1;
+    repeated google.protobuf.StringValue currency_ids   = 2;
+}
+
+message GetCurrencyNamesResponse
+{
+    bium.GrpcResponseMeta Meta                          = 1;
+    repeated bium.GrpcIdNameMessage items               = 2;
+}
+
+message GetCurrencyRequest
+{
+    bium.GrpcRequestMeta Meta                           = 1;
+    google.protobuf.StringValue currency_id             = 2; 
+}
+
+message GetCurrencyResponse
+{
+    bium.GrpcResponseMeta Meta          = 1;
+    GetCurrencyItem Currency            = 2;
+}
+
+message GetCurrencyItem
+{
+    google.protobuf.StringValue currency_id             = 1;
+    google.protobuf.StringValue currency_code           = 2;
+    google.protobuf.StringValue currency_type           = 3;
+    google.protobuf.StringValue currency_name           = 4;
+}

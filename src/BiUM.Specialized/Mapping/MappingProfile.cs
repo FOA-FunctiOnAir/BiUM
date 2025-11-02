@@ -6,6 +6,7 @@ public class MappingProfile : AutoMapper.Profile
 {
     public MappingProfile(Assembly assembly)
     {
+        ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
         ApplyMappingsFromAssembly(assembly);
     }
 
@@ -23,6 +24,11 @@ public class MappingProfile : AutoMapper.Profile
 
         foreach (var type in types)
         {
+            if (type.Name == "BaseForValuesDto`1")
+            {
+                continue;
+            }
+
             var instance = Activator.CreateInstance(type);
 
             var methodInfo = type.GetMethod(mappingMethodName);

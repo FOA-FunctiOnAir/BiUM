@@ -60,6 +60,8 @@ public static class ConfigureServices
 
         services.AddControllers()
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.CrudController).Assembly)
+            .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainCrudController).Assembly)
+            .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainTranslationController).Assembly)
             .AddControllersAsServices()
             .AddJsonOptions(options =>
         {

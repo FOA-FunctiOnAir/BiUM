@@ -14,6 +14,9 @@ public class DomainCrudColumn : BaseEntity
     [Column("COLUMN_NAME")]
     public required string ColumnName { get; set; }
 
+    [Column("FIELD_ID")]
+    public required Guid FieldId { get; set; }
+
     [Column("DATA_TYPE_ID")]
     public required Guid DataTypeId { get; set; }
 

@@ -1,8 +1,10 @@
 using BiUM.Contract;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
+using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Common.Translation;
 
-namespace BiUM.Infrastructure.Services;
+namespace BiUM.Specialized.Services;
 
 public interface ITranslationService
 {
@@ -66,5 +68,24 @@ public interface ITranslationService
         string code,
         string exception,
         MessageSeverity severity,
+        CancellationToken cancellationToken);
+
+    Task<ApiEmptyResponse> SaveDomainTranslationAsync(
+        SaveDomainTranslationCommand command,
+        CancellationToken cancellationToken);
+
+    Task<ApiEmptyResponse> DeleteDomainTranslationAsync(
+        Guid id,
+        CancellationToken cancellationToken);
+
+    Task<ApiResponse<DomainTranslationDto>> GetDomainTranslationAsync(
+        Guid id,
+        CancellationToken cancellationToken);
+
+    Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync(
+        string? code,
+        string? q,
+        int? pageStart,
+        int? pageSize,
         CancellationToken cancellationToken);
 }

@@ -17,5 +17,6 @@ public class DomainCrudVersion : TenantBaseEntity
 
     [ForeignKey("CrudId")]
     public virtual DomainCrud? DomainCrud { get; set; }
-    public virtual ICollection<DomainCrudVersionColumn>? DomainCrudVersionColumns { get; set; }
+
+    public virtual IList<DomainCrudVersionColumn>? DomainCrudVersionColumns { get; set; }
 }

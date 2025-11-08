@@ -1,7 +1,7 @@
-﻿using BiUM.Test.Application.Repositories;
+﻿using BiUM.Contract;
+using BiUM.Specialized.Services;
+using BiUM.Test.Application.Repositories;
 using BiUM.Test.Contract;
-using BiUM.Contract;
-using BiUM.Infrastructure.Services;
 using Grpc.Core;
 
 namespace BiUM.Test.Infrastructure.GrpcServices;

@@ -13,7 +13,7 @@ jobs:
       packages: write
       contents: read
     env:
-      PACKAGE_VERSION: 1.1.13
+      PACKAGE_VERSION: 1.1.14
       NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
       GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
 
@@ -116,19 +116,19 @@ jobs:
       run: dotnet pack ./src/BiUM.Bolt/BiUM.Bolt.csproj -c Release -o nupkg /p:Version=${{ env.PACKAGE_VERSION }}
     - name: Publish BiUM.Bolt
       run: dotnet nuget push ./nupkg/BiUM.Bolt.${{ env.PACKAGE_VERSION }}.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -k ${{ secrets.SECRET_KEY }} --skip-duplicate
-    - name: Wait for package propagation
-      run: sleep 5
+    # - name: Wait for package propagation
+    #   run: sleep 5
 
     # Restore dependencies after publishing internal packages
-    - name: Configure NuGet source
-      run: |
-        dotnet nuget remove source github || true
-        dotnet nuget add source ${{ env.GITHUB_PACKAGES_URL }} --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
+    # - name: Configure NuGet source
+    #   run: |
+    #     dotnet nuget remove source github || true
+    #     dotnet nuget add source ${{ env.GITHUB_PACKAGES_URL }} --name github --username ${{ github.repository_owner }} --password ${{ secrets.SECRET_KEY }} --store-password-in-clear-text
 
-    - name: Restore dependencies
-      run: dotnet restore --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
+    # - name: Restore dependencies
+    #   run: dotnet restore --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json
+    #   env:
+    #     NUGET_AUTH_TOKEN: ${{ secrets.SECRET_KEY }}
 
-    - name: Build
-      run: dotnet build --no-restore -c Debug --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json
+    # - name: Build
+    #   run: dotnet build --no-restore -c Debug --source ${{ env.GITHUB_PACKAGES_URL }} --source https://api.nuget.org/v3/index.json

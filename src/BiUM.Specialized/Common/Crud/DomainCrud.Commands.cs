@@ -28,6 +28,7 @@ public class SaveDomainCrudCommandColumn
     public Guid CrudId { get; set; }
     public string? PropertyName { get; set; }
     public string? ColumnName { get; set; }
+    public Guid FieldId { get; set; }
     public Guid DataTypeId { get; set; }
     public int? MaxLength { get; set; }
     public int SortOrder { get; set; }

@@ -43,7 +43,7 @@ public partial class CrudService
         }
         else
         {
-            var set = $"{QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "true" : "1")}, {QI(api2db["updatedBy"])} = {_currentUserService.UserId}, {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}";
+            var set = $"{QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "true" : "1")}, {QI(api2db["updatedBy"])} = '{_currentUserService.UserId}', {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}";
             var sqlSoft = $"UPDATE {table} SET {set} WHERE {QI(api2db["id"])} = @p0 AND {QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "false" : "0")}";
 
             _ = await ExecuteSqlAsync(sqlSoft, new object?[] { id }, cancellationToken);

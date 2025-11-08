@@ -3,6 +3,7 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Common.Models;
+using BiUM.Specialized.Consts;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,57 @@ public partial class CrudService
 
         if (domainCrud is null)
         {
+            response.AddMessage("Crud definition not found", MessageSeverity.Error);
+
+            return response;
+        }
+
+        if (domainCrud.MicroserviceId == Guid.Empty)
+        {
+            response.AddMessage("Crud Microservice is required", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (string.IsNullOrEmpty(domainCrud.Code))
+        {
+            response.AddMessage("Crud Code is required", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (domainCrud.Code.Length < 3)
+        {
+            response.AddMessage("Crud Code should be min 3 char", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (string.IsNullOrEmpty(domainCrud.TableName))
+        {
+            response.AddMessage("Crud Table Name is required", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (domainCrud.TableName.Length < 3)
+        {
+            response.AddMessage("Crud Table Name should be min 3 char", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (domainCrud.DomainCrudColumns is null || domainCrud.DomainCrudColumns.Count == 0)
+        {
+            response.AddMessage("Crud should have columns", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (domainCrud.DomainCrudColumns.Any(cc => cc.FieldId == Guid.Empty))
+        {
+            response.AddMessage("Crud Columns should be field", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (domainCrud.DomainCrudColumns.Any(cc => cc.DataTypeId == Guid.Empty))
+        {
+            response.AddMessage("Crud Columns should be data type", MessageSeverity.Error);
+
             return response;
         }
 
@@ -48,6 +100,7 @@ public partial class CrudService
             CrudVersionId = newDomainCrudVersion.Id,
             PropertyName = c.PropertyName,
             ColumnName = c.ColumnName,
+            FieldId = c.FieldId,
             DataTypeId = c.DataTypeId,
             MaxLength = c.MaxLength,
             SortOrder = c.SortOrder
@@ -90,6 +143,15 @@ public partial class CrudService
 
         try
         {
+            var responseSaveCrudServices = await SaveCrudServicesAsync(domainCrud.MicroserviceId, domainCrud.Code, newDomainCrudVersion.DomainCrudVersionColumns, cancellationToken);
+
+            if (!responseSaveCrudServices.Success)
+            {
+                response.AddMessage(responseSaveCrudServices.Messages);
+
+                return response;
+            }
+
             if (!string.IsNullOrWhiteSpace(ddl))
             {
                 await _baseContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
@@ -120,6 +182,13 @@ public partial class CrudService
     {
         var response = new ApiEmptyResponse();
 
+        if (command.MicroserviceId == Guid.Empty)
+        {
+            response.AddMessage("Microservice is required", MessageSeverity.Error);
+
+            return response;
+        }
+
         var domainCrud = await _baseContext.DomainCruds.FirstOrDefaultAsync(f => f.Id == command.Id, cancellationToken);
 
         if (domainCrud is null)
@@ -139,6 +208,7 @@ public partial class CrudService
                 CrudId = domainCrud.Id,
                 PropertyName = p.PropertyName,
                 ColumnName = p.ColumnName,
+                FieldId = p.FieldId,
                 DataTypeId = p.DataTypeId,
                 MaxLength = p.MaxLength,
                 SortOrder = p.SortOrder
@@ -162,6 +232,7 @@ public partial class CrudService
                         CrudId = domainCrud.Id,
                         PropertyName = domainCrudColumn.PropertyName,
                         ColumnName = domainCrudColumn.ColumnName,
+                        FieldId = domainCrudColumn.FieldId,
                         DataTypeId = domainCrudColumn.DataTypeId,
                         MaxLength = domainCrudColumn.MaxLength,
                         SortOrder = domainCrudColumn.SortOrder
@@ -174,6 +245,7 @@ public partial class CrudService
                     var newDomainCrudColumn = await _baseContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
                     newDomainCrudColumn!.PropertyName = domainCrudColumn.PropertyName;
                     newDomainCrudColumn!.ColumnName = domainCrudColumn.ColumnName;
+                    newDomainCrudColumn!.FieldId = domainCrudColumn.FieldId;
                     newDomainCrudColumn!.DataTypeId = domainCrudColumn.DataTypeId;
                     newDomainCrudColumn!.MaxLength = domainCrudColumn.MaxLength;
                     newDomainCrudColumn!.SortOrder = domainCrudColumn.SortOrder;
@@ -277,10 +349,54 @@ public partial class CrudService
             .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == _currentUserService.LanguageId))
             .Where(a =>
                 (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == _currentUserService.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
-                (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.ToLower().Contains(name.ToLower()))) &&
-                (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.ToLower().Contains(code.ToLower()))))
+                (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
+                (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(_mapper, pageStart, pageSize, cancellationToken);
 
         return domainCruds;
     }
+
+    private async Task<ApiEmptyResponse> SaveCrudServicesAsync(Guid microserviceId, string code, IList<DomainCrudVersionColumn>? columns, CancellationToken cancellationToken)
+    {
+        var response = new ApiEmptyResponse();
+
+        var columnsParameters = columns?.Select(c => new SaveCrudServicesColumnDto()
+        {
+            Property = c.PropertyName,
+            FieldId = c.FieldId
+        });
+
+        var parameters = new Dictionary<string, dynamic>
+            {
+                { "MicroserviceId", microserviceId },
+                { "Code", code },
+                { "Columns", columnsParameters }
+            };
+
+        var responseApi = await _httpClientsService.CallService<ApiEmptyResponse>(
+            serviceId: Ids.Service.SaveCrudServices.Id,
+            parameters: parameters,
+            cancellationToken: cancellationToken);
+
+        if (responseApi == null)
+        {
+            response.AddMessage("CallService error", MessageSeverity.Error);
+
+            return response;
+        }
+        else if (!responseApi.Success)
+        {
+            response.AddMessage(responseApi.Messages);
+
+            return response;
+        }
+
+        return response;
+    }
+}
+
+internal class SaveCrudServicesColumnDto
+{
+    public Guid FieldId { get; set; }
+    public string Property { get; set; }
 }

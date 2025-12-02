@@ -14,12 +14,10 @@ public record SaveDomainCrudCommand : BaseCommandDto
 
 public record PublishDomainCrudCommand : BaseCommandDto
 {
-    public Guid MicroserviceId { get; set; }
 }
 
 public record DeleteDomainCrudCommand : BaseCommandDto
 {
-    public Guid MicroserviceId { get; set; }
 }
 
 public class SaveDomainCrudCommandColumn

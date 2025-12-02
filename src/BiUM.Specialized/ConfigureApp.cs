@@ -29,13 +29,13 @@ public static partial class ConfigureApp
         {
             errorApp.Run(async context =>
             {
-                context.Response.StatusCode = 500;
-
-                await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
-
                 var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
 
                 if (exceptionHandlerFeature?.Error is null) return;
+
+                context.Response.StatusCode = 500;
+
+                await context.Response.WriteAsync("An unexpected error occurred");
 
                 var exception = exceptionHandlerFeature.Error;
 
@@ -43,14 +43,17 @@ public static partial class ConfigureApp
             });
         });
 
-        AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Fatal((Exception)e.ExceptionObject, "An unhandled exception occurred");
+        AppDomain.CurrentDomain.UnhandledException +=
+            (_, args) =>
+                Log.Fatal((Exception)args.ExceptionObject, "An unhandled exception occurred");
 
-        TaskScheduler.UnobservedTaskException += (s, e) =>
-        {
-            Log.Error(e.Exception, "An unobserved task exception occurred");
+        TaskScheduler.UnobservedTaskException +=
+            (_, args) =>
+            {
+                Log.Error(args.Exception, "An unobserved task exception occurred");
 
-            e.SetObserved();
-        };
+                args.SetObserved();
+            };
 
         app.UseCors(BiUM.Specialized.Consts.Application.BiAppOrigins);
 

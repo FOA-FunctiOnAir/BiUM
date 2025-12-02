@@ -5,13 +5,8 @@ namespace BiUM.Specialized.Common.API;
 
 public class ApiEmptyResponse : IApiResponse
 {
-    public virtual bool Success
-    {
-        get
-        {
-            return _messages.All(s => s.Severity != MessageSeverity.Error);
-        }
-    }
+    public virtual bool Success =>
+        _messages.All(s => s.Severity != MessageSeverity.Error);
 
     private readonly List<IResponseMessage> _messages = [];
 
@@ -31,7 +26,7 @@ public class ApiEmptyResponse : IApiResponse
     {
         _messages.Add(new ResponseMessage
         {
-            Code = "",
+            Code = string.Empty,
             Message = message,
             Severity = severity ?? MessageSeverity.Error
         });

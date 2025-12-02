@@ -45,7 +45,16 @@ public static partial class ConfigureApp
 
         AppDomain.CurrentDomain.UnhandledException +=
             (_, args) =>
-                Log.Fatal((Exception)args.ExceptionObject, "An unhandled exception occurred");
+            {
+                if (args.ExceptionObject is Exception ex)
+                {
+                    Log.Fatal(ex, "An unhandled exception occurred");
+                }
+                else
+                {
+                    Log.Fatal("An unhandled exception occurred, but no Exception object was provided");
+                }
+            };
 
         TaskScheduler.UnobservedTaskException +=
             (_, args) =>

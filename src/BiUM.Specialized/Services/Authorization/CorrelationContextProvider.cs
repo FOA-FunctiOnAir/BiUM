@@ -7,6 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace BiUM.Specialized.Services.Authorization;
 
+/// <summary>
+/// This class provides functionality to retrieve and deserialize the CorrelationContext
+/// from the HTTP request headers. It has to be registered as a scoped service to ensure
+/// that each HTTP request gets its own instance.
+/// </summary>
 public class CorrelationContextProvider : ICorrelationContextProvider
 {
     private const string CorrelationContextHeader = "X-Correlation-Context";
@@ -20,6 +25,8 @@ public class CorrelationContextProvider : ICorrelationContextProvider
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<CorrelationContextProvider> _logger;
 
+    private CorrelationContext? _correlationContext;
+
     public CorrelationContextProvider(IHttpContextAccessor httpContextAccessor, ILogger<CorrelationContextProvider> logger)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -28,6 +35,11 @@ public class CorrelationContextProvider : ICorrelationContextProvider
 
     public CorrelationContext? Get()
     {
+        if (_correlationContext is not null)
+        {
+            return _correlationContext;
+        }
+
         var httpContext = _httpContextAccessor.HttpContext;
 
         if (httpContext is null)
@@ -46,7 +58,9 @@ public class CorrelationContextProvider : ICorrelationContextProvider
         {
             var bytes = Convert.FromBase64String(headerValue);
 
-            return MessagePackSerializer.Deserialize<CorrelationContext>(bytes, MessagePackOptions);
+            _correlationContext = MessagePackSerializer.Deserialize<CorrelationContext>(bytes, MessagePackOptions);
+
+            return _correlationContext;
         }
         catch (Exception ex)
         {

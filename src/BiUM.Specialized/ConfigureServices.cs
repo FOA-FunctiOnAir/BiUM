@@ -114,7 +114,7 @@ public static class ConfigureServices
 
         services.AddScoped<EntitySaveChangesInterceptor>();
 
-        services.AddTransient<ICorrelationContextProvider, CorrelationContextProvider>();
+        services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
 
         services.AddTransient<ICrudService, CrudService>();
         services.AddTransient<ICurrentUserService, CurrentUserService>();

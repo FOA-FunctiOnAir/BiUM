@@ -1,9 +1,7 @@
 ﻿using BiUM.Specialized.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -23,28 +21,34 @@ public static partial class ConfigureApp
         {
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
+
+            // app.UseHttpsRedirection();
         }
 
         app.UseExceptionHandler(errorApp =>
         {
             errorApp.Run(async context =>
             {
-                var er = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-
-                if (er != null)
-                    Log.Error(er, "Unhandled exception");
-
                 context.Response.StatusCode = 500;
 
-                await context.Response.WriteAsync("Something went wrong.");
+                await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
+
+                var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+
+                if (exceptionHandlerFeature?.Error is null) return;
+
+                var exception = exceptionHandlerFeature.Error;
+
+                Log.Error(exception, "An unhandled exception occurred");
             });
         });
 
-        AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Fatal((Exception)e.ExceptionObject!, "Unhandled exception");
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Fatal((Exception)e.ExceptionObject, "An unhandled exception occurred");
 
         TaskScheduler.UnobservedTaskException += (s, e) =>
         {
-            Log.Error(e.Exception, "Unobserved task exception");
+            Log.Error(e.Exception, "An unobserved task exception occurred");
+
             e.SetObserved();
         };
 
@@ -58,6 +62,9 @@ public static partial class ConfigureApp
         });
 
         app.UseHealthChecks("/health");
+
+        app.UseRouting();
+
         app.MapGet("/version", () =>
         {
             var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
@@ -65,10 +72,7 @@ public static partial class ConfigureApp
             return Results.Ok(new { version });
         });
 
-        //app.UseHttpsRedirection();
         app.UseStaticFiles();
-
-        app.UseRouting();
 
         app.UseAuthentication();
         app.UseAuthorization();

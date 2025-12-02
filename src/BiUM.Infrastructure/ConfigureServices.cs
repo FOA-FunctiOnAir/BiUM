@@ -7,7 +7,6 @@ using BiUM.Infrastructure.Services.Caching.Redis;
 using BiUM.Infrastructure.Services.Logging.Serilog;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;

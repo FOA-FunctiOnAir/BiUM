@@ -2,7 +2,6 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Services;
-using BiUM.Infrastructure.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.File;
 using BiUM.Specialized.Interceptors;
@@ -114,6 +113,8 @@ public static class ConfigureServices
         });
 
         services.AddScoped<EntitySaveChangesInterceptor>();
+
+        services.AddTransient<ICorrelationContextProvider, CorrelationContextProvider>();
 
         services.AddTransient<ICrudService, CrudService>();
         services.AddTransient<ICurrentUserService, CurrentUserService>();

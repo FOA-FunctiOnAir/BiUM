@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 public class AsyncLock
 {
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);

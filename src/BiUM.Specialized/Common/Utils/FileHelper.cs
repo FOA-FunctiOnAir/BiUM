@@ -1,9 +1,5 @@
 ﻿using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
-using SimpleHtmlToPdf.Settings.Enums;
-using SimpleHtmlToPdf.Settings;
-using SimpleHtmlToPdf.UnmanagedHandler;
-using SimpleHtmlToPdf;
 using System.Reflection;
 
 namespace BiUM.Specialized.Common.Utils;

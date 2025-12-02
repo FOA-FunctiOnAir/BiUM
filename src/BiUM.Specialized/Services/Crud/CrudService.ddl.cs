@@ -1,5 +1,4 @@
 ﻿using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text;

@@ -1,28 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<AssemblyName>BiUM.Specialized</AssemblyName>
-		<RootNamespace>BiUM.Specialized</RootNamespace>
-		<PackageId>BiUM.Specialized</PackageId>
-	</PropertyGroup>
+  <PropertyGroup>
+    <AssemblyName>BiUM.Specialized</AssemblyName>
+    <RootNamespace>BiUM.Specialized</RootNamespace>
+    <PackageId>BiUM.Specialized</PackageId>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<!--<ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
-		<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
-		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />-->
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
+    <ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="BiUM.Contract" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Core" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Infrastructure" Version="$(BiUMVersion)" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.*" />
-		<PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.*" />
-		<PackageReference Include="Grpc.Core.Api" Version="2.*" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.11" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.11" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.16" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.*" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.*" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.*" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.16" />
+  </ItemGroup>
 </Project>

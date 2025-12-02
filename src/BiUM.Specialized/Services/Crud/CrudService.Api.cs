@@ -1,5 +1,4 @@
 using BiUM.Specialized.Common.API;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text;
 

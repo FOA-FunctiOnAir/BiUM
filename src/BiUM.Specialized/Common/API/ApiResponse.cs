@@ -1,6 +1,5 @@
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
-using FluentValidation;
 
 namespace BiUM.Specialized.Common.API;
 
@@ -10,11 +9,7 @@ public class ApiEmptyResponse : IApiResponse
     {
         get
         {
-            var success = from s in _messages
-                          where s.Severity == MessageSeverity.Error
-                          select s;
-
-            return !success.Any();
+            return _messages.All(s => s.Severity != MessageSeverity.Error);
         }
     }
 

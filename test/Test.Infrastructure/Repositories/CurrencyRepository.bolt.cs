@@ -1,5 +1,4 @@
 ﻿using BiUM.Specialized.Common.API;
-using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace BiUM.Test.Infrastructure.Repositories;

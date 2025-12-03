@@ -1,15 +1,12 @@
 <Project>
-	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<LangVersion>latest</LangVersion>
-		<Version>1.1.15</Version>
-		<Authors>FunctiOnAir</Authors>
-		<Company>FunctiOnAir</Company>
-		<Copyright>FunctiOnAir</Copyright>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>Latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <GenerateLocalPackages>false</GenerateLocalPackages>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
 
-		<BiUMVersion>1.1.15</BiUMVersion>
-	</PropertyGroup>
+    <BiUMVersion>1.1.15</BiUMVersion>
+  </PropertyGroup>
 </Project>

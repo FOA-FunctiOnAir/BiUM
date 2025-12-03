@@ -117,7 +117,6 @@ public static class ConfigureServices
         services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
 
         services.AddTransient<ICrudService, CrudService>();
-        services.AddTransient<ICurrentUserService, CurrentUserService>();
         services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<IHttpClientsService, HttpClientService>();
         services.AddTransient<ITranslationService, TranslationService>();

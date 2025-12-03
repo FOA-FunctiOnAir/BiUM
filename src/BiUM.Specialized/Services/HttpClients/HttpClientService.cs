@@ -3,11 +3,14 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -17,18 +20,20 @@ namespace BiUM.Specialized.Services.HttpClients;
 public class HttpClientService : IHttpClientsService
 {
     private readonly HttpClientsOptions _httpClientOptions;
-    private readonly ICurrentUserService _currentUserService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    private readonly JsonSerializerOptions _serializerSsettings = new JsonSerializerOptions
+    private readonly JsonSerializerOptions _serializerSsettings = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
     };
 
-    public HttpClientService(IOptions<HttpClientsOptions> httpClientOptions, ICurrentUserService currentUserService)
+    public HttpClientService(
+        IHttpContextAccessor httpContextAccessor,
+        IOptions<HttpClientsOptions> httpClientOptions)
     {
         _httpClientOptions = httpClientOptions.Value;
-        _currentUserService = currentUserService;
+        this._httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IApiResponse> CallService(
@@ -390,28 +395,18 @@ public class HttpClientService : IHttpClientsService
 
     private HttpClient CreateRequest()
     {
+        var httpContext = _httpContextAccessor.HttpContext;
+
         var _httpClient = new HttpClient();
 
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationId, _currentUserService.CorrelationId.ToString());
+        var correlationContextHeaderValue = httpContext?.Request.Headers[HeaderKeys.CorrelationContext];
 
-        if (!string.IsNullOrEmpty(_currentUserService.Token))
+        if (correlationContextHeaderValue.HasValue && correlationContextHeaderValue.Value != StringValues.Empty)
         {
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.AuthorizationToken, _currentUserService.Token);
+            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationContext, correlationContextHeaderValue.Value.ToString());
         }
-
-        if (_currentUserService.ApplicationId is not null)
-        {
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.ApplicationId, _currentUserService.ApplicationId.ToString());
-        }
-
-        if (_currentUserService.TenantId is not null)
-        {
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.TenantId, _currentUserService.TenantId.ToString());
-        }
-
-        _httpClient.DefaultRequestHeaders.Add(HeaderKeys.LanguageId, _currentUserService.LanguageId.ToString());
 
         _httpClient.Timeout = new TimeSpan(0, 5, 0);
 

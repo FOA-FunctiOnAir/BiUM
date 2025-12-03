@@ -16,7 +16,7 @@ public partial class CurrencyRepository
         CancellationToken cancellationToken)
     {
         var currencies = await _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _currentUserService.LanguageId))
+            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
             .Where(c =>
                 (
                     string.IsNullOrEmpty(q) ||
@@ -34,7 +34,7 @@ public partial class CurrencyRepository
         var returnObject = new ApiResponse<IList<GetFwCurrenciesForNamesDto>>();
 
         var currencies = await _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _currentUserService.LanguageId))
+            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
             .Where(m => ids != null && ids.Contains(m.Id))
             .ToIListAsync<Currency, GetFwCurrenciesForNamesDto>(_mapper, cancellationToken);
 

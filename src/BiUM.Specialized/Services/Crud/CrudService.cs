@@ -1,6 +1,7 @@
 using AutoMapper;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +16,8 @@ public partial class CrudService : BaseRepository, ICrudService
     private readonly IConfiguration _configuration;
     private readonly IDbContext _baseContext;
 
-    private readonly ICurrentUserService _currentUserService;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
+    private readonly CorrelationContext _correlationContext;
     private readonly IHttpClientsService _httpClientsService;
     private readonly IMapper _mapper;
 
@@ -28,10 +30,12 @@ public partial class CrudService : BaseRepository, ICrudService
         _baseContext = baseContext;
         _configuration = configuration;
 
-        _currentUserService = _serviceProvider.GetRequiredService<ICurrentUserService>();
+        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
         _httpClientsService = _serviceProvider.GetRequiredService<IHttpClientsService>();
         _mapper = _serviceProvider.GetRequiredService<IMapper>();
 
         _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
+
+        _correlationContext = _correlationContextProvider.Get();
     }
 }

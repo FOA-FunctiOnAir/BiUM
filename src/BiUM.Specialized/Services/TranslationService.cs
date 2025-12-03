@@ -3,6 +3,7 @@ using BiUM.Contract;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.API;
@@ -20,7 +21,8 @@ public class TranslationService : ITranslationService
     private readonly IServiceProvider _serviceProvider;
     private readonly IDbContext _baseContext;
 
-    public readonly ICurrentUserService _currentUserService;
+    public readonly ICorrelationContextProvider _correlationContextProvider;
+    private readonly CorrelationContext _correlationContext;
     public readonly IMapper _mapper;
 
     public readonly BiAppOptions _biAppOptions;
@@ -31,10 +33,12 @@ public class TranslationService : ITranslationService
 
         _baseContext = _serviceProvider.GetRequiredService<IDbContext>();
 
-        _currentUserService = _serviceProvider.GetRequiredService<ICurrentUserService>();
+        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
         _mapper = _serviceProvider.GetRequiredService<IMapper>();
 
         _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
+
+        _correlationContext = _correlationContextProvider.Get();
     }
 
     public virtual async Task<IApiResponse> AddMessage(
@@ -302,7 +306,7 @@ public class TranslationService : ITranslationService
     {
         var domainTranslations = await _baseContext.DomainTranslations
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails!.Any(rt => rt.Text != null && rt.LanguageId == _currentUserService.LanguageId && rt.Text.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails!.Any(rt => rt.Text != null && rt.LanguageId == _correlationContext.LanguageId && rt.Text.ToLower().Contains(q.ToLower()))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(_mapper, pageStart, pageSize, cancellationToken);
 
@@ -313,8 +317,8 @@ public class TranslationService : ITranslationService
     {
         var translation = await _baseContext.DomainTranslations
             .AsNoTracking()
-            .Include(dt => dt.DomainTranslationDetails!.Where(dtd => dtd.LanguageId == _currentUserService.LanguageId))
-            .Where(x => x.Code.Equals(code) && x.ApplicationId == _currentUserService.ApplicationId)
+            .Include(dt => dt.DomainTranslationDetails!.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
+            .Where(x => x.Code.Equals(code) && x.ApplicationId == _correlationContext.ApplicationId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (translation is null || translation.DomainTranslationDetails is null || translation.DomainTranslationDetails.Count == 0)

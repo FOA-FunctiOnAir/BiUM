@@ -195,7 +195,7 @@ public partial class CrudService
         {
             domainCrud = new DomainCrud()
             {
-                TenantId = _currentUserService.TenantId!.Value,
+                TenantId = _correlationContext.TenantId!.Value,
                 MicroserviceId = command.MicroserviceId,
                 Name = command.NameTr.ToTranslationString(),
                 Code = command.Code,
@@ -346,9 +346,9 @@ public partial class CrudService
         CancellationToken cancellationToken)
     {
         var domainCruds = await _baseContext.DomainCruds
-            .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == _currentUserService.LanguageId))
+            .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == _correlationContext.LanguageId))
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == _currentUserService.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == _correlationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
                 (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(_mapper, pageStart, pageSize, cancellationToken);

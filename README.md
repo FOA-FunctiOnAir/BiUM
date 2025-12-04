@@ -1,5 +1,5 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Introduction
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project.
 
 # Getting Started
 TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
@@ -9,10 +9,10 @@ TODO: Guide users through getting your code up and running on their own system. 
 4.	API references
 
 # Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+TODO: Describe and show how to build your code and run the tests.
 
 # Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+TODO: Explain how other users and developers can contribute to make your code better.
 
 If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
 - [ASP.NET Core](https://github.com/aspnet/Home)
@@ -21,7 +21,7 @@ If you want to learn more about creating good readme files then refer the follow
 
 <!-- Push steps
 1 - Run this command line to remove all credentials : dotnet nuget locals all --clear
-2 - Go to Solution .sln path where nuget.config file is available run : dotnet restore --interactive 
+2 - Go to Solution .sln path where nuget.config file is available run : dotnet restore --interactive
 3 - Add these attributes to the project that you want to pack :
   --<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   --<PackageId>EasyAccess</PackageId>
@@ -89,3 +89,11 @@ dotnet add package BiUM.Core --source "https://nuget.pkg.github.com/FOA-FunctiOn
 ```
 
 **Note**: If you're using this configuration on a build server or any kind of automation, make sure you protect your personal access token. If you are doing this as part of a GitHub Actions workflow, you can use the GITHUB_TOKEN instead of a PAT for authentication within the workflow.
+
+# Project Documentation
+
+- [BiUM.Bolt](src/BiUM.Bolt/README.md) - Database configuration and initialization.
+- [BiUM.Contract](src/BiUM.Contract/README.md) - Shared gRPC contracts.
+- [BiUM.Core](src/BiUM.Core/README.md) - Core utilities and shared services.
+- [BiUM.Infrastructure](src/BiUM.Infrastructure/README.md) - Infrastructure implementations (gRPC, Redis, RabbitMQ, Serilog).
+- [BiUM.Specialized](src/BiUM.Specialized/README.md) - High-level application configuration and specialized services.

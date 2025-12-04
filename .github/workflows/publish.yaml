@@ -26,7 +26,6 @@ jobs:
       SOLUTION: "BiUM.sln"
       BUILD_CONFIG: "Release"
       PACKAGE_VERSION: "1.2.${{ github.run_number }}"
-      PACKAGE_SOURCE: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
     steps:
       - name: Checkout Source
@@ -74,15 +73,25 @@ jobs:
             --no-build \
             --verbosity minimal
 
+      - name: Setup NuGet Source
+        if: github.event_name != 'pull_request'
+        run: |
+          PACKAGE_USER=${{ github.repository_owner }}
+          PACKAGE_SOURCE=https://nuget.pkg.github.com/$PACKAGE_USER/index.json
+
+          echo "PACKAGE_USER=$PACKAGE_USER" >> $GITHUB_ENV
+          echo "PACKAGE_SOURCE=$PACKAGE_SOURCE" >> $GITHUB_ENV
+
       - name: Add GitHub NuGet Source
+        if: github.event_name != 'pull_request'
         run: |
           dotnet nuget add source $PACKAGE_SOURCE \
             --name github \
-            --username ${{ github.actor }} \
+            --username $PACKAGE_USER \
             --password ${{ secrets.GITHUB_TOKEN }} \
             --store-password-in-clear-text
 
-      - name: Publish Packages
+      - name: Publish Packages to GitHub NuGet Source
         if: github.event_name != 'pull_request'
         run: |
           dotnet nuget push \
@@ -90,10 +99,10 @@ jobs:
             --source "github" \
             --skip-duplicate
 
-      - name: Publish Symbols
+      - name: Publish Symbols to GitHub NuGet Source
         if: github.event_name != 'pull_request'
         run: |
           dotnet nuget push \
-            **\*.snupkg \
+            **/*.snupkg \
             --source "github" \
             --skip-duplicate

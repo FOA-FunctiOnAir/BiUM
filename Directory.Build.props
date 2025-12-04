@@ -1,12 +1,10 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>Latest</LangVersion>
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
     <GenerateLocalPackages>false</GenerateLocalPackages>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-
-    <BiUMVersion>1.1.15</BiUMVersion>
   </PropertyGroup>
 </Project>

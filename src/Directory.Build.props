@@ -6,7 +6,6 @@
     <Authors>FunctiOnAir</Authors>
     <Company>FunctiOnAir</Company>
     <Copyright>FunctiOnAir</Copyright>
-    <Version>$(BiUMVersion)</Version>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <Product>$(MSBuildProjectName)</Product>

@@ -1,0 +1,93 @@
+name: Build and Push NuGet Packages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      SOLUTION: "BiUM.sln"
+      BUILD_CONFIG: "Release"
+      PACKAGE_VERSION: "1.2.${{ github.run_number }}"
+      PACKAGE_SOURCE: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v6
+
+      - name: Get .NET Version from Directory.Build.props
+        id: dotnet_version
+        shell: bash
+        run: |
+          # 1. Grep the line, extracting only the matched segment
+          # 2. Sed capture group to get the digit after 'net'
+          MAJOR_VERSION=$(grep -oP '<TargetFramework>.*</TargetFramework>' Directory.Build.props | sed -E 's/.*net([0-9]+).*/\1/')
+
+          echo "Detected .NET Major Version: $MAJOR_VERSION"
+
+          # 3. Write to GitHub Output
+          echo "major=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.dotnet_version.outputs.major }}
+          dotnet-quality: "ga"
+
+      - name: Build
+        run: |
+          dotnet build \
+            $SOLUTION \
+            --configuration $BUILD_CONFIG \
+            --verbosity minimal \
+            --property:Version="$PACKAGE_VERSION" \
+            --property:ContinuousIntegrationBuild=true \
+            --property:Deterministic=true \
+            --property:DeterministicSourcePaths=true \
+            --property:SourceLinkCreate=true \
+            --property:DebugType=pdbonly \
+            --property:IncludeSymbols=true \
+            --property:SymbolPackageFormat=snupkg
+
+      - name: Run Tests
+        run: |
+          dotnet test \
+            --configuration $BUILD_CONFIG \
+            --no-restore \
+            --no-build \
+            --verbosity minimal
+
+      - name: Publish Packages
+        if: github.event_name != 'pull_request'
+        run: |
+          dotnet nuget push \
+            **\*.nupkg \
+            --source $PACKAGE_SOURCE \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate
+
+      - name: Publish Symbols
+        if: github.event_name != 'pull_request'
+        run: |
+          dotnet nuget push \
+            **\*.snupkg \
+            --source $PACKAGE_SOURCE \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate

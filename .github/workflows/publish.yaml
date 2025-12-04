@@ -97,6 +97,7 @@ jobs:
           dotnet nuget push \
             **/*.nupkg \
             --source "github" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate
 
       - name: Publish Symbols to GitHub NuGet Source
@@ -105,4 +106,5 @@ jobs:
           dotnet nuget push \
             **/*.snupkg \
             --source "github" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate

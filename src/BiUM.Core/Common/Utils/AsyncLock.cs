@@ -1,3 +1,5 @@
+namespace BiUM.Core.Common.Utils;
+
 public class AsyncLock
 {
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);

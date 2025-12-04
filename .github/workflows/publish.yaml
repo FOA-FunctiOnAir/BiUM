@@ -76,7 +76,7 @@ jobs:
       - name: Setup NuGet Source
         if: github.event_name != 'pull_request'
         run: |
-          PACKAGE_USER=${{ github.repository_owner }}
+          PACKAGE_USER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
           PACKAGE_SOURCE=https://nuget.pkg.github.com/$PACKAGE_USER/index.json
 
           echo "PACKAGE_USER=$PACKAGE_USER" >> $GITHUB_ENV

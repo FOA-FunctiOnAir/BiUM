@@ -74,12 +74,20 @@ jobs:
             --no-build \
             --verbosity minimal
 
+      - name: Add GitHub NuGet Source
+        run: |
+          dotnet nuget add source $PACKAGE_SOURCE \
+            --name github \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }} \
+            --store-password-in-clear-text
+
       - name: Publish Packages
         if: github.event_name != 'pull_request'
         run: |
           dotnet nuget push \
-            **\*.nupkg \
-            --source $PACKAGE_SOURCE \
+            **/*.nupkg \
+            --source "github" \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate
 
@@ -88,6 +96,6 @@ jobs:
         run: |
           dotnet nuget push \
             **\*.snupkg \
-            --source $PACKAGE_SOURCE \
+            --source "github" \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate

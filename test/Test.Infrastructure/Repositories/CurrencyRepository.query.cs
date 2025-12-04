@@ -55,7 +55,7 @@ public partial class CurrencyRepository : BaseRepository, ICurrencyRepository
     public async Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, int? pageStart, int? pageSize, CancellationToken cancellationToken)
     {
         var currencys = _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _currentUserService.LanguageId))
+            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
             .Where(p =>
                 (!id.HasValue || p.Id == id.Value) &&
                 (string.IsNullOrWhiteSpace(name) || p.Name.ToLower().Contains(name.Trim().ToLower())) &&

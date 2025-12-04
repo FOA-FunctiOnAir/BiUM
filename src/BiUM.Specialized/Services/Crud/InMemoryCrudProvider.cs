@@ -15,7 +15,7 @@
 //    private readonly IServiceProvider _serviceProvider;
 //    private readonly IDbContext _baseContext;
 
-//    public readonly ICurrentUserService _currentUserService;
+//    public readonly ICorrelationContextProvider _correlationContextProvider;
 //    public readonly IMapper _mapper;
 
 //    private readonly List<DomainCrud> _defs;
@@ -26,7 +26,7 @@
 
 //        _baseContext = _serviceProvider.GetRequiredService<IDbContext>();
 
-//        _currentUserService = _serviceProvider.GetRequiredService<ICurrentUserService>();
+//        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
 //        _mapper = _serviceProvider.GetRequiredService<IMapper>();
 //    }
 

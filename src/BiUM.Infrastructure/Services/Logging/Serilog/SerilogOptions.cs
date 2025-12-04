@@ -1,6 +1,5 @@
-using StackExchange.Redis;
-
 namespace BiUM.Infrastructure.Services.Logging.Serilog;
+
 public class SerilogOptions
 {
     public string? MinimumLevel { get; set; }

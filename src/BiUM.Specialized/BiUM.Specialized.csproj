@@ -6,15 +6,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!--<ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
-		<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
-		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />-->
+		<ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
+		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BiUM.Contract" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Core" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Infrastructure" Version="$(BiUMVersion)" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.*" />
 		<PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.*" />
 		<PackageReference Include="Grpc.Core.Api" Version="2.*" />

@@ -6,15 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!--<ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
-		<ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
-		<ProjectReference Include="..\BiUM.Specialized\BiUM.Specialized.csproj" />-->
+		<ProjectReference Include="..\BiUM.Specialized\BiUM.Specialized.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BiUM.Core" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Infrastructure" Version="$(BiUMVersion)" />
-		<PackageReference Include="BiUM.Specialized" Version="$(BiUMVersion)" />
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
 		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />

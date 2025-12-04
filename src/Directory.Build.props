@@ -1,0 +1,43 @@
+<Project>
+  <Import
+    Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <Authors>FunctiOnAir</Authors>
+    <Company>FunctiOnAir</Company>
+    <Copyright>FunctiOnAir</Copyright>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Product>$(MSBuildProjectName)</Product>
+    <Title>$(MSBuildProjectName)</Title>
+    <PackageTags>$(MSBuildProjectName)</PackageTags>
+    <RepositoryUrl>https://github.com/FOA-FunctiOnAir/BiUM.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/FOA-FunctiOnAir/BiUM.git</PackageProjectUrl>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SourceRoot Include="$(MSBuildThisFileDirectory)/$(MSBuildProjectName)/" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(GenerateLocalPackages)'=='true'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.0.0-local</Version>
+    <PackageTarget>bium</PackageTarget>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(SourceLinkCreate)'=='true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(SourceLinkCreate)'=='true'">
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedAllSources>true</EmbedAllSources>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
+  </ItemGroup>
+</Project>

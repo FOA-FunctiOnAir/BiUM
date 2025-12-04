@@ -1,6 +1,7 @@
 using AutoMapper;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Database;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.Models;
@@ -16,7 +17,8 @@ public partial class BaseRepository : IBaseRepository
     private readonly IServiceProvider _serviceProvider;
     private readonly IDbContext _baseContext;
 
-    public readonly ICurrentUserService _currentUserService;
+    public readonly ICorrelationContextProvider _correlationContextProvider;
+    public readonly CorrelationContext? _correlationContext;
     public readonly ITranslationService _translationService;
     public readonly IMapper _mapper;
 
@@ -27,11 +29,13 @@ public partial class BaseRepository : IBaseRepository
         _baseContext = baseContext;
         _serviceProvider = serviceProvider;
 
-        _currentUserService = _serviceProvider.GetRequiredService<ICurrentUserService>();
+        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
         _translationService = _serviceProvider.GetRequiredService<ITranslationService>();
         _mapper = _serviceProvider.GetRequiredService<IMapper>();
 
         _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
+
+        _correlationContext = _correlationContextProvider.Get();
     }
 
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken)

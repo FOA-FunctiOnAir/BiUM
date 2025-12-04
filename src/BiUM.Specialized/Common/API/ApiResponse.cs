@@ -1,22 +1,12 @@
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Enums;
-using FluentValidation;
 
 namespace BiUM.Specialized.Common.API;
 
 public class ApiEmptyResponse : IApiResponse
 {
-    public virtual bool Success
-    {
-        get
-        {
-            var success = from s in _messages
-                          where s.Severity == MessageSeverity.Error
-                          select s;
-
-            return !success.Any();
-        }
-    }
+    public virtual bool Success =>
+        _messages.All(s => s.Severity != MessageSeverity.Error);
 
     private readonly List<IResponseMessage> _messages = [];
 
@@ -36,7 +26,7 @@ public class ApiEmptyResponse : IApiResponse
     {
         _messages.Add(new ResponseMessage
         {
-            Code = "",
+            Code = string.Empty,
             Message = message,
             Severity = severity ?? MessageSeverity.Error
         });

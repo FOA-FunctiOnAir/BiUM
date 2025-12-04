@@ -2,9 +2,10 @@
 
 public static class HeaderKeys
 {
-    public static string ApplicationId = "Bi-Application-Id";
     public static string AuthorizationToken = "Authorization";
-    public static string CorrelationId = "Bi-Correlation-Id";
-    public static string LanguageId = "Bi-Language-Id";
-    public static string TenantId = "Bi-Tenant-Id";
+    public static string ApplicationId = "X-Application-Id";
+    public static string CorrelationContext = "X-Correlation-Context";
+    public static string CorrelationId = "X-Correlation-Id";
+    public static string LanguageId = "X-Language-Id";
+    public static string TenantId = "X-Tenant-Id";
 }

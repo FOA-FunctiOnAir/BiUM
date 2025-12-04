@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace BiUM.Core.Models.Caching.Redis;
 
 public class CacheItem<T>

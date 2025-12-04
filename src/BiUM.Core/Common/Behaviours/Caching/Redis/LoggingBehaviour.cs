@@ -3,6 +3,8 @@ using BiUM.Core.Caching.Redis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+namespace BiUM.Core.Common.Behaviours.Caching.Redis;
+
 public class PerformanceMiddleware
 {
     private readonly RequestDelegate _next;
@@ -13,7 +15,7 @@ public class PerformanceMiddleware
         _next = next;
         _logger = logger;
     }
-    
+
     public async Task Invoke(HttpContext context, IRedisClient redisCache)
     {
         var sw = Stopwatch.StartNew();

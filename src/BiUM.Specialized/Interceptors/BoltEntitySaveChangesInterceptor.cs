@@ -1,3 +1,4 @@
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
@@ -8,13 +9,16 @@ namespace BiUM.Specialized.Interceptors;
 
 public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
 {
-    private readonly ICurrentUserService _currentUserService;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
+    private readonly CorrelationContext _correlationContext;
     private readonly IDateTimeService _dateTimeService;
 
-    public BoltEntitySaveChangesInterceptor(ICurrentUserService currentUserService, IDateTimeService dateTimeService)
+    public BoltEntitySaveChangesInterceptor(ICorrelationContextProvider correlationContextProvider, IDateTimeService dateTimeService)
     {
-        _currentUserService = currentUserService;
+        _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
+
+        _correlationContext = _correlationContextProvider.Get();
     }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -51,14 +55,14 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
 
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.CorrelationId = _currentUserService.CorrelationId;
-                entry.Entity.CreatedBy = _currentUserService.UserId;
+                entry.Entity.CorrelationId = _correlationContext.CorrelationId;
+                entry.Entity.CreatedBy = _correlationContext.User?.Id;
                 entry.Entity.Created = DateOnly.FromDateTime(now);
                 entry.Entity.CreatedTime = TimeOnly.FromDateTime(now);
             }
             else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
             {
-                entry.Entity.UpdatedBy = _currentUserService.UserId;
+                entry.Entity.UpdatedBy = _correlationContext.User?.Id;
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }

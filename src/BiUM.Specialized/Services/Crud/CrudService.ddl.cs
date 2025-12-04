@@ -1,5 +1,4 @@
 ﻿using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text;
@@ -421,11 +420,11 @@ END;
         void AddParam(object? v) { paramNames.Add($"@p{p}"); paramValues.Add(v); p++; }
 
         AddParam(newId);
-        AddParam(_currentUserService.CorrelationId);
-        AddParam(_currentUserService.TenantId);
+        AddParam(_correlationContext.CorrelationId);
+        AddParam(_correlationContext.TenantId);
         AddParam(true);
         AddParam(false);
-        AddParam(_currentUserService.UserId);
+        AddParam(_correlationContext.User?.Id);
         AddParam(false);
 
         valSql.Append($"{paramNames[0]},{paramNames[1]},{paramNames[2]},{paramNames[3]},{paramNames[4]},{paramNames[5]},{NowDateSql(dbType)},{NowTimeSql(dbType)},{paramNames[6]}");
@@ -465,7 +464,7 @@ END;
         var parms = new List<object?>
         {
             id,
-            _currentUserService.UserId
+            _correlationContext.User?.Id
         };
         int p = 2;
 

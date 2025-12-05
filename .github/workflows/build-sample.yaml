@@ -39,12 +39,12 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v6
 
-      - name: Get .NET Version from Directory.Build.props
+      - name: Get .NET Version from root Directory.Build.props
         id: dotnet_version
         run: |
           # 1. Grep the line, extracting only the matched segment
           # 2. Sed capture group to get the digit after 'net'
-          MAJOR_VERSION=$(grep -oP '<TargetFramework>.*</TargetFramework>' Directory.Build.props | sed -E 's/.*net([0-9]+).*/\1/')
+          MAJOR_VERSION=$(grep -oP '<TargetFramework>.*</TargetFramework>' ../Directory.Build.props | sed -E 's/.*net([0-9]+).*/\1/')
 
           echo "Detected .NET Major Version: $MAJOR_VERSION"
 

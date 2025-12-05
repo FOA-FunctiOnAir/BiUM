@@ -13,6 +13,7 @@
     <File Path=".github/workflows/publish.yaml" />
   </Folder>
   <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
     <Project Path="src/BiUM.Bolt/BiUM.Bolt.csproj" />
     <Project Path="src/BiUM.Contract/BiUM.Contract.csproj" />
     <Project Path="src/BiUM.Core/BiUM.Core.csproj" />

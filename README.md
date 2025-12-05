@@ -61,23 +61,18 @@ Click "Generate new token."
 
 Create a ***'nuget.config'*** file in your solution directory with the following content:
 
-
-
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
-    <add key="github" value="https://nuget.pkg.github.com/FOA-FunctiOnAir/index.json" />
+    <clear />
+    <add key="bium" value="https://nuget.pkg.github.com/foa-functionair/index.json" />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <add key="bium.local" value="%userprofile%\.nuget\bium" />
   </packageSources>
-
-  <packageSourceCredentials>
-    <github>
-      <add key="Username" value="GITHUB_USERNAME" />
-      <add key="ClearTextPassword" value="GITHUB_TOKEN" />
-    </github>
-  </packageSourceCredentials>
 </configuration>
 ```
+
 Replace **GITHUB_USERNAME** with your GitHub username, and **GITHUB_TOKEN** with the personal access token you created.
 
 ## Step 3: Downloading the Package

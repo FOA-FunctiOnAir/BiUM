@@ -37,6 +37,20 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
+  <Target Name="CopyToLocalNugetSource" AfterTargets="Pack" Condition="'$(GenerateLocalPackages)'=='true' And $([MSBuild]::IsOSPlatform('Windows'))">
+    <MakeDir Directories="$(UserProfile)\.nuget\$(PackageTarget)" Condition="!Exists('$(UserProfile)\.nuget\$(PackageTarget)')" />
+    <Exec Command="del /f /q $(UserProfile)\.nuget\$(PackageTarget)\$(MSBuildProjectName.ToLower()).$(Version).nupkg" />
+    <Exec Command="dotnet nuget push $(OutputPath)..\$(PackageId).$(Version).nupkg --source $(UserProfile)\.nuget\$(PackageTarget)\" />
+    <Exec Command="rmdir /q /s $(UserProfile)\.nuget\packages\$(MSBuildProjectName.ToLower())\" />
+  </Target>
+
+  <Target Name="CopyToLocalNugetSource" AfterTargets="Pack" Condition="'$(GenerateLocalPackages)'=='true' And !$([MSBuild]::IsOSPlatform('Windows'))">
+    <MakeDir Directories="$(UserProfile)/.nuget/$(PackageTarget)" Condition="!Exists('$(UserProfile)/.nuget/$(PackageTarget)')" />
+    <Exec Command="rm -f $(UserProfile)/.nuget\$(PackageTarget)/$(MSBuildProjectName.ToLower()).$(Version).nupkg" />
+    <Exec Command="dotnet nuget push $(OutputPath)../$(PackageId).$(Version).nupkg --source $(UserProfile)/.nuget/$(PackageTarget)/" />
+    <Exec Command="rm -rf $(UserProfile)/.nuget/packages/$(MSBuildProjectName.ToLower())/" />
+  </Target>
+
   <ItemGroup>
     <InternalsVisibleTo Include="$(MSBuildProjectName).Tests" />
   </ItemGroup>

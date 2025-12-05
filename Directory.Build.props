@@ -2,9 +2,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <IsPackable>false</IsPackable>
-    <GenerateLocalPackages>false</GenerateLocalPackages>
+
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <GenerateLocalPackages>true</GenerateLocalPackages>
   </PropertyGroup>
 </Project>

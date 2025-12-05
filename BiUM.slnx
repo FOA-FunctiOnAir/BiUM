@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/Solution Items/.github/" />
   <Folder Name="/Solution Items/.github/workflows/">
+    <File Path=".github/workflows/build-sample.yaml" />
     <File Path=".github/workflows/publish.yaml" />
   </Folder>
   <Folder Name="/src/">

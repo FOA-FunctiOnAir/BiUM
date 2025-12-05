@@ -9,6 +9,6 @@
     <IsPackable>false</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
-    <GenerateLocalPackages>true</GenerateLocalPackages>
+    <GenerateLocalPackages>false</GenerateLocalPackages>
   </PropertyGroup>
 </Project>

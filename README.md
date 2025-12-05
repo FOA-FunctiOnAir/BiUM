@@ -21,7 +21,7 @@ If you want to learn more about creating good readme files then refer the follow
 
 <!-- Push steps
 1 - Run this command line to remove all credentials : dotnet nuget locals all --clear
-2 - Go to Solution .sln path where nuget.config file is available run : dotnet restore --interactive
+2 - Go to Solution .sln|.slnx path where nuget.config file is available run : dotnet restore --interactive
 3 - Add these attributes to the project that you want to pack :
   --<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   --<PackageId>EasyAccess</PackageId>

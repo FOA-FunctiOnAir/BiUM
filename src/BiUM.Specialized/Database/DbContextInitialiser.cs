@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BiUM.Specialized.Database;
 
-public partial class DbContextInitialiser<TDbContext> : IDbContextInitialiser
+public class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     where TDbContext : DbContext
 {
     public readonly ILogger<DbContextInitialiser<TDbContext>> _logger;

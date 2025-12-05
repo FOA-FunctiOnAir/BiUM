@@ -7,7 +7,7 @@ using Serilog;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static partial class ConfigureApp
+public static class ConfigureApp
 {
     public static WebApplication AddSpecializedApps(this WebApplication app)
     {

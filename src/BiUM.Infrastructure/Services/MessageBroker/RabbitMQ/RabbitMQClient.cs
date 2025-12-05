@@ -12,13 +12,13 @@ using System.Text.Json;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
-public partial class RabbitMQClient : IRabbitMQClient
+public class RabbitMQClient : IRabbitMQClient
 {
     private readonly string _queueTemplate = "{{owner}}/{{message}}";
     private readonly BiAppOptions _biAppOptions;
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IConnection? _connection;
-    private readonly IModel? _channel;
+    private readonly IChannel? _channel;
     private readonly ILogger<RabbitMQClient> _logger;
 
     public RabbitMQClient(RabbitMQOptions options)
@@ -36,8 +36,9 @@ public partial class RabbitMQClient : IRabbitMQClient
         {
             Uri = new Uri($"amqp://{options.UserName}:{options.Password}@{options.Hostname}:{options.Port}/{options.VirtualHost}")
         };
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+
+        _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
+        _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
     }
 
     public RabbitMQClient(IOptions<BiAppOptions> biAppOptions, IOptions<RabbitMQOptions> rabbitMQOptions, ILogger<RabbitMQClient> logger)
@@ -53,84 +54,80 @@ public partial class RabbitMQClient : IRabbitMQClient
 
         var factory = new ConnectionFactory
         {
-            Uri = new Uri($"amqp://{_rabbitMQOptions.UserName}:{_rabbitMQOptions.Password}@{_rabbitMQOptions.Hostname}:{_rabbitMQOptions.Port}/{_rabbitMQOptions.VirtualHost}"),
-            DispatchConsumersAsync = true
+            Uri = new Uri($"amqp://{_rabbitMQOptions.UserName}:{_rabbitMQOptions.Password}@{_rabbitMQOptions.Hostname}:{_rabbitMQOptions.Port}/{_rabbitMQOptions.VirtualHost}")
         };
 
         var appName = $"{_biAppOptions.Environment}-{_biAppOptions.Domain}";
 
-        _connection = factory.CreateConnection(appName);
-        _channel = _connection.CreateModel();
+        _connection = factory.CreateConnectionAsync(appName).GetAwaiter().GetResult();
+        _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
     }
 
-    public Task PublishAsync<T>(T message)
+    public async Task PublishAsync<T>(T message)
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
         var queueName = GetQueueName(typeof(T));
 
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
         var json = JsonSerializer.Serialize(message);
         var body = Encoding.UTF8.GetBytes(json);
 
-        var properties = _channel.CreateBasicProperties();
-        properties.Persistent = true;
+        var properties = new BasicProperties { Persistent = true };
 
-        _channel.BasicPublish(
+        await _channel.BasicPublishAsync(
             exchange: "",
             routingKey: queueName,
+            mandatory: false,
             basicProperties: properties,
             body: body);
-
-        return Task.CompletedTask;
     }
 
-    public Task PublishAsync<T>(string target, T message)
+    public async Task PublishAsync<T>(string target, T message)
     {
         ArgumentNullException.ThrowIfNull(_connection);
         ArgumentNullException.ThrowIfNull(_channel);
 
         var queueName = GetQueueName(typeof(T), target);
 
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
         _logger.LogInformation("Connection open: {Open}, Channel open: {ChOpen}", _connection.IsOpen, _channel.IsOpen);
 
         var json = JsonSerializer.Serialize(message);
         var body = Encoding.UTF8.GetBytes(json);
 
-        var properties = _channel.CreateBasicProperties();
-        properties.Persistent = true;
+        var properties = new BasicProperties { Persistent = true };
 
-        _channel.BasicPublish(
+        await _channel.BasicPublishAsync(
             exchange: "",
             routingKey: queueName,
+            mandatory: false,
             basicProperties: properties,
             body: body);
 
         _logger.LogInformation("PublishAsync sent");
-
-        return Task.CompletedTask;
     }
 
-    public void SendMessage(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
+    public async Task SendMessageAsync(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
         // Declare a queue
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
         // Convert the message to bytes
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-        var properties = _channel.CreateBasicProperties();
-        properties.Persistent = persistent;
+
+        var properties = new BasicProperties { Persistent = true };
 
         // Publish the message to the queue
-        _channel.BasicPublish(exchange: exchangeName, routingKey: queueName, basicProperties: properties, body: body);
+        await _channel.BasicPublishAsync(exchange: exchangeName, routingKey: queueName, mandatory: false, basicProperties: properties, body: body);
     }
 
-    public Task<T?> ReceiveMessageAsync<T>(CancellationToken token)
+    // TODO: Logic gözden geçirilmeli
+    public async Task<T?> ReceiveMessageAsync<T>(CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
@@ -138,10 +135,11 @@ public partial class RabbitMQClient : IRabbitMQClient
 
         var tcs = new TaskCompletionSource<T?>();
 
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.Received += async (model, ea) =>
+
+        consumer.ReceivedAsync += async (model, ea) =>
         {
             try
             {
@@ -149,28 +147,33 @@ public partial class RabbitMQClient : IRabbitMQClient
                 var json = Encoding.UTF8.GetString(body);
                 var message = JsonSerializer.Deserialize<T>(json);
 
-                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+                await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+
                 tcs.TrySetResult(message);
             }
             catch (Exception ex)
             {
                 // Hata durumunda reject et
-                _channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: true);
+                await _channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true);
+
                 tcs.TrySetException(ex);
             }
 
             await Task.Yield();
         };
 
-        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
 
         // Cancellation destekle
         token.Register(() => tcs.TrySetCanceled(token));
 
-        return tcs.Task;
+        await tcs.Task;
+
+        return tcs.Task.Result;
     }
 
-    public Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token)
+    // TODO: Logic gözden geçirilmeli
+    public async Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
@@ -178,71 +181,80 @@ public partial class RabbitMQClient : IRabbitMQClient
 
         var tcs = new TaskCompletionSource<object?>();
 
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
-        consumer.Received += async (model, ea) =>
+        consumer.ReceivedAsync += async (model, ea) =>
         {
             try
             {
                 var json = Encoding.UTF8.GetString(ea.Body.ToArray());
                 var obj = JsonSerializer.Deserialize(json, eventType);
 
-                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+                await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+
                 tcs.TrySetResult(obj);
             }
             catch (Exception ex)
             {
-                _channel.BasicNack(ea.DeliveryTag, false, requeue: true);
+                await _channel.BasicNackAsync(ea.DeliveryTag, false, requeue: true);
+
                 tcs.TrySetException(ex);
             }
             await Task.Yield();
         };
 
-        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
+
         token.Register(() => tcs.TrySetCanceled(token));
 
-        return tcs.Task;
+        await tcs.Task;
+
+        return tcs.Task.Result;
     }
 
+    // TODO: Logic gözden geçirilmeli
     public async Task<Message> ReceiveMessageAsync(string queueName = "")
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
         // Declare the queue to consume from
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
-        var consumer = new EventingBasicConsumer(_channel);
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+
         Message? receivedMessage = new();
 
         var tcs = new TaskCompletionSource<Message>();
 
-        consumer.Received += (model, ea) =>
+        consumer.ReceivedAsync += async (model, ea) =>
         {
             var body = ea.Body.ToArray();
+
             receivedMessage = JsonSerializer.Deserialize<Message>(Encoding.UTF8.GetString(body));
+
             tcs.SetResult(receivedMessage!);
         };
 
-        _channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer);
 
         await tcs.Task; // Wait for the message to be received before returning
 
         return tcs.Task.Result;
     }
 
-    public void StartConsuming(Type eventType, Func<object, Task> callback)
+    public async Task StartConsumingAsync(Type eventType, Func<object, Task> callback)
     {
         ArgumentNullException.ThrowIfNull(_channel);
 
         var queueName = GetQueueName(eventType);
 
-        _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+        await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
-        consumer.Received += async (model, ea) =>
+        consumer.ReceivedAsync += async (model, ea) =>
         {
             try
             {
@@ -253,27 +265,27 @@ public partial class RabbitMQClient : IRabbitMQClient
 
                 await callback(obj);
 
-                _channel.BasicAck(ea.DeliveryTag, multiple: false);
+                await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
             {
-                _channel.BasicNack(ea.DeliveryTag, false, true);
+                await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
 
                 _logger.LogError(ex, "Error handling {EventType}", eventType.Name);
             }
         };
 
-        _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
 
         _logger.LogInformation("Started listening to {Queue}", queueName);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _logger.LogInformation("RabbitMQClient disposed");
 
-        _channel?.Close();
-        _connection?.Close();
+        await _channel?.CloseAsync();
+        await _connection?.CloseAsync();
     }
 
     private string GetQueueName(Type type, string? target = null)

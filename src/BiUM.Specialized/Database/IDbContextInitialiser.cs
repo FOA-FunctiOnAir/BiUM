@@ -1,6 +1,6 @@
 ﻿namespace BiUM.Specialized.Database;
 
-public partial interface IDbContextInitialiser
+public interface IDbContextInitialiser
 {
     Task InitialiseAsync();
     Task SeedAsync();

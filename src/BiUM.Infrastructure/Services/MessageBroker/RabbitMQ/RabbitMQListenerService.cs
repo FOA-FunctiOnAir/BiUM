@@ -55,10 +55,9 @@ public class RabbitMQListenerService : BackgroundService
         return lambda.Compile();
     }
 
-    protected override Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (!_rabbitMQOptions.Enable)
-            return Task.CompletedTask;
+        if (!_rabbitMQOptions.Enable) return;
 
         var handlerTypes = GetAllHandlerTypes();
 
@@ -72,7 +71,7 @@ public class RabbitMQListenerService : BackgroundService
                 key => BuildInvokerWithCreateDelegate(key.handlerIface, key.eventType)
             );
 
-            _client.StartConsuming(eventType, async obj =>
+            await _client.StartConsumingAsync(eventType, async obj =>
             {
                 _logger.LogWarning("Event StartConsuming started for {EventType}", eventType.FullName);
                 try
@@ -89,14 +88,11 @@ public class RabbitMQListenerService : BackgroundService
                 }
             });
         }
-
-        return Task.CompletedTask;
     }
 
-    protected /*override*/ Task ExecuteAsync_Old(CancellationToken stoppingToken)
+    protected async Task ExecuteAsync_Old(CancellationToken stoppingToken)
     {
-        if (!_rabbitMQOptions.Enable)
-            return Task.CompletedTask;
+        if (!_rabbitMQOptions.Enable) return;
 
         var handlerTypes = GetAllHandlerTypes();
 
@@ -106,7 +102,7 @@ public class RabbitMQListenerService : BackgroundService
 
             var handlerGenericType = typeof(IEventHandler<>).MakeGenericType(eventType);
 
-            _client.StartConsuming(eventType, async (obj) =>
+            await _client.StartConsumingAsync(eventType, async (obj) =>
             {
                 _logger.LogWarning("Event StartConsuming started for {EventType}", eventType.FullName);
 
@@ -125,8 +121,6 @@ public class RabbitMQListenerService : BackgroundService
                 }
             });
         }
-
-        return Task.CompletedTask;
     }
 
     private static Type[] GetAllHandlerTypes()
@@ -136,15 +130,5 @@ public class RabbitMQListenerService : BackgroundService
             .Where(t => t.GetInterfaces().Any(i =>
                 i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>)))
             .ToArray();
-    }
-
-    public override Task StopAsync(CancellationToken cancellationToken)
-    {
-        return base.StopAsync(cancellationToken);
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 }

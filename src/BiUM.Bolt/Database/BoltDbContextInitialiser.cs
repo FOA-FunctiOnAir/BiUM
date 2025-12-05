@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace BiUM.Bolt.Database;
 
-public partial class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextInitialiser<TDbContext>, IBaseBoltDbContextInitialiser
+public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextInitialiser<TDbContext>, IBaseBoltDbContextInitialiser
     where TBoltDbContext : DbContext
     where TDbContext : DbContext
 {

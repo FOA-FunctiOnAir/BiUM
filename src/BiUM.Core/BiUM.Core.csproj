@@ -8,7 +8,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.22" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
-    <PackageReference Include="SimpleHtmlToPdf" Version="3.0.7" />
+    <PackageReference Include="SimpleHtmlToPdf" Version="2.1.15" />
     <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
     <PackageReference Include="System.Text.Json" Version="8.0.6" />
   </ItemGroup>

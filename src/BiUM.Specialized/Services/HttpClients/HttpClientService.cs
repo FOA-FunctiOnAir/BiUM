@@ -1,16 +1,15 @@
-﻿using BiUM.Core.Common.API;
+using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
-using BiUM.Core.Models;
-using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.Collections;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -424,7 +423,27 @@ public class HttpClientService : IHttpClientsService
                 parameterizedUrl += "?";
             }
 
-            var getParameters = parameters.Select(parameter => $"{parameter.Key}={parameter.Value}");
+            var getParameters = parameters.Select(parameter =>
+            {
+                if (parameter.Value is IEnumerable enumerable and not string)
+                {
+                    var queryParts = new List<string>();
+
+                    foreach (var item in enumerable)
+                    {
+                        if (item is null)
+                        {
+                            continue;
+                        }
+
+                        queryParts.Add($"{parameter.Key}={Uri.EscapeDataString(item.ToString()!)}");
+                    }
+
+                    return string.Join("&", queryParts);
+                }
+
+                return $"{parameter.Key}={parameter.Value}";
+            });
 
             parameterizedUrl += string.Join("&", getParameters);
         }

@@ -37,7 +37,9 @@ jobs:
     env:
       SOLUTION: "BiUM.slnx"
       BUILD_CONFIG: "Release"
-      PACKAGE_VERSION: "1.2.${{ github.run_number }}"
+      MAJOR: 1
+      MINOR: 2
+      MINOR_START_RUN: 17
 
     steps:
       - name: Checkout Source
@@ -60,6 +62,18 @@ jobs:
         with:
           dotnet-version: ${{ steps.dotnet_version.outputs.major }}
           dotnet-quality: "ga"
+
+      - name: Calculate package version
+        run: |
+          PATCH=$(( ${{ github.run_number }} - MINOR_START_RUN ))
+
+          if [ $PATCH -lt 0 ]; then
+            echo "PATCH version negatif olamaz"
+            exit 1
+          fi
+
+          echo "PACKAGE_VERSION=$MAJOR.$MINOR.$PATCH" >> $GITHUB_ENV
+          echo "Calculated version: $MAJOR.$MINOR.$PATCH"
 
       - name: Build
         run: |

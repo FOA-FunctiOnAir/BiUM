@@ -1,4 +1,5 @@
-﻿using BiUM.Core.Models;
+using BiUM.Core.Consts;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Services.Authorization;
 using MessagePack;
 using MessagePack.Resolvers;
@@ -14,8 +15,6 @@ namespace BiUM.Specialized.Services.Authorization;
 /// </summary>
 public class CorrelationContextProvider : ICorrelationContextProvider
 {
-    private const string CorrelationContextHeader = "X-Correlation-Context";
-
     private static readonly MessagePackSerializerOptions MessagePackOptions =
         StandardResolver.Options
             .WithOmitAssemblyVersion(true)
@@ -47,7 +46,7 @@ public class CorrelationContextProvider : ICorrelationContextProvider
             return null;
         }
 
-        var headerValue = httpContext.Request.Headers[CorrelationContextHeader].ToString();
+        var headerValue = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
 
         if (string.IsNullOrEmpty(headerValue))
         {

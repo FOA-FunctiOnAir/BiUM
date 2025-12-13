@@ -38,8 +38,8 @@ jobs:
       SOLUTION: "BiUM.slnx"
       BUILD_CONFIG: "Release"
       MAJOR: 1
-      MINOR: 2
-      MINOR_START_RUN: 17
+      MINOR: 3
+      MINOR_START_RUN: 18
 
     steps:
       - name: Checkout Source
@@ -92,7 +92,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          dotnet test \
+          dotnet test $SOLUTION \
             --configuration $BUILD_CONFIG \
             --no-restore \
             --no-build \

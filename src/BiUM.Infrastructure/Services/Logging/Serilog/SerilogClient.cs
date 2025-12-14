@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Configuration;
-
 using BiUM.Core.Logging.Serilog;
-
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 

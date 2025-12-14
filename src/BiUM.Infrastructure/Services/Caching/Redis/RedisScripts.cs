@@ -17,5 +17,25 @@ public static class RedisScripts
         return result == 1 ? RedisResult.Create(1, ResultType.Integer) : RedisResult.Create(0, ResultType.Integer);
     }
 
-    // ReplaceIfEqual script code goes here.
+    public static string ReplaceIfEqualScript { get; } = @"
+        local key = KEYS[1]
+        local value = ARGV[1]
+        local expected = ARGV[2]
+        local expires = ARGV[3]
+
+        if redis.call('get', key) == expected then
+            redis.call('set', key, value)
+            if expires ~= '' then
+                redis.call('pexpire', key, expires)
+            end
+            return 1
+        else
+            return 0
+        end";
+
+    public static RedisResult ReplaceIfEqual(IDatabase redis, RedisKey key, RedisValue value, RedisValue expected, object expires, CommandFlags flags = CommandFlags.None)
+    {
+         var result = (long)redis.ScriptEvaluate(ReplaceIfEqualScript, new[] { key }, new[] { value, expected, (RedisValue)(expires?.ToString() ?? "") }, flags);
+         return result == 1 ? RedisResult.Create(1, ResultType.Integer) : RedisResult.Create(0, ResultType.Integer);
+    }
 }

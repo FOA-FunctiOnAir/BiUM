@@ -1,7 +1,9 @@
-namespace BiUM.Infrastructure.Services.Logging.Serilog;
+namespace BiUM.Core.Common.Configs;
 
 public class SerilogOptions
 {
+    public const string Name = "SerilogOptions";
+
     public string? MinimumLevel { get; set; }
     public List<WriteToVm>? WriteTo { get; set; }
 

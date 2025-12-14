@@ -48,7 +48,7 @@ public class HttpClientService : IHttpClientsService
 
             var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
             var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
-            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters);
+            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters, true);
 
             var httpResponseServiceApi = await _httpClient.GetAsync(targetServiceUrlWithParameters, cancellationToken);
 
@@ -84,7 +84,7 @@ public class HttpClientService : IHttpClientsService
 
             if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
             {
-                var targetUrl = GetGetUrl(url, parameters);
+                var targetUrl = GetGetUrl(url, parameters, true);
 
                 httpResponseTargetApi = await _httpClient.GetAsync(targetUrl, cancellationToken);
             }
@@ -144,7 +144,7 @@ public class HttpClientService : IHttpClientsService
 
             var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
             var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
-            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters);
+            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters, true);
 
             var httpResponseServiceApi = await _httpClient.GetAsync(targetServiceUrlWithParameters, cancellationToken);
 
@@ -180,7 +180,7 @@ public class HttpClientService : IHttpClientsService
 
             if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
             {
-                var targetUrl = GetGetUrl(url, parameters);
+                var targetUrl = GetGetUrl(url, parameters, true);
 
                 httpResponseTargetApi = await _httpClient.GetAsync(targetUrl, cancellationToken);
             }
@@ -248,7 +248,7 @@ public class HttpClientService : IHttpClientsService
 
             parameters = GetParameters(parameters, q, pageStart, pageSize);
 
-            var targetUrlWithParameters = GetGetUrl(targetUrl, parameters);
+            var targetUrlWithParameters = GetGetUrl(targetUrl, parameters, true);
 
             var httpResponseTargetApi = await _httpClient.GetAsync(targetUrlWithParameters, cancellationToken);
 
@@ -412,7 +412,7 @@ public class HttpClientService : IHttpClientsService
         return _httpClient;
     }
 
-    private static string GetGetUrl(string url, Dictionary<string, dynamic>? parameters = null)
+    private static string GetGetUrl(string url, Dictionary<string, dynamic>? parameters = null, bool isGet = false)
     {
         string parameterizedUrl = url;
 
@@ -425,7 +425,7 @@ public class HttpClientService : IHttpClientsService
 
             var getParameters = parameters.Select(parameter =>
             {
-                if (parameter.Value is IEnumerable enumerable and not string)
+                if (isGet && parameter.Value is IEnumerable enumerable and not string)
                 {
                     var queryParts = new List<string>();
 

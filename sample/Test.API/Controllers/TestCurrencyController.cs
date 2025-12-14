@@ -1,4 +1,4 @@
-﻿using BiUM.Test.Application.Dtos;
+using BiUM.Test.Application.Dtos;
 using BiUM.Test.Application.Features.Currencies.Commands.DeleteCurrency;
 using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Test.Application.Features.Currencies.Commands.UpdateBoltCurrency;
@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BiUM.Test.API.Controllers;
 
 [BiUMRoute("test")]
-public class CurrencyController : ApiControllerBase
+public class TestCurrencyController : ApiControllerBase
 {
     [HttpPost]
     public async Task<ApiEmptyResponse> UpdateBoltCurrency([FromBody] UpdateBoltCurrencyCommand command)

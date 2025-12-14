@@ -13,6 +13,6 @@ public interface IRedisClient : IDisposable
     Task<bool> ReplaceAsync<T>(string key, T value, TimeSpan? expiresIn = null);
     Task<bool> ReplaceIfEqualsAsync<T>(string key, T value, T expected, TimeSpan? expiresIn = null);
     Task<bool> ExistsAsync(string key);
-    Task<TimeSpan?> GetExprationAsync(string key);
-    Task<bool> SetExprationAsync(string key, TimeSpan expiresIn);
+    Task<TimeSpan?> GetExpirationAsync(string key);
+    Task<bool> SetExpirationAsync(string key, TimeSpan expiresIn);
 }

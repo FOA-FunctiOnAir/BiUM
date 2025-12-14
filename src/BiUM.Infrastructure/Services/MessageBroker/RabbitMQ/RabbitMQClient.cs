@@ -21,26 +21,6 @@ public class RabbitMQClient : IRabbitMQClient
     private readonly IChannel? _channel;
     private readonly ILogger<RabbitMQClient> _logger;
 
-    public RabbitMQClient(RabbitMQOptions options)
-    {
-        _rabbitMQOptions = options;
-
-        if (!_rabbitMQOptions.Enable)
-        {
-            // throw new InvalidOperationException("RabbitMQ is not enabled.");
-
-            return;
-        }
-
-        var factory = new ConnectionFactory
-        {
-            Uri = new Uri($"amqp://{options.UserName}:{options.Password}@{options.Hostname}:{options.Port}/{options.VirtualHost}")
-        };
-
-        _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-        _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
-    }
-
     public RabbitMQClient(IOptions<BiAppOptions> biAppOptions, IOptions<RabbitMQOptions> rabbitMQOptions, ILogger<RabbitMQClient> logger)
     {
         _biAppOptions = biAppOptions.Value;

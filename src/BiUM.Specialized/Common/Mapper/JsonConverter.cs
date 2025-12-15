@@ -452,7 +452,7 @@ public sealed class JsonTimeSpanConverter : JsonConverter<TimeSpan>
 public sealed class JsonNullToEmptyListConverterFactory : JsonConverterFactory
 {
     public override bool CanConvert(Type typeToConvert)
-        => typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(System.Collections.Generic.List<>);
+        => typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(List<>);
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
@@ -462,18 +462,18 @@ public sealed class JsonNullToEmptyListConverterFactory : JsonConverterFactory
         return (JsonConverter)Activator.CreateInstance(convType)!;
     }
 
-    private sealed class NullToEmptyListConverter<T> : JsonConverter<System.Collections.Generic.List<T>>
+    private sealed class NullToEmptyListConverter<T> : JsonConverter<List<T>>
     {
-        public override System.Collections.Generic.List<T> Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
+        public override List<T> Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
         {
             if (r.TokenType == JsonTokenType.Null) return new();
 
-            var list = JsonSerializer.Deserialize<System.Collections.Generic.List<T>>(ref r, o);
+            var list = JsonSerializer.Deserialize<List<T>>(ref r, o);
 
             return list ?? new();
         }
 
-        public override void Write(Utf8JsonWriter w, System.Collections.Generic.List<T> value, JsonSerializerOptions o)
+        public override void Write(Utf8JsonWriter w, List<T> value, JsonSerializerOptions o)
             => JsonSerializer.Serialize(w, value, o);
     }
 }

@@ -11,8 +11,9 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ConfigureApp
 {
-    public async static Task<IServiceCollection> AddBolt<TDbContext, TDbContextInitialiser>(
-        this IServiceCollection services, IConfiguration configuration
+    public static IServiceCollection AddBolt<TDbContext, TDbContextInitialiser>(
+        this IServiceCollection services,
+        IConfiguration configuration
     )
         where TDbContext : DbContext
         where TDbContextInitialiser : class
@@ -21,7 +22,6 @@ public static partial class ConfigureApp
 
         var serviceProvider = services.BuildServiceProvider();
         var boltOptions = serviceProvider.GetRequiredService<IOptions<BoltOptions>>();
-        var httpClientsService = serviceProvider.GetRequiredService<IHttpClientsService>();
 
         if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {
@@ -45,31 +45,7 @@ public static partial class ConfigureApp
                 }
             }
 
-            //if (!string.IsNullOrEmpty(boltOptions.Value.Server))
-            //{
-            //    var parameters = new Dictionary<string, dynamic>
-            //    {
-            //        { "Branch", boltOptions.Value.Branch },
-            //        { "DatabaseName", databaseName }
-            //    };
-
-            //    var responseBoltDbSave = await httpClientsService.Post<bool>(Guid.NewGuid(), default, Ids.Language.Turkish.Id, boltOptions.Value.Server, parameters, false);
-
-            //    Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
-
-            //    if (responseBoltDbSave == null || !responseBoltDbSave.Success)
-            //    {
-            //        // TODO: log
-            //        Console.WriteLine(JsonSerializer.Serialize(responseBoltDbSave));
-            //    }
-            //}
-
             var boltDbName = databaseName ?? "db";
-
-            //if (boltOptions.Value.Branch == "Local")
-            //{
-            //    boltDbName = boltOptions.Value.Branch + "_" + (databaseName ?? "db");
-            //}
 
             var connectionString = string.Format(boltOptions.Value.ConnectionString, boltDbName);
 

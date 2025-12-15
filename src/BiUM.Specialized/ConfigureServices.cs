@@ -4,12 +4,14 @@ using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.File;
+using BiUM.Infrastructure.Services.Serialization;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Authorization;
 using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
+using BiUM.Specialized.Services.Serialization;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,6 +32,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
+    private const string AuthSecretKey = "my secret key is galatasaray because it can happy to me all time";
+
     public static IServiceCollection AddSpecializedServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
@@ -64,33 +68,9 @@ public static class ConfigureServices
             .AddControllersAsServices()
             .AddJsonOptions(options =>
         {
-            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-//            options.JsonSerializerOptions.Converters.Insert(0, new JsonBoolConverter());
-//            options.JsonSerializerOptions.Converters.Insert(1, new JsonIntConverter());
-//            options.JsonSerializerOptions.Converters.Insert(2, new JsonLongConverter());
-//            options.JsonSerializerOptions.Converters.Insert(3, new JsonShortConverter());
-//            options.JsonSerializerOptions.Converters.Insert(4, new JsonByteConverter());
-//            options.JsonSerializerOptions.Converters.Insert(5, new JsonSByteConverter());
-//            options.JsonSerializerOptions.Converters.Insert(6, new JsonUIntConverter());
-//            options.JsonSerializerOptions.Converters.Insert(7, new JsonULongConverter());
-//            options.JsonSerializerOptions.Converters.Insert(8, new JsonUShortConverter());
-//            options.JsonSerializerOptions.Converters.Insert(9, new JsonFloatConverter());
-//            options.JsonSerializerOptions.Converters.Insert(10, new JsonDoubleConverter());
-//            options.JsonSerializerOptions.Converters.Insert(11, new JsonDecimalConverter());
-//            options.JsonSerializerOptions.Converters.Insert(12, new JsonDateTimeLenientConverter());
-//            options.JsonSerializerOptions.Converters.Insert(13, new JsonDateTimeOffsetLenientConverter());
-//#if NET6_0_OR_GREATER
-//            options.JsonSerializerOptions.Converters.Add(new JsonDateOnlyLenientConverter());
-//            options.JsonSerializerOptions.Converters.Add(new JsonTimeOnlyLenientConverter());
-//#endif
-//            options.JsonSerializerOptions.Converters.Add(new JsonGuidConverter());
-//            options.JsonSerializerOptions.Converters.Add(new JsonEnumNullConverterFactory());
-//            options.JsonSerializerOptions.Converters.Add(new JsonTimeSpanConverter());
-//            options.JsonSerializerOptions.Converters.Add(new JsonNullToEmptyListConverterFactory());
-//            options.JsonSerializerOptions.Converters.Add(new JsonNullableBoolConverter());
-
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
         services.Configure<BiAppOptions>(configuration.GetSection(BiAppOptions.Name));
@@ -115,6 +95,7 @@ public static class ConfigureServices
         services.AddScoped<EntitySaveChangesInterceptor>();
 
         services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
+        services.AddSingleton<ICorrelationContextSerializer, CorrelationContextSerializer>();
 
         services.AddTransient<ICrudService, CrudService>();
         services.AddTransient<IDateTimeService, DateTimeService>();
@@ -126,7 +107,7 @@ public static class ConfigureServices
         services.AddAuthorizationBuilder()
             .AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("my secret key is galatasaray because it can happy to me all time"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AuthSecretKey));
 
         services.AddAuthentication(x =>
         {
@@ -170,20 +151,19 @@ public static class ConfigureServices
         return services;
     }
 
-    public static IServiceCollection AddGrpcClients<TClient>(this IServiceCollection services, string microserviceName)
+    public static IServiceCollection AddGrpcClients<TClient>(this IServiceCollection services, IConfiguration configuration, string serviceKey)
         where TClient : class
     {
         var serviceProvider = services.BuildServiceProvider();
-        var grpcOptions = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
 
-        var url = grpcOptions.Value.GetDomain(microserviceName);
+        var grpcOptionsAccessor = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
+
+        var url = grpcOptionsAccessor.Value.GetServiceUrl(serviceKey);
 
         services.AddTransient<ForwardHeadersGrpcInterceptor>();
 
-        services.AddGrpcClient<TClient>(o =>
-        {
-            o.Address = new Uri(url);
-        }).AddInterceptor<ForwardHeadersGrpcInterceptor>();
+        services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
+            .AddInterceptor<ForwardHeadersGrpcInterceptor>();
 
         return services;
     }

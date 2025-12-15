@@ -244,11 +244,11 @@ public partial class CrudService
                 {
                     var newDomainCrudColumn = await _baseContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
                     newDomainCrudColumn!.PropertyName = domainCrudColumn.PropertyName;
-                    newDomainCrudColumn!.ColumnName = domainCrudColumn.ColumnName;
-                    newDomainCrudColumn!.FieldId = domainCrudColumn.FieldId;
-                    newDomainCrudColumn!.DataTypeId = domainCrudColumn.DataTypeId;
-                    newDomainCrudColumn!.MaxLength = domainCrudColumn.MaxLength;
-                    newDomainCrudColumn!.SortOrder = domainCrudColumn.SortOrder;
+                    newDomainCrudColumn.ColumnName = domainCrudColumn.ColumnName;
+                    newDomainCrudColumn.FieldId = domainCrudColumn.FieldId;
+                    newDomainCrudColumn.DataTypeId = domainCrudColumn.DataTypeId;
+                    newDomainCrudColumn.MaxLength = domainCrudColumn.MaxLength;
+                    newDomainCrudColumn.SortOrder = domainCrudColumn.SortOrder;
 
                     _baseContext.DomainCrudColumns.Update(newDomainCrudColumn);
                 }
@@ -263,7 +263,7 @@ public partial class CrudService
             _baseContext.DomainCruds.Update(domainCrud);
         }
 
-        await SaveTranslations(_baseContext.DomainCrudTranslations, domainCrud!.Id, nameof(domainCrud.Name), command.NameTr, cancellationToken);
+        await SaveTranslations(_baseContext.DomainCrudTranslations, domainCrud.Id, nameof(domainCrud.Name), command.NameTr, cancellationToken);
 
         await _baseContext.SaveChangesAsync(cancellationToken);
 
@@ -378,7 +378,7 @@ public partial class CrudService
             parameters: parameters,
             cancellationToken: cancellationToken);
 
-        if (responseApi == null)
+        if (responseApi is null)
         {
             response.AddMessage("CallService error", MessageSeverity.Error);
 

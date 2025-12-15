@@ -25,7 +25,7 @@ public static class ExportHelper
 
     public static ExportDto ExportObject(string name, string mimeType, byte[] bytes)
     {
-        string val = Convert.ToBase64String(bytes, Base64FormattingOptions.InsertLineBreaks);
+        var val = Convert.ToBase64String(bytes, Base64FormattingOptions.InsertLineBreaks);
 
         return new ExportDto
         {

@@ -28,7 +28,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     {
         try
         {
-            _boltContext.Database.EnsureCreated();
+            await _boltContext.Database.EnsureCreatedAsync();
 
             if (_boltContext.Database.IsSqlServer())
             {
@@ -38,6 +38,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while initialising the bolt database.");
+
             throw;
         }
     }
@@ -46,26 +47,29 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     {
         var boltStatusId = GuidGenerator.NewGuid("Bolt-App-Status-Id");
 
-        if (_boltOptions == null || !_boltOptions.Enable) return;
+        if (!_boltOptions.Enable)
+        {
+            return;
+        }
 
         BoltStatus boltStatus = null;
         BoltTransaction lastTransaction = null;
 
         var boltStatuses = await GetResultsFromTable<TDbContext, BoltStatus>(_context, $"SELECT * FROM dbo.\"__BOLT_STATUS\"", cancellationToken);
 
-        if (boltStatuses != null && boltStatuses.Any())
+        if (boltStatuses.Any())
         {
             boltStatus = boltStatuses[0];
         }
 
-        if (boltStatus != null && boltStatus.LastTransactionId != null)
+        if (boltStatus?.LastTransactionId is not null)
         {
             var boltTransactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
                 _boltContext,
                 FormattableStringFactory.Create($"SELECT * FROM dbo.\"__BOLT_TRANSACTION\" WHERE \"ID\" = '{boltStatus.LastTransactionId.ToString()}'"),
                 cancellationToken);
 
-            if (boltTransactions != null && boltTransactions.Any())
+            if (boltTransactions.Any())
             {
                 lastTransaction = boltTransactions[0];
             }
@@ -81,67 +85,45 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
         if (!transactions.Any()) { return; }
 
-        //var dbTransaction = _context.Database.BeginTransaction();
         var isError = false;
         var transactionId = Guid.Empty;
         Guid? lastTransactionId = null;
 
         try
         {
-            var grouppedTableTransactions = transactions.GroupBy(x => x.TableName);
-
             foreach (var transaction in transactions)
             {
                 transactionId = transaction.Id;
+
                 var ids = transaction.Ids?.Trim().Split(";");
                 var guidIds = ids?.Select(x => new Guid(x.Trim()));
                 var allIds = guidIds ?? [];
 
-                var uniqueIds = allIds.Distinct();
-                if (!uniqueIds.Any()) continue;
+                var uniqueIds = allIds.Distinct().ToArray();
 
-                var linqBoltQuery = _boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) as IQueryable<IEntity>;
-                if (linqBoltQuery is null) continue;
+                if (uniqueIds.Length == 0) continue;
+
+                if (_boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) is not IQueryable<IEntity> linqBoltQuery) continue;
 
                 var boltEntities = await linqBoltQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
-                var linqTargetQuery = _context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) as IQueryable<IEntity>;
-                if (linqTargetQuery is null) continue;
+                if (_context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) is not IQueryable<IEntity> linqTargetQuery) continue;
 
                 var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 if (transaction.Delete)
                 {
-                    var deleteEntities = boltEntities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
+                    var deleteEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
 
-                    if (deleteEntities.Any())
-                    {
-                        //foreach (var entity in deleteEntities)
-                        //{
-                        //    if (entity is IBaseEntity)
-                        //    {
-                        //        (entity as IBaseEntity).Deleted = true;
-                        //    }
-                        //}
-
-                        //_context.UpdateRange(deleteEntities);
-                        _context.RemoveRange(deleteEntities);
-                    }
+                    _context.RemoveRange(deleteEntities);
                 }
                 else
                 {
-                    var insertEntities = boltEntities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));
-                    var updateEntities = boltEntities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
+                    var insertEntities = boltEntities.Where(b => targetEntities.All(t => t.Id != b.Id));
+                    var updateEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
 
-                    if (insertEntities.Any())
-                    {
-                        _context.AddRange(insertEntities);
-                    }
-
-                    if (updateEntities.Any())
-                    {
-                        _context.UpdateRange(updateEntities);
-                    }
+                    _context.AddRange(insertEntities);
+                    _context.UpdateRange(updateEntities);
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -150,45 +132,6 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
                 _context.ChangeTracker.Clear();
             }
-
-            //foreach (var tableTransactions in grouppedTableTransactions)
-            //{
-            //    var allIds = new List<Guid>();
-
-            //    foreach (var transaction in tableTransactions)
-            //    {
-            //        var ids = transaction.Ids?.Trim().Split(";");
-            //        var guidIds = ids?.Select(x => new Guid(x.Trim()));
-            //        allIds.AddRange(guidIds ?? []);
-            //    }
-
-            //    var uniqueIds = allIds.Distinct();
-            //    if (!uniqueIds.Any()) continue;
-
-            //    var linqQuery = _boltContext.GetType().GetProperty(tableTransactions.Key)?.GetValue(_boltContext) as IQueryable<IBaseEntity>;
-            //    if (linqQuery is null) continue;
-
-            //    var entities = await linqQuery.Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
-
-            //    var linqTargetQuery = _context.GetType().GetProperty(tableTransactions.Key)?.GetValue(_context) as IQueryable<IBaseEntity>;
-            //    if (linqTargetQuery is null) continue;
-
-            //    var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
-
-            //    var insertEntities = entities.Where(x => !targetEntities.Select(x => x.Id).Contains(x.Id));
-            //    var updateEntities = entities.Where(x => targetEntities.Select(x => x.Id).Contains(x.Id));
-
-            //    if (insertEntities.Any())
-            //    {
-            //        _context.AddRange(insertEntities);
-            //    }
-            //    if (updateEntities.Any())
-            //    {
-            //        _context.UpdateRange(updateEntities);
-            //    }
-
-            //    await _context.SaveChangesAsync(cancellationToken);
-            //}
         }
         catch (Exception ex)
         {
@@ -196,7 +139,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
             _context.ChangeTracker.Clear();
 
-            if (boltStatus == null)
+            if (boltStatus is null)
             {
                 boltStatus = new BoltStatus()
                 {
@@ -215,7 +158,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 _context.Update(boltStatus);
             }
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync(cancellationToken);
         }
         finally
         {
@@ -227,12 +170,12 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     .ThenByDescending(x => x.SortOrder)
                     .First();
 
-                if (boltStatus == null)
+                if (boltStatus is null)
                 {
                     boltStatus = new BoltStatus()
                     {
                         Id = boltStatusId,
-                        LastTransactionId = last?.Id,
+                        LastTransactionId = last.Id,
                         Error = null
                     };
 
@@ -240,13 +183,13 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 }
                 else
                 {
-                    boltStatus.LastTransactionId = last?.Id;
+                    boltStatus.LastTransactionId = last.Id;
                     boltStatus.Error = null;
 
                     _context.Update(boltStatus);
                 }
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync(cancellationToken);
             }
         }
     }

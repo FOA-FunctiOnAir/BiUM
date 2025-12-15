@@ -33,7 +33,7 @@ public class MappingProfile : AutoMapper.Profile
 
             var methodInfo = type.GetMethod(mappingMethodName);
 
-            if (methodInfo != null)
+            if (methodInfo is not null)
             {
                 methodInfo.Invoke(instance, new object[] { this });
             }

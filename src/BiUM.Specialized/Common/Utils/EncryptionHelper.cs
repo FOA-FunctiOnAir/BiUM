@@ -7,8 +7,8 @@ public static class EncryptionHelper
 {
     public static string Encrypt(string clearText)
     {
-        string EncryptionKey = "abc123";
-        byte[] clearBytes = Encoding.Unicode.GetBytes(clearText);
+        var EncryptionKey = "abc123";
+        var clearBytes = Encoding.Unicode.GetBytes(clearText);
 
         using (var encryptor = Aes.Create())
         {
@@ -32,9 +32,9 @@ public static class EncryptionHelper
 
     public static string Decrypt(string encryptedText)
     {
-        string EncryptionKey = "abc123";
+        var EncryptionKey = "abc123";
         encryptedText = encryptedText.Replace(" ", "+");
-        byte[] cipherBytes = Convert.FromBase64String(encryptedText);
+        var cipherBytes = Convert.FromBase64String(encryptedText);
 
         using (var encryptor = Aes.Create())
         {
@@ -44,7 +44,7 @@ public static class EncryptionHelper
 
             using var ms = new MemoryStream();
 
-            using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
+            using (var cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
             {
                 cs.Write(cipherBytes, 0, cipherBytes.Length);
                 cs.Close();

@@ -70,7 +70,7 @@ public partial class BaseRepository : IBaseRepository
 
                 if (applicationTranslation is not null)
                 {
-                    applicationTranslation!.Translation = translation.Translation;
+                    applicationTranslation.Translation = translation.Translation;
 
                     dbSetTranslationEntity.Update(applicationTranslation);
                 }
@@ -81,7 +81,7 @@ public partial class BaseRepository : IBaseRepository
 
                 if (applicationTranslation is not null)
                 {
-                    dbSetTranslationEntity.Remove(applicationTranslation!);
+                    dbSetTranslationEntity.Remove(applicationTranslation);
                 }
             }
         }

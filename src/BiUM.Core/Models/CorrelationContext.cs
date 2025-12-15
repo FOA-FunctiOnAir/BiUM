@@ -5,6 +5,12 @@ namespace BiUM.Core.Models;
 [MessagePackObject]
 public class CorrelationContext
 {
+    public static CorrelationContext Empty { get; } =
+        new()
+        {
+            CorrelationId = Guid.Empty
+        };
+
     [Key(0)]
     public required Guid CorrelationId { get; init; }
 

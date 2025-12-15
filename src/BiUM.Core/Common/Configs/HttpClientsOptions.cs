@@ -10,16 +10,32 @@ public class HttpClientsOptions
 
     public string GetFullUrl(string url)
     {
-        if (string.IsNullOrEmpty(url) || !url.StartsWith("/api/")) return url;
-
-        string domainNameStart = url[(url.IndexOf("/api/") + 5)..];
-        string domainName = domainNameStart[..domainNameStart.IndexOf('/')];
-
-        if (Domains?.TryGetValue(domainName, out var domain) == true)
+        if (string.IsNullOrEmpty(url))
         {
-            return (domain ?? BaseUrl) + url;
+            return url;
         }
 
-        throw new ArgumentNullException(domainName, "Domain url does not exist in env.");
+        var startIndex = url.IndexOf("/api/", StringComparison.InvariantCultureIgnoreCase);
+
+        if (startIndex == -1)
+        {
+            return url;
+        }
+
+        var endIndex = url.IndexOf('/', startIndex + 5);
+
+        if (endIndex == -1)
+        {
+            return url;
+        }
+
+        var serviceKey = url[(startIndex + 5)..endIndex];
+
+        if (Domains?.TryGetValue(serviceKey, out var baseUrl) is true)
+        {
+            return $"{baseUrl}{url}";
+        }
+
+        throw new InvalidOperationException($"{serviceKey} not found in Domains");
     }
 }

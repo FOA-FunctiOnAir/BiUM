@@ -2,11 +2,10 @@ using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.HttpClients;
-using BiUM.Infrastructure.Services.Authorization;
-using BiUM.Infrastructure.Services.Serialization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.Collections;
 using System.Net.Http.Headers;
@@ -29,8 +28,7 @@ public class HttpClientService : IHttpClientsService
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ICorrelationContextProvider _correlationContextProvider;
-    private readonly ICorrelationContextSerializer _correlationContextSerializer;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly HttpClientsOptions _httpClientOptions;
 
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
@@ -41,13 +39,11 @@ public class HttpClientService : IHttpClientsService
 
     public HttpClientService(
         IHttpClientFactory httpClientFactory,
-        ICorrelationContextProvider correlationContextProvider,
-        ICorrelationContextSerializer correlationContextSerializer,
+        IHttpContextAccessor httpContextAccessor,
         IOptions<HttpClientsOptions> httpClientOptions)
     {
         _httpClientFactory = httpClientFactory;
-        _correlationContextProvider = correlationContextProvider;
-        _correlationContextSerializer = correlationContextSerializer;
+        _httpContextAccessor = httpContextAccessor;
         _httpClientOptions = httpClientOptions.Value;
     }
 
@@ -549,15 +545,20 @@ public class HttpClientService : IHttpClientsService
 
     private void TryAddCorrelationContext(HttpRequestMessage request)
     {
-        var correlationContext = _correlationContextProvider.Get();
+        var httpContext = _httpContextAccessor.HttpContext;
 
-        if (correlationContext is null)
+        if (httpContext is null)
         {
             return;
         }
 
-        var headerValue = _correlationContextSerializer.Serialize(correlationContext);
+        var correlationContextHeader = httpContext.Request.Headers[CorrelationContextHeader].ToString();
 
-        request.Headers.Add(CorrelationContextHeader, headerValue);
+        if (string.IsNullOrEmpty(correlationContextHeader))
+        {
+            return;
+        }
+
+        request.Headers.Add(CorrelationContextHeader, correlationContextHeader);
     }
 }

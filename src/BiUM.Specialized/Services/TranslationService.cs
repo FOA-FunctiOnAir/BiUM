@@ -16,32 +16,26 @@ using Microsoft.Extensions.Options;
 
 namespace BiUM.Specialized.Services;
 
-public class TranslationService : ITranslationService
+public sealed class TranslationService : ITranslationService
 {
-    private readonly IServiceProvider _serviceProvider;
     private readonly IDbContext _baseContext;
 
-    public readonly ICorrelationContextProvider _correlationContextProvider;
+    private readonly IMapper _mapper;
     private readonly CorrelationContext _correlationContext;
-    public readonly IMapper _mapper;
-
-    public readonly BiAppOptions _biAppOptions;
+    private readonly BiAppOptions _biAppOptions;
 
     public TranslationService(IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
+        _baseContext = serviceProvider.GetRequiredService<IDbContext>();
 
-        _baseContext = _serviceProvider.GetRequiredService<IDbContext>();
+        var correlationContextProvider = serviceProvider.GetRequiredService<ICorrelationContextProvider>();
 
-        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
-        _mapper = _serviceProvider.GetRequiredService<IMapper>();
-
-        _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
-
-        _correlationContext = _correlationContextProvider.Get();
+        _mapper = serviceProvider.GetRequiredService<IMapper>();
+        _correlationContext = correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        _biAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
-    public virtual async Task<IApiResponse> AddMessage(
+    public async Task<IApiResponse> AddMessage(
         IApiResponse response,
         string code,
         CancellationToken cancellationToken)
@@ -49,7 +43,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(response, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual async Task<IApiResponse> AddMessage(
+    public async Task<IApiResponse> AddMessage(
         IApiResponse response,
         string code,
         MessageSeverity severity,
@@ -58,7 +52,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(response, code, string.Empty, severity, cancellationToken);
     }
 
-    public virtual async Task<IApiResponse> AddMessage(
+    public async Task<IApiResponse> AddMessage(
         IApiResponse response,
         string code,
         Exception exception,
@@ -67,7 +61,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(response, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual async Task<IApiResponse> AddMessage(
+    public async Task<IApiResponse> AddMessage(
         IApiResponse response,
         string code,
         Exception exception,
@@ -77,7 +71,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(response, code, exception.GetFullMessage(), severity, cancellationToken);
     }
 
-    public virtual async Task<IApiResponse> AddMessage(
+    public async Task<IApiResponse> AddMessage(
         IApiResponse response,
         string code,
         string exception,
@@ -111,7 +105,7 @@ public class TranslationService : ITranslationService
         return response;
     }
 
-    public virtual async Task<GrpcResponseMeta> AddMessage(
+    public async Task<GrpcResponseMeta> AddMessage(
         GrpcResponseMeta meta,
         string code,
         CancellationToken cancellationToken)
@@ -119,7 +113,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(meta, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual async Task<GrpcResponseMeta> AddMessage(
+    public async Task<GrpcResponseMeta> AddMessage(
         GrpcResponseMeta meta,
         string code,
         MessageSeverity severity,
@@ -128,7 +122,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(meta, code, string.Empty, severity, cancellationToken);
     }
 
-    public virtual async Task<GrpcResponseMeta> AddMessage(
+    public async Task<GrpcResponseMeta> AddMessage(
         GrpcResponseMeta meta,
         string code,
         Exception exception,
@@ -137,7 +131,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(meta, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual async Task<GrpcResponseMeta> AddMessage(
+    public async Task<GrpcResponseMeta> AddMessage(
         GrpcResponseMeta meta,
         string code,
         Exception exception,
@@ -147,7 +141,7 @@ public class TranslationService : ITranslationService
         return await AddMessage(meta, code, exception.GetFullMessage(), severity, cancellationToken);
     }
 
-    public virtual async Task<GrpcResponseMeta> AddMessage(
+    public async Task<GrpcResponseMeta> AddMessage(
         GrpcResponseMeta meta,
         string code,
         string exception,
@@ -181,7 +175,7 @@ public class TranslationService : ITranslationService
         return meta;
     }
 
-    public virtual async Task<ApiEmptyResponse> SaveDomainTranslationAsync(
+    public async Task<ApiEmptyResponse> SaveDomainTranslationAsync(
         SaveDomainTranslationCommand command,
         CancellationToken cancellationToken)
     {
@@ -220,7 +214,9 @@ public class TranslationService : ITranslationService
             domainTranslation.Code = command.Code;
             domainTranslation.Test = command.Test;
 
-            foreach (var domainTranslationDetail in command.Translations)
+            var translations = command.Translations ?? [];
+
+            foreach (var domainTranslationDetail in translations)
             {
                 if (domainTranslationDetail._rowStatus == RowStatuses.New)
                 {
@@ -238,7 +234,7 @@ public class TranslationService : ITranslationService
                     var newDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
 
                     newDomainTranslationDetail!.LanguageId = domainTranslationDetail.LanguageId;
-                    newDomainTranslationDetail!.Text = domainTranslationDetail.Text;
+                    newDomainTranslationDetail.Text = domainTranslationDetail.Text;
 
                     _baseContext.DomainTranslationDetails.Update(newDomainTranslationDetail);
                 }
@@ -258,7 +254,7 @@ public class TranslationService : ITranslationService
         return response;
     }
 
-    public virtual async Task<ApiEmptyResponse> DeleteDomainTranslationAsync(
+    public async Task<ApiEmptyResponse> DeleteDomainTranslationAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -282,7 +278,7 @@ public class TranslationService : ITranslationService
         return response;
     }
 
-    public virtual async Task<ApiResponse<DomainTranslationDto>> GetDomainTranslationAsync(
+    public async Task<ApiResponse<DomainTranslationDto>> GetDomainTranslationAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -297,7 +293,7 @@ public class TranslationService : ITranslationService
         return returnObject;
     }
 
-    public virtual async Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync(
+    public async Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync(
         string? code,
         string? q,
         int? pageStart,
@@ -306,7 +302,7 @@ public class TranslationService : ITranslationService
     {
         var domainTranslations = await _baseContext.DomainTranslations
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails!.Any(rt => rt.Text != null && rt.LanguageId == _correlationContext.LanguageId && rt.Text.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails!.Any(rt => rt.LanguageId == _correlationContext.LanguageId && rt.Text.Contains(q, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(_mapper, pageStart, pageSize, cancellationToken);
 

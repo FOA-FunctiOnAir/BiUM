@@ -20,7 +20,7 @@ public static class RabbitMQServiceCollectionExtensions
                 HandlerInterface = t.GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == handlerInterfaceType)
             })
-            .Where(x => x.HandlerInterface != null)
+            .Where(x => x.HandlerInterface is not null)
             .ToList();
 
         foreach (var handler in handlerTypes)

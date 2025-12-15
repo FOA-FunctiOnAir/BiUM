@@ -11,11 +11,11 @@ public static partial class ConfigureApp
         var biAppOptions = scope.ServiceProvider.GetRequiredService<IOptions<BiAppOptions>>();
         var boltOptions = scope.ServiceProvider.GetRequiredService<IOptions<BoltOptions>>();
 
-        if (boltOptions?.Value?.Enable != null && boltOptions.Value.Enable)
+        if (boltOptions.Value.Enable)
         {
             var initialiser = scope.ServiceProvider.GetRequiredService<IBaseBoltDbContextInitialiser>();
 
-            if (biAppOptions?.Value != null && (biAppOptions.Value.Environment == "Development" || biAppOptions.Value.Environment == "Production"))
+            if (biAppOptions.Value.Environment is "Development" or "Production")
             {
                 await initialiser.InitialiseAsync();
 

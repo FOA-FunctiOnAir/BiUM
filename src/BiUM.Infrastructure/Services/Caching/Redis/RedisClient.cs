@@ -51,7 +51,7 @@ public class RedisClient : IRedisClient
     /// <exception cref="ArgumentNullException">Thrown if the key parameter is null or an empty string.</exception>
     public async Task<CacheItem<T>> GetAsync<T>(string key)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -136,7 +136,7 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> ExistsAsync(string key)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -152,7 +152,7 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public async Task<TimeSpan?> GetExpirationAsync(string key)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -171,7 +171,7 @@ public class RedisClient : IRedisClient
     {
         var keyCount = 0;
 
-        if (keys == null)
+        if (keys is null)
         {
             var endpoints = _connection.GetEndPoints();
 
@@ -206,7 +206,7 @@ public class RedisClient : IRedisClient
         }
         else
         {
-            var redisKeys = keys.Where(k => !String.IsNullOrEmpty(k)).Select(k => (RedisKey)k).ToArray();
+            var redisKeys = keys.Where(k => !string.IsNullOrEmpty(k)).Select(k => (RedisKey)k).ToArray();
 
             if (redisKeys.Length > 0)
             {
@@ -230,7 +230,7 @@ public class RedisClient : IRedisClient
 
     public async Task<bool> RemoveIfEqualsAsync<T>(string key, T expected)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -255,7 +255,7 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> ReplaceAsync<T>(string key, T value, TimeSpan? expiresIn = null)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -277,7 +277,7 @@ public class RedisClient : IRedisClient
 
     public async Task<bool> ReplaceIfEqualsAsync<T>(string key, T value, T expected, TimeSpan? expiresIn = null)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
@@ -311,7 +311,7 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> SetExpirationAsync(string key, TimeSpan expiresIn)
     {
-        if (String.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }

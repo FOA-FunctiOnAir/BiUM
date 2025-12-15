@@ -87,7 +87,7 @@ public partial class CrudService
 
         var where = new StringBuilder($"WHERE {QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "false" : "0")}");
         var parms = new List<object?>();
-        int p = 0;
+        var p = 0;
 
         var allowedApi = new HashSet<string>(version.DomainCrudVersionColumns!.Select(x => x.PropertyName).Concat(BaseApiProperties), StringComparer.OrdinalIgnoreCase);
         var dynDict = version.DomainCrudVersionColumns!.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
@@ -160,7 +160,7 @@ public partial class CrudService
         var pageStart = query.TryGetValue("PageStart", out var pstStr) && int.TryParse(pstStr, out var pst) && pst >= 0 ? pst : 0;
         var pageNumber = (pageStart / pageSize) + 1;
 
-        string limit = dbType == "PostgreSQL" ? $" LIMIT {pageSize} OFFSET {pageStart}" : $" OFFSET {pageStart} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+        var limit = dbType == "PostgreSQL" ? $" LIMIT {pageSize} OFFSET {pageStart}" : $" OFFSET {pageStart} ROWS FETCH NEXT {pageSize} ROWS ONLY";
 
         var sqlCount = $"SELECT COUNT(1) FROM {table} {where}";
         var total = await QueryScalarLongAsync(sqlCount, parms.ToArray(), ct);

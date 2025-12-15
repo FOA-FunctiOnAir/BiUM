@@ -12,13 +12,10 @@ public class BiGrpcOptions
 
     public Dictionary<string, string>? Domains { get; set; }
 
-    public string GetDomain(string domainName)
+    public string GetServiceUrl(string serviceKey)
     {
-        if (Domains?.TryGetValue(domainName, out var domain) == true)
-        {
-            return domain;
-        }
-
-        throw new ArgumentNullException(domainName, "Domain url does not exist in env.");
+        return Domains?.TryGetValue(serviceKey, out var url) == true
+            ? url
+            : throw new InvalidOperationException($"{serviceKey} not found in Domains");
     }
 }

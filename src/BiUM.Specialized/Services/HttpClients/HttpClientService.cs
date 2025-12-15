@@ -1,38 +1,54 @@
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
-using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
+using BiUM.Infrastructure.Services.Authorization;
+using BiUM.Infrastructure.Services.Serialization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using System.Collections;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Specialized.Services.HttpClients;
 
 public class HttpClientService : IHttpClientsService
 {
-    private readonly HttpClientsOptions _httpClientOptions;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private const int UrlMaxLength = 2048;
 
-    private readonly JsonSerializerOptions _serializerSsettings = new()
+    private const string JsonContentType = "application/json";
+
+    private const string CorrelationContextHeader = "X-Correlation-Context";
+
+    private static readonly TimeSpan Timeout = new TimeSpan(0, 5, 0);
+    private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
+
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
+    private readonly ICorrelationContextSerializer _correlationContextSerializer;
+    private readonly HttpClientsOptions _httpClientOptions;
+
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
 
     public HttpClientService(
-        IHttpContextAccessor httpContextAccessor,
+        IHttpClientFactory httpClientFactory,
+        ICorrelationContextProvider correlationContextProvider,
+        ICorrelationContextSerializer correlationContextSerializer,
         IOptions<HttpClientsOptions> httpClientOptions)
     {
+        _httpClientFactory = httpClientFactory;
+        _correlationContextProvider = correlationContextProvider;
+        _correlationContextSerializer = correlationContextSerializer;
         _httpClientOptions = httpClientOptions.Value;
-        this._httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IApiResponse> CallService(
@@ -40,92 +56,84 @@ public class HttpClientService : IHttpClientsService
         Dictionary<string, dynamic>? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        var response = new ApiEmptyResponse();
+        var result = new ApiEmptyResponse();
 
         try
         {
-            using var _httpClient = CreateRequest();
+            var serviceResult = await GetServiceInfoAsync(serviceId, cancellationToken);
 
-            var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
-            var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
-            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters, true);
-
-            var httpResponseServiceApi = await _httpClient.GetAsync(targetServiceUrlWithParameters, cancellationToken);
-
-            if (!httpResponseServiceApi.IsSuccessStatusCode)
+            if (!serviceResult.Success)
             {
-                response.AddMessage("HttpClientService.GetServiceDefinition", httpResponseServiceApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage(serviceResult.Messages);
 
-                return response;
+                return result;
             }
 
-            string resultData = await httpResponseServiceApi.Content.ReadAsStringAsync(cancellationToken);
-
-            var serviceData = JsonSerializer.Deserialize<ApiResponse<ServiceDto>>(resultData, _serializerSsettings);
-
-            if (!serviceData!.Success)
+            if (serviceResult.Value is null)
             {
-                response.AddMessage(serviceData.Messages);
+                result.AddMessage("Api Response value error", MessageSeverity.Error);
 
-                return response;
-            }
-            else if (serviceData?.Value == null)
-            {
-                response.AddMessage("Api Response value error", MessageSeverity.Error);
-
-                return response;
+                return result;
             }
 
-            var url = _httpClientOptions.GetFullUrl(serviceData.Value.Url);
+            var url = _httpClientOptions.GetFullUrl(serviceResult.Value.Url);
 
-            parameters = GetParameters(parameters);
+            parameters = AddSearchAndPagination(parameters);
 
-            HttpResponseMessage? httpResponseTargetApi = null;
+            HttpResponseMessage? response = null;
 
-            if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
+            var httpClient = GetHttpClient(serviceId);
+
+            if (serviceResult.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
             {
-                var targetUrl = GetGetUrl(url, parameters, true);
+                var targetUrl = AppendParametersAsQueryString(url, parameters);
 
-                httpResponseTargetApi = await _httpClient.GetAsync(targetUrl, cancellationToken);
+                var request = CreateRequestMessage(HttpMethod.Get, targetUrl);
+
+                TryAddCorrelationContext(request);
+
+                response = await httpClient.SendAsync(request, cancellationToken);
             }
-            else if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
+            else if (serviceResult.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
             {
-                var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
-                var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
+                var request = CreateRequestMessage(HttpMethod.Post, url);
 
-                httpResponseTargetApi = await _httpClient.PostAsync(url, content, cancellationToken);
-            }
+                request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
 
-            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
-            {
-                response.AddMessage("GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                TryAddCorrelationContext(request);
 
-                return response;
-            }
-
-            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
-
-            if (serviceData.Value.IsExternal == true)
-            {
-            }
-            else
-            {
-                var innerResponse = JsonSerializer.Deserialize<ApiEmptyResponse>(resultData2, _serializerSsettings);
-
-                if (innerResponse != null)
-                {
-                    response = innerResponse;
-                }
+                response = await httpClient.SendAsync(request, cancellationToken);
             }
 
-            return response;
+            if (response is not { IsSuccessStatusCode: true })
+            {
+                result.AddMessage("GetTargetServiceDefinition", response?.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
+
+                return result;
+            }
+
+            if (serviceResult.Value.IsExternal == true)
+            {
+                return result;
+            }
+
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+            var fetchedResult = await JsonSerializer.DeserializeAsync<ApiEmptyResponse>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+            if (fetchedResult is not null)
+            {
+                result = fetchedResult;
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
-            response.AddMessage($"HttpClientService.CallService-{ex.Message}", ex.StackTrace, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
         }
 
-        return response;
+        return result;
     }
 
     public async Task<IApiResponse<TType>> CallService<TType>(
@@ -136,97 +144,90 @@ public class HttpClientService : IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        var response = new ApiResponse<TType>();
+        var result = new ApiResponse<TType>();
 
         try
         {
-            using var _httpClient = CreateRequest();
+            var serviceResult = await GetServiceInfoAsync(serviceId, cancellationToken);
 
-            var serviceParameters = GetParameters(new([new("Id", serviceId.ToString())]));
-            var targetServiceUrl = _httpClientOptions.GetFullUrl("/api/configuration/Service/GetService");
-            var targetServiceUrlWithParameters = GetGetUrl(targetServiceUrl, serviceParameters, true);
-
-            var httpResponseServiceApi = await _httpClient.GetAsync(targetServiceUrlWithParameters, cancellationToken);
-
-            if (!httpResponseServiceApi.IsSuccessStatusCode)
+            if (!serviceResult.Success)
             {
-                response.AddMessage("HttpClientService.GetServiceDefinition", httpResponseServiceApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage(serviceResult.Messages);
 
-                return response;
+                return result;
             }
 
-            string resultData = await httpResponseServiceApi.Content.ReadAsStringAsync(cancellationToken);
-
-            var serviceData = JsonSerializer.Deserialize<ApiResponse<ServiceDto>>(resultData, _serializerSsettings);
-
-            if (!serviceData!.Success)
+            if (serviceResult.Value is null)
             {
-                response.AddMessage(serviceData.Messages);
+                result.AddMessage("Api Response value error", MessageSeverity.Error);
 
-                return response;
-            }
-            else if (serviceData?.Value == null)
-            {
-                response.AddMessage("Api Response value error", MessageSeverity.Error);
-
-                return response;
+                return result;
             }
 
-            var url = _httpClientOptions.GetFullUrl(serviceData.Value.Url);
+            var url = _httpClientOptions.GetFullUrl(serviceResult.Value.Url);
 
-            parameters = GetParameters(parameters, q, pageStart, pageSize);
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
-            HttpResponseMessage? httpResponseTargetApi = null;
+            HttpResponseMessage? response = null;
 
-            if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
+            var httpClient = GetHttpClient(serviceId);
+
+            if (serviceResult.Value.HttpType == Ids.Parameter.HttpType.Values.Get)
             {
-                var targetUrl = GetGetUrl(url, parameters, true);
+                var targetUrl = AppendParametersAsQueryString(url, parameters);
 
-                httpResponseTargetApi = await _httpClient.GetAsync(targetUrl, cancellationToken);
+                var request = CreateRequestMessage(HttpMethod.Get, targetUrl);
+
+                TryAddCorrelationContext(request);
+
+                response = await httpClient.SendAsync(request, cancellationToken);
             }
-            else if (serviceData.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
+            else if (serviceResult.Value.HttpType == Ids.Parameter.HttpType.Values.Post)
             {
-                var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
-                var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
+                var request = CreateRequestMessage(HttpMethod.Post, url);
 
-                httpResponseTargetApi = await _httpClient.PostAsync(url, content, cancellationToken);
+                request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+
+                TryAddCorrelationContext(request);
+
+                response = await httpClient.SendAsync(request, cancellationToken);
             }
 
-            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
+            if (response is not { IsSuccessStatusCode: true })
             {
-                response.AddMessage("GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage("GetTargetServiceDefinition", response?.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
 
-                return response;
+                return result;
             }
 
-            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
-            if (serviceData.Value.IsExternal == true)
+            if (serviceResult.Value.IsExternal == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
+                result.Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                return result;
+            }
+
+            var fetchedResult = await JsonSerializer.DeserializeAsync<ApiResponse<TType>>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+            if (fetchedResult is not null)
+            {
+                result = fetchedResult;
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
-
-                if (innerResponse != null)
-                {
-                    response = innerResponse;
-                }
-                else
-                {
-                    response.Value = default;
-                }
+                result.Value = default;
             }
 
-            return response;
+            return result;
         }
         catch (Exception ex)
         {
-            response.AddMessage($"HttpClientService.CallService-{ex.Message}", ex.StackTrace, MessageSeverity.Error);
-        }
+            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
 
-        return response;
+            return result;
+        }
     }
 
     public async Task<IApiResponse<TType>> Get<TType>(
@@ -238,55 +239,59 @@ public class HttpClientService : IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        var response = new ApiResponse<TType>();
+        var result = new ApiResponse<TType>();
 
         try
         {
-            using var _httpClient = CreateRequest();
+            url = _httpClientOptions.GetFullUrl(url);
 
-            var targetUrl = _httpClientOptions.GetFullUrl(url);
+            var httpClient = GetHttpClient(url);
 
-            parameters = GetParameters(parameters, q, pageStart, pageSize);
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
-            var targetUrlWithParameters = GetGetUrl(targetUrl, parameters, true);
+            var targetUrl = AppendParametersAsQueryString(url, parameters);
 
-            var httpResponseTargetApi = await _httpClient.GetAsync(targetUrlWithParameters, cancellationToken);
+            var request = CreateRequestMessage(HttpMethod.Get, targetUrl);
 
-            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
             {
-                response.AddMessage("HttpClientService.GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage("HttpClientService.Get", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
 
-                return response;
+                return result;
             }
 
-            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
             if (external == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
+                result.Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                return result;
+            }
+
+            var fetchedResponse = await JsonSerializer.DeserializeAsync<ApiResponse<TType>>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+            if (fetchedResponse is not null)
+            {
+                result = fetchedResponse;
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
-
-                if (innerResponse != null)
-                {
-                    response = innerResponse;
-                }
-                else
-                {
-                    response.Value = default;
-                }
+                result.Value = default;
             }
 
-            return response;
+            return result;
         }
         catch (Exception ex)
         {
-            response.AddMessage("HttpClientService.Get", ex.Message, MessageSeverity.Error);
-        }
+            result.AddMessage($"HttpClientService.Get-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
 
-        return response;
+            return result;
+        }
     }
 
     public async Task<IApiResponse> Post(
@@ -295,43 +300,51 @@ public class HttpClientService : IHttpClientsService
         bool? external = false,
         CancellationToken cancellationToken = default)
     {
-        var response = new ApiEmptyResponse();
+        var result = new ApiEmptyResponse();
 
         try
         {
-            using var _httpClient = CreateRequest();
+            url = _httpClientOptions.GetFullUrl(url);
 
-            var targetUrl = _httpClientOptions.GetFullUrl(url);
+            var httpClient = GetHttpClient(url);
 
-            parameters = GetParameters(parameters);
+            parameters = AddSearchAndPagination(parameters);
 
-            var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
-            var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
+            var request = CreateRequestMessage(HttpMethod.Post, url);
 
-            var httpResponseTargetApi = await _httpClient.PostAsync(targetUrl, content, cancellationToken);
+            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
 
-            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
             {
-                response.AddMessage("HttpClientService.GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage("HttpClientService.Post", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
 
-                return response;
+                return result;
             }
 
-            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
-
-            if (external == false)
+            if (external == true)
             {
-                response = JsonSerializer.Deserialize<ApiEmptyResponse>(resultData2, _serializerSsettings);
+                return result;
             }
 
-            return response;
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var fetchedResponse = await JsonSerializer.DeserializeAsync<ApiEmptyResponse>(responseStream, _jsonSerializerOptions, cancellationToken);
+            if (fetchedResponse is not null)
+            {
+                result = fetchedResponse;
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
-            response.AddMessage("HttpClientService.Post", ex.Message, MessageSeverity.Error);
-        }
+            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
 
-        return response;
+            return result;
+        }
     }
 
     public async Task<IApiResponse<TType>> Post<TType>(
@@ -340,125 +353,211 @@ public class HttpClientService : IHttpClientsService
         bool? external = false,
         CancellationToken cancellationToken = default)
     {
-        var response = new ApiResponse<TType>();
+        var result = new ApiResponse<TType>();
 
         try
         {
-            using var _httpClient = CreateRequest();
+            url = _httpClientOptions.GetFullUrl(url);
 
-            var targetUrl = _httpClientOptions.GetFullUrl(url);
+            var httpClient = GetHttpClient(url);
 
-            parameters = GetParameters(parameters);
+            parameters = AddSearchAndPagination(parameters);
 
-            var contentSerialized = JsonSerializer.Serialize(parameters, _serializerSsettings);
-            var content = new StringContent(contentSerialized, Encoding.UTF8, "application/json");
+            var request = CreateRequestMessage(HttpMethod.Post, url);
 
-            var httpResponseTargetApi = await _httpClient.PostAsync(targetUrl, content, cancellationToken);
+            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
 
-            if (httpResponseTargetApi == null || !httpResponseTargetApi.IsSuccessStatusCode)
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
             {
-                response.AddMessage("HttpClientService.GetTargetServiceDefinition", httpResponseTargetApi?.ReasonPhrase ?? "ReasonPhrase", MessageSeverity.Error);
+                result.AddMessage("HttpClientService.Post", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
 
-                return response;
+                return result;
             }
 
-            string resultData2 = await httpResponseTargetApi.Content.ReadAsStringAsync(cancellationToken);
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
             if (external == true)
             {
-                response.Value = JsonSerializer.Deserialize<TType>(resultData2, _serializerSsettings);
+                result.Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                return result;
+            }
+
+            var fetchedResponse = await JsonSerializer.DeserializeAsync<ApiResponse<TType>>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+            if (fetchedResponse is not null)
+            {
+                result = fetchedResponse;
             }
             else
             {
-                var innerResponse = JsonSerializer.Deserialize<ApiResponse<TType>>(resultData2, _serializerSsettings);
-
-                if (innerResponse != null)
-                {
-                    response = innerResponse;
-                }
-                else
-                {
-                    response.Value = default;
-                }
+                result.Value = default;
             }
 
-            return response;
+            return result;
         }
         catch (Exception ex)
         {
-            response.AddMessage("HttpClientService.Post", ex.Message, MessageSeverity.Error);
-        }
+            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
 
-        return response;
+            return result;
+        }
     }
 
-    private HttpClient CreateRequest()
+    private HttpClient GetHttpClient(Guid serviceId)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpClient = _httpClientFactory.CreateClient(serviceId.ToString());
 
-        var _httpClient = new HttpClient();
+        httpClient.Timeout = Timeout;
 
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        var correlationContextHeaderValue = httpContext?.Request.Headers[HeaderKeys.CorrelationContext];
-
-        if (correlationContextHeaderValue.HasValue && correlationContextHeaderValue.Value != StringValues.Empty)
-        {
-            _httpClient.DefaultRequestHeaders.Add(HeaderKeys.CorrelationContext, correlationContextHeaderValue.Value.ToString());
-        }
-
-        _httpClient.Timeout = new TimeSpan(0, 5, 0);
-
-        return _httpClient;
+        return httpClient;
     }
 
-    private static string GetGetUrl(string url, Dictionary<string, dynamic>? parameters = null, bool isGet = false)
+    private HttpClient GetHttpClient(string url)
     {
-        string parameterizedUrl = url;
+        var uri = new Uri(url);
 
-        if (parameters != null && parameters.Count > 0)
+        var host = uri.Host;
+
+        var port = uri.Port;
+
+        var serviceKey = uri.AbsolutePath.Split('&').FirstOrDefault(p => p != "api");
+
+        var key = string.IsNullOrEmpty(serviceKey)
+            ? $"{host}:{port}"
+            : $"{host}:{port}/{serviceKey}";
+
+        var httpClient = _httpClientFactory.CreateClient(key);
+
+        httpClient.Timeout = Timeout;
+
+        return httpClient;
+    }
+
+    private async Task<ApiResponse<ServiceDto>> GetServiceInfoAsync(Guid serviceId, CancellationToken cancellationToken)
+    {
+        const string getServiceUrl = "/api/configuration/Service/GetService";
+
+        try
         {
-            if (!parameterizedUrl.Contains('?'))
+            var serviceParameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
+
+            var serviceUrl = AppendParametersAsQueryString(_httpClientOptions.GetFullUrl(getServiceUrl), serviceParameters);
+
+            var serviceRequest = CreateRequestMessage(HttpMethod.Get, serviceUrl);
+
+            var serviceHttpClient = GetHttpClient(serviceUrl);
+
+            var serviceResponse = await serviceHttpClient.SendAsync(serviceRequest, cancellationToken);
+
+            if (!serviceResponse.IsSuccessStatusCode)
             {
-                parameterizedUrl += "?";
+                var result = new ApiResponse<ServiceDto>();
+
+                result.AddMessage("HttpClientService.GetServiceDefinition", serviceResponse.ReasonPhrase ?? nameof(serviceResponse.ReasonPhrase), MessageSeverity.Error);
+
+                return result;
             }
 
-            var getParameters = parameters.Select(parameter =>
-            {
-                if (isGet && parameter.Value is IEnumerable enumerable and not string)
-                {
-                    var queryParts = new List<string>();
+            var serviceResult = await JsonSerializer.DeserializeAsync<ApiResponse<ServiceDto>>(await serviceResponse.Content.ReadAsStreamAsync(cancellationToken), options: _jsonSerializerOptions, cancellationToken: cancellationToken);
 
-                    foreach (var item in enumerable)
-                    {
-                        if (item is null)
-                        {
-                            continue;
-                        }
-
-                        queryParts.Add($"{parameter.Key}={Uri.EscapeDataString(item.ToString()!)}");
-                    }
-
-                    return string.Join("&", queryParts);
-                }
-
-                return $"{parameter.Key}={parameter.Value}";
-            });
-
-            parameterizedUrl += string.Join("&", getParameters);
+            return serviceResult!;
         }
+        catch (Exception ex)
+        {
+            var result = new ApiResponse<ServiceDto>();
 
-        return parameterizedUrl;
+            result.AddMessage($"HttpClientService.GetServiceDefinition-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+
+            return result;
+        }
     }
 
-    private static Dictionary<string, dynamic> GetParameters(Dictionary<string, dynamic>? parameters, string? q = null, int? pageStart = null, int? pageSize = null)
+    private static string AppendParametersAsQueryString(string url, Dictionary<string, dynamic>? parameters = null)
+    {
+        var sb = new StringBuilder(UrlMaxLength);
+
+        sb.Append(url);
+
+        if (parameters is not { Count: > 0 })
+        {
+            return sb.ToString();
+        }
+
+        if (!url.Contains('?'))
+        {
+            sb.Append('?');
+        }
+
+        foreach (var parameter in parameters)
+        {
+            if (parameter.Value is IEnumerable enumerable and not string)
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item is null)
+                    {
+                        continue;
+                    }
+
+                    sb.Append(parameter.Key);
+                    sb.Append('=');
+                    sb.Append(item);
+                    sb.Append('&');
+                }
+            }
+            else
+            {
+                sb.Append(parameter.Key);
+                sb.Append('=');
+                sb.Append(parameter.Value);
+                sb.Append('&');
+            }
+        }
+
+        return sb.ToString().TrimEnd('&');
+    }
+
+    private static Dictionary<string, dynamic> AddSearchAndPagination(Dictionary<string, dynamic>? parameters, string? q = null, int? pageStart = null, int? pageSize = null)
     {
         parameters ??= [];
 
-        if (!string.IsNullOrEmpty(q)) parameters.Add("Q", q);
-        if (pageStart.HasValue) parameters.Add("PageStart", pageStart.Value.ToString());
-        if (pageSize.HasValue) parameters.Add("PageSize", pageSize.Value.ToString());
+        if (!string.IsNullOrEmpty(q))
+        {
+            parameters.Add("Q", q);
+        }
+
+        if (pageStart.HasValue)
+        {
+            parameters.Add("PageStart", pageStart.Value.ToString());
+        }
+
+        if (pageSize.HasValue)
+        {
+            parameters.Add("PageSize", pageSize.Value.ToString());
+        }
 
         return parameters;
+    }
+
+    private static HttpRequestMessage CreateRequestMessage(HttpMethod method, string url) =>
+        new(method, url);
+
+    private void TryAddCorrelationContext(HttpRequestMessage request)
+    {
+        var correlationContext = _correlationContextProvider.Get();
+
+        if (correlationContext is null)
+        {
+            return;
+        }
+
+        var headerValue = _correlationContextSerializer.Serialize(correlationContext);
+
+        request.Headers.Add(CorrelationContextHeader, headerValue);
     }
 }

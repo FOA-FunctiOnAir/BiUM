@@ -100,7 +100,7 @@ public partial class CrudService
             {
                 var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
-                for (int i = 0; i < reader.FieldCount; i++)
+                for (var i = 0; i < reader.FieldCount; i++)
                 {
                     var name = reader.GetName(i);
                     var val = await reader.IsDBNullAsync(i, ct) ? null : reader.GetValue(i);
@@ -124,7 +124,7 @@ public partial class CrudService
 
     private static void AddParams(DbCommand cmd, IList<object?> parameters)
     {
-        for (int i = 0; i < parameters.Count; i++)
+        for (var i = 0; i < parameters.Count; i++)
         {
             var p = cmd.CreateParameter();
             p.ParameterName = $"@p{i}";

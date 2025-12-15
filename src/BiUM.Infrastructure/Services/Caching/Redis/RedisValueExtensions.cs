@@ -9,35 +9,35 @@ internal static class RedisValueExtensions
     public static RedisValue ToRedisValue<T>(this T value)
     {
         var redisValue = _nullValue;
-        if (value == null)
+        if (value is null)
             return redisValue;
 
         var t = typeof(T);
-        if (t == typeof(String))
+        if (t == typeof(string))
             redisValue = value.ToString();
-        else if (t == typeof(Boolean))
+        else if (t == typeof(bool))
             redisValue = Convert.ToBoolean(value);
-        else if (t == typeof(Byte))
+        else if (t == typeof(byte))
             redisValue = Convert.ToInt16(value);
-        else if (t == typeof(Int16))
+        else if (t == typeof(short))
             redisValue = Convert.ToInt16(value);
-        else if (t == typeof(Int32))
+        else if (t == typeof(int))
             redisValue = Convert.ToInt32(value);
-        else if (t == typeof(Int64))
+        else if (t == typeof(long))
             redisValue = Convert.ToInt64(value);
-        else if (t == typeof(Double))
+        else if (t == typeof(double))
             redisValue = Convert.ToDouble(value);
-        else if (t == typeof(Char))
+        else if (t == typeof(char))
             redisValue = Convert.ToString(value);
-        else if (t == typeof(SByte))
+        else if (t == typeof(sbyte))
             redisValue = Convert.ToSByte(value);
-        else if (t == typeof(UInt16))
+        else if (t == typeof(ushort))
             redisValue = Convert.ToUInt32(value);
-        else if (t == typeof(UInt32))
+        else if (t == typeof(uint))
             redisValue = Convert.ToUInt32(value);
-        else if (t == typeof(UInt64))
+        else if (t == typeof(ulong))
             redisValue = Convert.ToUInt64(value);
-        else if (t == typeof(Single))
+        else if (t == typeof(float))
             redisValue = Convert.ToSingle(value);
         else if (t == typeof(Array))
             redisValue = value as byte[];
@@ -52,9 +52,9 @@ internal static class RedisValueExtensions
         T value;
         var type = typeof(T);
 
-        if (type == typeof(Boolean) || type == typeof(string) || type.IsNumericType())
+        if (type == typeof(bool) || type == typeof(string) || type.IsNumericType())
             value = (T)Convert.ChangeType(redisValue, type);
-        else if (type == typeof(Boolean?) || type.IsNullableNumericType())
+        else if (type == typeof(bool?) || type.IsNullableNumericType())
             value = redisValue.IsNull ? default : (T)Convert.ChangeType(redisValue, Nullable.GetUnderlyingType(type));
         else
             return JsonSerializer.Deserialize<T>((byte[])redisValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, IncludeFields = true });

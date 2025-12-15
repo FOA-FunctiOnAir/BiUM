@@ -75,9 +75,9 @@ public class BaseDbContext : DbContext, IDbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (_entitySaveChangesInterceptor != null)
+        if (_entitySaveChangesInterceptor is not null)
             optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
-        if (_boltEntitySaveChangesInterceptor != null)
+        if (_boltEntitySaveChangesInterceptor is not null)
             optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
 
         base.OnConfiguring(optionsBuilder);

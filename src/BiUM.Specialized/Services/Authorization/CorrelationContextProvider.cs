@@ -1,8 +1,7 @@
 using BiUM.Core.Consts;
 using BiUM.Core.Models;
 using BiUM.Infrastructure.Services.Authorization;
-using MessagePack;
-using MessagePack.Resolvers;
+using BiUM.Infrastructure.Services.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -15,20 +14,16 @@ namespace BiUM.Specialized.Services.Authorization;
 /// </summary>
 public class CorrelationContextProvider : ICorrelationContextProvider
 {
-    private static readonly MessagePackSerializerOptions MessagePackOptions =
-        StandardResolver.Options
-            .WithOmitAssemblyVersion(true)
-            .WithAllowAssemblyVersionMismatch(true)
-            .WithCompression(MessagePackCompression.Lz4BlockArray);
-
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICorrelationContextSerializer _correlationContextSerializer;
     private readonly ILogger<CorrelationContextProvider> _logger;
 
     private CorrelationContext? _correlationContext;
 
-    public CorrelationContextProvider(IHttpContextAccessor httpContextAccessor, ILogger<CorrelationContextProvider> logger)
+    public CorrelationContextProvider(IHttpContextAccessor httpContextAccessor, ICorrelationContextSerializer correlationContextSerializer, ILogger<CorrelationContextProvider> logger)
     {
         _httpContextAccessor = httpContextAccessor;
+        _correlationContextSerializer = correlationContextSerializer;
         _logger = logger;
     }
 
@@ -55,9 +50,7 @@ public class CorrelationContextProvider : ICorrelationContextProvider
 
         try
         {
-            var bytes = Convert.FromBase64String(headerValue);
-
-            _correlationContext = MessagePackSerializer.Deserialize<CorrelationContext>(bytes, MessagePackOptions);
+            _correlationContext = _correlationContextSerializer.Deserialize(headerValue);
 
             return _correlationContext;
         }

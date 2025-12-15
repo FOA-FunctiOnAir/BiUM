@@ -36,7 +36,7 @@ public partial class CrudService
         foreach (var line in fixedCols) sb.AppendLine(line + ",");
 
         var list = cols.ToList();
-        for (int i = 0; i < list.Count; i++)
+        for (var i = 0; i < list.Count; i++)
         {
             var c = list[i];
             var tail = i < list.Count - 1 ? "," : "";
@@ -143,7 +143,7 @@ public partial class CrudService
         foreach (var line in fixedCols) sb.AppendLine(line + ",");
 
         var list = cols.ToList();
-        for (int i = 0; i < list.Count; i++)
+        for (var i = 0; i < list.Count; i++)
         {
             var c = list[i];
             var tail = i < list.Count - 1 ? "," : "";
@@ -413,7 +413,7 @@ END;
         var valSql = new StringBuilder();
         var paramNames = new List<string>();
         var paramValues = new List<object?>();
-        int p = 0;
+        var p = 0;
 
         colSql.Append($"{QI(api2db["id"])},{QI(api2db["correlationId"])},{QI(api2db["tenantId"])},{QI(api2db["active"])},{QI(api2db["deleted"])},{QI(api2db["createdBy"])},{QI(api2db["created"])},{QI(api2db["createdTime"])},{QI(api2db["test"])}");
 
@@ -429,7 +429,7 @@ END;
 
         valSql.Append($"{paramNames[0]},{paramNames[1]},{paramNames[2]},{paramNames[3]},{paramNames[4]},{paramNames[5]},{NowDateSql(dbType)},{NowTimeSql(dbType)},{paramNames[6]}");
 
-        for (int i = 0; i < includeProps.Count; i++)
+        for (var i = 0; i < includeProps.Count; i++)
         {
             var prop = includeProps[i];
             var meta = dynDict[prop];
@@ -466,7 +466,7 @@ END;
             id,
             _correlationContext.User?.Id
         };
-        int p = 2;
+        var p = 2;
 
         set.Append($"{QI(api2db["updatedBy"])} = @p1, {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}");
 

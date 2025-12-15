@@ -32,7 +32,7 @@ public static class FileHelper
             return response;
         }
 
-        using Stream stream = streamResponse.Value!;
+        using var stream = streamResponse.Value!;
         using StreamReader streamReader = new(stream);
 
         response.Value = streamReader.ReadToEnd();
@@ -46,7 +46,7 @@ public static class FileHelper
 
         resourceName = resourceName.Replace(Path.PathSeparator, '.');
 
-        string text = Array.Find(assembly.GetManifestResourceNames(), (string r) => r.EndsWith(resourceName));
+        var text = Array.Find(assembly.GetManifestResourceNames(), (string r) => r.EndsWith(resourceName));
 
         if (string.IsNullOrEmpty(text))
         {

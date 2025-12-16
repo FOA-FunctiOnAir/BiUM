@@ -17,13 +17,6 @@ public static class ConfigureApp
             app.MapGrpcReflectionService();
             app.UseDeveloperExceptionPage();
         }
-        else
-        {
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
-
-            // app.UseHttpsRedirection();
-        }
 
         app.UseExceptionHandler(errorApp =>
         {
@@ -66,6 +59,8 @@ public static class ConfigureApp
 
         app.UseCors(BiUM.Specialized.Consts.Application.BiAppOrigins);
 
+        app.UseRouting();
+
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
@@ -75,34 +70,32 @@ public static class ConfigureApp
 
         app.UseHealthChecks("/health");
 
-        app.UseRouting();
-
-        app.MapGet("/version", () =>
+        app.MapGet("/version", () => Results.Ok(new VersionResult
         {
-            var version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
-
-            return Results.Ok(new { version });
-        });
+            Version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown"
+        }));
 
         app.UseStaticFiles();
-
-        app.UseAuthentication();
-        app.UseAuthorization();
 
         return app;
     }
 
-    public static async Task InitialiseDatabase(this IServiceScope scope)
+    public static Task InitialiseDatabase(this IServiceScope scope)
     {
         var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
 
-        await initialiser.InitialiseAsync();
+        return initialiser.InitialiseAsync();
     }
 
-    public static async Task SyncDatabase(this IServiceScope scope)
+    public static Task SyncDatabase(this IServiceScope scope)
     {
         var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
 
-        await initialiser.SeedAsync();
+        return initialiser.SeedAsync();
+    }
+
+    private sealed class VersionResult
+    {
+        public required string Version { get; init; }
     }
 }

@@ -15,17 +15,13 @@ using BiUM.Specialized.Services.Serialization;
 using FluentValidation;
 using Grpc.Core;
 using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -33,8 +29,6 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
-    private const string AuthSecretKey = "my secret key is galatasaray because it can happy to me all time";
-
     public static IServiceCollection AddSpecializedServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
@@ -74,7 +68,9 @@ public static class ConfigureServices
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
-        services.Configure<BiAppOptions>(configuration.GetSection(BiAppOptions.Name));
+        var appOptionsSection = configuration.GetSection(BiAppOptions.Name);
+
+        services.Configure<BiAppOptions>(appOptionsSection);
         services.Configure<BiGrpcOptions>(configuration.GetSection(BiGrpcOptions.Name));
         services.Configure<BiMailOptions>(configuration.GetSection(BiMailOptions.Name));
 
@@ -84,13 +80,15 @@ public static class ConfigureServices
 
         services.AddEndpointsApiExplorer();
 
-        var serviceProvider = services.BuildServiceProvider();
-        var appOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>();
+        var appOptions = appOptionsSection.Get<BiAppOptions>();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc(appOptions.Value.DomainVersion, new OpenApiInfo { Title = $"BiApp {appOptions.Value.Domain} APIs", Version = appOptions.Value.DomainVersion });
+            if (appOptions is not null)
+            {
+                c.SwaggerDoc(appOptions.DomainVersion, new OpenApiInfo { Title = $"BiApp {appOptions.Domain} APIs", Version = appOptions.DomainVersion });
+            }
         });
 
         services.AddScoped<EntitySaveChangesInterceptor>();
@@ -102,34 +100,6 @@ public static class ConfigureServices
         services.AddTransient<IDateTimeService, DateTimeService>();
         services.AddTransient<IHttpClientsService, HttpClientService>();
         services.AddTransient<ITranslationService, TranslationService>();
-
-        services.AddAuthentication();
-
-        services.AddAuthorizationBuilder()
-            .AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AuthSecretKey));
-
-        services.AddAuthentication(x =>
-        {
-            x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(x =>
-        {
-            x.RequireHttpsMetadata = false;
-            x.SaveToken = true;
-
-            x.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
-
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = false,
-            };
-        });
 
         return services;
     }

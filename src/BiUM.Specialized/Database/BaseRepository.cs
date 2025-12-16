@@ -35,7 +35,7 @@ public partial class BaseRepository : IBaseRepository
 
         _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
 
-        _correlationContext = _correlationContextProvider.Get();
+        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     }
 
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken)

@@ -36,6 +36,6 @@ public partial class CrudService : BaseRepository, ICrudService
 
         _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
 
-        _correlationContext = _correlationContextProvider.Get();
+        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     }
 }

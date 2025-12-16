@@ -20,7 +20,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
 
-        _correlationContext = _correlationContextProvider.Get();
+        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

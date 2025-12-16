@@ -91,6 +91,8 @@ public static class ConfigureServices
             }
         });
 
+        services.AddHttpClient();
+
         services.AddScoped<EntitySaveChangesInterceptor>();
 
         services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();

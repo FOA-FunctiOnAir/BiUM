@@ -126,7 +126,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
         }
 
         return result;
@@ -220,7 +220,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.CallService-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
 
             return result;
         }
@@ -284,7 +284,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            result.AddMessage($"HttpClientService.Get-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.Get-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
 
             return result;
         }
@@ -337,7 +337,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
 
             return result;
         }
@@ -398,7 +398,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch (Exception ex)
         {
-            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.Post-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
 
             return result;
         }
@@ -421,7 +421,7 @@ public class HttpClientService : IHttpClientsService
 
         var port = uri.Port;
 
-        var serviceKey = uri.AbsolutePath.Split('&').FirstOrDefault(p => p != "api");
+        var serviceKey = uri.AbsolutePath.Split('/').FirstOrDefault(p => p != "api");
 
         var key = string.IsNullOrEmpty(serviceKey)
             ? $"{host}:{port}"
@@ -461,13 +461,22 @@ public class HttpClientService : IHttpClientsService
 
             var serviceResult = await JsonSerializer.DeserializeAsync<ApiResponse<ServiceDto>>(await serviceResponse.Content.ReadAsStreamAsync(cancellationToken), options: _jsonSerializerOptions, cancellationToken: cancellationToken);
 
-            return serviceResult!;
+            if (serviceResult is null)
+            {
+                var result = new ApiResponse<ServiceDto>();
+
+                result.AddMessage("HttpClientService.GetServiceDefinition", "Failed to deserialize service response", MessageSeverity.Error);
+
+                return result;
+            }
+
+            return serviceResult;
         }
         catch (Exception ex)
         {
             var result = new ApiResponse<ServiceDto>();
 
-            result.AddMessage($"HttpClientService.GetServiceDefinition-{ex.GetType().Name}", ex.StackTrace ?? ex.Message, MessageSeverity.Error);
+            result.AddMessage($"HttpClientService.GetServiceDefinition-{ex.GetType().Name}", ex.ToString(), MessageSeverity.Error);
 
             return result;
         }
@@ -502,7 +511,7 @@ public class HttpClientService : IHttpClientsService
 
                     sb.Append(parameter.Key);
                     sb.Append('=');
-                    sb.Append(item);
+                    sb.Append(Uri.EscapeDataString(item.ToString()!));
                     sb.Append('&');
                 }
             }
@@ -510,7 +519,7 @@ public class HttpClientService : IHttpClientsService
             {
                 sb.Append(parameter.Key);
                 sb.Append('=');
-                sb.Append(parameter.Value);
+                sb.Append(Uri.EscapeDataString(parameter.Value));
                 sb.Append('&');
             }
         }

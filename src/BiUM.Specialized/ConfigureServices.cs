@@ -13,6 +13,7 @@ using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
 using BiUM.Specialized.Services.Serialization;
 using FluentValidation;
+using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -151,16 +152,19 @@ public static class ConfigureServices
         return services;
     }
 
-    public static IServiceCollection AddGrpcClients<TClient>(this IServiceCollection services, IConfiguration configuration, string serviceKey)
-        where TClient : class
+    public static IServiceCollection AddGrpcClient<TClient>(this IServiceCollection services, IConfiguration configuration, string serviceKey)
+        where TClient : ClientBase<TClient>
     {
-        var serviceProvider = services.BuildServiceProvider();
+        var grpcOptions = configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>();
 
-        var grpcOptionsAccessor = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
+        if (grpcOptions is null)
+        {
+            throw new InvalidOperationException($"{BiGrpcOptions.Name} not found in configuration");
+        }
 
-        var url = grpcOptionsAccessor.Value.GetServiceUrl(serviceKey);
+        var url = grpcOptions.GetServiceUrl(serviceKey);
 
-        services.AddTransient<ForwardHeadersGrpcInterceptor>();
+        services.AddScoped<ForwardHeadersGrpcInterceptor>();
 
         services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
             .AddInterceptor<ForwardHeadersGrpcInterceptor>();

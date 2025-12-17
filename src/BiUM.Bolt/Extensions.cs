@@ -1,6 +1,5 @@
 ﻿using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.HttpClients;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

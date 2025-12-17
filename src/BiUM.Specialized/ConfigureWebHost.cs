@@ -3,39 +3,36 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureWebHost
 {
-    public static ConfigureWebHostBuilder AddSpecializedWebHost(this ConfigureWebHostBuilder webhost, IServiceCollection services, IConfiguration configuration)
+    public static WebApplicationBuilder AddSpecializedWebHost(this WebApplicationBuilder appBuilder)
     {
-        var serviceProvider = services.BuildServiceProvider();
-        var appOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>();
-        var grpcOptions = serviceProvider.GetRequiredService<IOptions<BiGrpcOptions>>();
+        var appOptions = appBuilder.Configuration.GetSection(BiAppOptions.Name).Get<BiAppOptions>();
 
-        var appPort = appOptions.Value.Port > 0 ? appOptions.Value.Port : 8080;
-        var grpcPort = 0;
-        var grpcProtocol = HttpProtocols.Http2;
+        ArgumentNullException.ThrowIfNull(appOptions);
 
-        if (grpcOptions.Value.Enable && Enum.TryParse<HttpProtocols>(grpcOptions.Value.Protocol, out var _grpcProtocol))
+        var grpcOptions = appBuilder.Configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>();
+
+        ArgumentNullException.ThrowIfNull(grpcOptions);
+
+        var appPort = appOptions.Port > 0 ? appOptions.Port : 8080;
+
+        appBuilder.WebHost.ConfigureKestrel(options =>
         {
-            grpcPort = grpcOptions.Value.Port;
-            grpcProtocol = _grpcProtocol;
-        }
+            options.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1);
 
-        webhost.ConfigureKestrel(o =>
-        {
-            o.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1);
-
-            if (grpcOptions.Value.Enable && grpcPort > 0)
+            if (grpcOptions.Enable)
             {
-                o.ListenAnyIP(grpcPort, lo => lo.Protocols = grpcProtocol);
+                var grpcPort = grpcOptions.Port > 0 ? grpcOptions.Port : appPort + 1000;
+
+                options.ListenAnyIP(grpcPort, lo => lo.Protocols = HttpProtocols.Http2);
             }
         });
 
-        return webhost;
+        return appBuilder;
     }
 }

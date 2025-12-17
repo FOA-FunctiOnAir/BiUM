@@ -1,5 +1,7 @@
 using BiUM.Infrastructure.Common.Events;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Linq;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 

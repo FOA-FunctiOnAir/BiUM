@@ -1,3 +1,5 @@
+using System;
+
 namespace BiUM.Infrastructure.Common.Models;
 
 public interface ITranslationBaseEntity : IEntity

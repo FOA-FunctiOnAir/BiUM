@@ -1,4 +1,6 @@
 ﻿using BiUM.Infrastructure.Common.Events;
+using System;
+using System.Collections.Generic;
 
 namespace BiUM.Infrastructure.Common.Models;
 

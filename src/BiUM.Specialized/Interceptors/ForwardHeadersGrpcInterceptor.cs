@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace BiUM.Specialized.Interceptors;
 

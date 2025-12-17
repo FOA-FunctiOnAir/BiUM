@@ -1,7 +1,8 @@
-using System.Diagnostics;
 using BiUM.Core.Caching.Redis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace BiUM.Core.Common.Behaviours.Caching.Redis;
 

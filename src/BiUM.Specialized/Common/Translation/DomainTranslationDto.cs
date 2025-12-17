@@ -2,6 +2,8 @@ using AutoMapper;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
+using System;
+using System.Collections.Generic;
 
 namespace BiUM.Specialized.Common.Translation;
 

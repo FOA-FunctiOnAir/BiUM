@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -19,13 +20,10 @@ public static class ConfigureWebHost
         var grpcPort = 0;
         var grpcProtocol = HttpProtocols.Http2;
 
-        if (grpcOptions.Value.Enable)
+        if (grpcOptions.Value.Enable && Enum.TryParse<HttpProtocols>(grpcOptions.Value.Protocol, out var _grpcProtocol))
         {
-            if (Enum.TryParse<HttpProtocols>(grpcOptions.Value.Protocol, out var _grpcProtocol))
-            {
-                grpcPort = grpcOptions.Value.Port;
-                grpcProtocol = _grpcProtocol;
-            }
+            grpcPort = grpcOptions.Value.Port;
+            grpcProtocol = _grpcProtocol;
         }
 
         webhost.ConfigureKestrel(o =>

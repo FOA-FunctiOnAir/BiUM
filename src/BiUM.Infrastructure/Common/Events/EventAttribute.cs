@@ -1,4 +1,6 @@
-﻿namespace BiUM.Infrastructure.Common.Events;
+﻿using System;
+
+namespace BiUM.Infrastructure.Common.Events;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 public class EventAttribute : Attribute

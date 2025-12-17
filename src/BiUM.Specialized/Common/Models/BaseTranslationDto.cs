@@ -1,4 +1,6 @@
-﻿namespace BiUM.Specialized.Common.Models;
+﻿using System;
+
+namespace BiUM.Specialized.Common.Models;
 
 public class BaseTranslationDto
 {

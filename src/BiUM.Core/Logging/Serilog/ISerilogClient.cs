@@ -1,3 +1,5 @@
+using System;
+
 namespace BiUM.Core.Logging.Serilog;
 
 public interface ISerilogClient : IDisposable

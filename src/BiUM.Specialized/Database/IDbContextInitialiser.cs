@@ -1,4 +1,6 @@
-﻿namespace BiUM.Specialized.Database;
+﻿using System.Threading.Tasks;
+
+namespace BiUM.Specialized.Database;
 
 public interface IDbContextInitialiser
 {

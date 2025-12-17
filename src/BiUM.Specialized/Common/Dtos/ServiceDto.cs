@@ -1,4 +1,5 @@
 ﻿using BiUM.Specialized.Common.Models;
+using System;
 using System.Data;
 
 namespace BiUM.Specialized.Common.Dtos;

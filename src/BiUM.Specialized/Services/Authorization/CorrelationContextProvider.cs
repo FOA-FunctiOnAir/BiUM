@@ -4,6 +4,7 @@ using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace BiUM.Specialized.Services.Authorization;
 

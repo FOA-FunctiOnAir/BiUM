@@ -1,4 +1,6 @@
-﻿namespace BiUM.Specialized.Consts;
+﻿using System;
+
+namespace BiUM.Specialized.Consts;
 
 public partial class Ids
 {

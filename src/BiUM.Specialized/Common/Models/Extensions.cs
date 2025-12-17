@@ -1,4 +1,5 @@
 ﻿using BiUM.Infrastructure.Common.Models;
+using System;
 
 namespace BiUM.Specialized.Common.Models;
 

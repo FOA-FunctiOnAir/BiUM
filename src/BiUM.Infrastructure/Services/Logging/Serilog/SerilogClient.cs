@@ -2,6 +2,7 @@ using BiUM.Core.Logging.Serilog;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
+using System;
 
 namespace BiUM.Infrastructure.Services.Logging.Serilog;
 

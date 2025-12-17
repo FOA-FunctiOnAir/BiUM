@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace BiUM.Core.Common.Configs;
 
 public class SerilogOptions

@@ -1,4 +1,7 @@
-﻿namespace BiUM.Infrastructure.Common.Events;
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace BiUM.Infrastructure.Common.Events;
 
 public interface IEventHandler<in TEvent> where TEvent : IEvent
 {

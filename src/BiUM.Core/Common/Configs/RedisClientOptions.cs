@@ -1,3 +1,5 @@
+using System;
+
 namespace BiUM.Core.Common.Configs;
 
 public class RedisClientOptions

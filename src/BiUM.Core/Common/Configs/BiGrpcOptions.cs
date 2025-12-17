@@ -1,4 +1,7 @@
-﻿namespace BiUM.Core.Common.Configs;
+﻿using System;
+using System.Collections.Generic;
+
+namespace BiUM.Core.Common.Configs;
 
 public class BiGrpcOptions
 {

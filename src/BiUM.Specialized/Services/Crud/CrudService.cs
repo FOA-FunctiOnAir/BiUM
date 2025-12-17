@@ -7,6 +7,7 @@ using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System;
 
 namespace BiUM.Specialized.Services.Crud;
 

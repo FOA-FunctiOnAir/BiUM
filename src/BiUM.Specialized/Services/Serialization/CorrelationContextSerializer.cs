@@ -2,6 +2,7 @@
 using BiUM.Infrastructure.Services.Serialization;
 using MessagePack;
 using MessagePack.Resolvers;
+using System;
 
 namespace BiUM.Specialized.Services.Serialization;
 

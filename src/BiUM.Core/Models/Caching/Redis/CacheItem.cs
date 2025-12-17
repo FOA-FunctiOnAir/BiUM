@@ -1,3 +1,5 @@
+using System;
+
 namespace BiUM.Core.Models.Caching.Redis;
 
 public class CacheItem<T>

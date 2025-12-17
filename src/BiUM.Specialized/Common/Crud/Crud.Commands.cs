@@ -1,4 +1,5 @@
 using BiUM.Specialized.Common.MediatR;
+using System;
 
 namespace BiUM.Specialized.Common.Crud;
 

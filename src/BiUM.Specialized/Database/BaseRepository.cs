@@ -9,6 +9,10 @@ using BiUM.Specialized.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
@@ -18,7 +22,7 @@ public partial class BaseRepository : IBaseRepository
     private readonly IDbContext _baseContext;
 
     public readonly ICorrelationContextProvider _correlationContextProvider;
-    public readonly CorrelationContext? _correlationContext;
+    public readonly CorrelationContext _correlationContext;
     public readonly ITranslationService _translationService;
     public readonly IMapper _mapper;
 

@@ -1,4 +1,5 @@
 ﻿using BiUM.Infrastructure.Common.Models;
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Bolt.Database.Entities;

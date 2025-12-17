@@ -1,4 +1,6 @@
-﻿namespace BiUM.Specialized.Common.Utils;
+﻿using System;
+
+namespace BiUM.Specialized.Common.Utils;
 
 public static class DateTimeHelper
 {

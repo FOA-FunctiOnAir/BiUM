@@ -21,6 +21,7 @@ using Microsoft.OpenApi.Models;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
+using System;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;

@@ -1,4 +1,7 @@
 ﻿using BiUM.Core.Models.MessageBroker.RabbitMQ;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BiUM.Core.MessageBroker.RabbitMQ;
 

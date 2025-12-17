@@ -7,12 +7,18 @@ using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Services.HttpClients;
 

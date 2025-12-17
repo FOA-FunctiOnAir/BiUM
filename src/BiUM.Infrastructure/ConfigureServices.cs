@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

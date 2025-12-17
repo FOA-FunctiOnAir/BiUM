@@ -1,4 +1,6 @@
-﻿namespace BiUM.Specialized.Common.Models;
+﻿using System.Collections.Generic;
+
+namespace BiUM.Specialized.Common.Models;
 
 public static class RowStatuses
 {

@@ -1,3 +1,5 @@
+using System;
+
 namespace BiUM.Core.Models.MessageBroker.RabbitMQ;
 
 public sealed class Message

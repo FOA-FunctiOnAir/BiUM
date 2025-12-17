@@ -1,6 +1,7 @@
 ﻿using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
 using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

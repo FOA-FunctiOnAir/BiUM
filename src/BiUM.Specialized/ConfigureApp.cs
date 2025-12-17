@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

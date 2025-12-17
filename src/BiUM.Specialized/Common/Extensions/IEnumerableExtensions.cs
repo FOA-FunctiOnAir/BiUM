@@ -1,5 +1,6 @@
 ﻿using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
+using System.Collections.Generic;
 
 namespace System.Linq;
 

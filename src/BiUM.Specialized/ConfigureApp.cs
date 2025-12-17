@@ -82,16 +82,16 @@ public static class ConfigureApp
         return app;
     }
 
-    public static Task InitialiseDatabase(this IServiceScope scope)
+    public static Task InitialiseDatabase(this IServiceProvider serviceProvider)
     {
-        var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
+        var initialiser = serviceProvider.GetRequiredService<IDbContextInitialiser>();
 
         return initialiser.InitialiseAsync();
     }
 
-    public static Task SyncDatabase(this IServiceScope scope)
+    public static Task SyncDatabase(this IServiceProvider serviceProvider)
     {
-        var initialiser = scope.ServiceProvider.GetRequiredService<IDbContextInitialiser>();
+        var initialiser = serviceProvider.GetRequiredService<IDbContextInitialiser>();
 
         return initialiser.SeedAsync();
     }

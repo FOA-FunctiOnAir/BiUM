@@ -506,6 +506,11 @@ public class HttpClientService : IHttpClientsService
 
         foreach (var parameter in parameters)
         {
+            if (parameter.Value is null)
+            {
+                continue;
+            }
+
             if (parameter.Value is IEnumerable enumerable and not string)
             {
                 foreach (var item in enumerable)
@@ -525,7 +530,7 @@ public class HttpClientService : IHttpClientsService
             {
                 sb.Append(parameter.Key);
                 sb.Append('=');
-                sb.Append(Uri.EscapeDataString(parameter.Value));
+                sb.Append(Uri.EscapeDataString(Convert.ToString(parameter.Value)));
                 sb.Append('&');
             }
         }

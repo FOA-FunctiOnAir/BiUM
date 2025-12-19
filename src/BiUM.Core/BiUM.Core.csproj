@@ -7,8 +7,5 @@
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.22" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
-    <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
-    <PackageReference Include="SimpleHtmlToPdf" Version="2.1.15" />
-    <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
   </ItemGroup>
 </Project>

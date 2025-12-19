@@ -1,4 +1,4 @@
-namespace BiUM.Infrastructure.Services.File;
+namespace BiUM.Core.File;
 
 public interface IFileService
 {

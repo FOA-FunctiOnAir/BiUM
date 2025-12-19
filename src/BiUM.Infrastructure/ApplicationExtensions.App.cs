@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static IApplicationBuilder UsesInfrastructure(this WebApplication app)
+    public static IApplicationBuilder UseInfrastructure(this WebApplication app)
     {
         var appOptionsAccessor = app.Services.GetService<IOptions<BiAppOptions>>();
 

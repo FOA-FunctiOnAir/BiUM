@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static WebApplication AddSpecializedApps(this WebApplication app)
+    public static WebApplication UseSpecialized(this WebApplication app)
     {
         if (app.Environment.IsDevelopment())
         {

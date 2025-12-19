@@ -1,11 +1,11 @@
-﻿using BiUM.Infrastructure.Services.File;
+﻿using BiUM.Core.File;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.Settings;
 using SimpleHtmlToPdf.Settings.Enums;
 using SimpleHtmlToPdf.UnmanagedHandler;
 
-namespace BiUM.Specialized.Services.File;
+namespace BiUM.Infrastructure.Services.File;
 
 public class FileService : IFileService
 {

@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Builder;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class ConfigureApp
+public static partial class ApplicationExtensions
 {
-    public static IApplicationBuilder AddCoreApps(this IApplicationBuilder app)
+    public static IApplicationBuilder UseCore(this IApplicationBuilder app)
     {
         app.UseMiddleware<PerformanceMiddleware>();
 

@@ -6,9 +6,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class ConfigureWebHost
+public static partial class ApplicationExtensions
 {
-    public static WebApplicationBuilder AddSpecializedWebHost(this WebApplicationBuilder appBuilder)
+    public static WebApplicationBuilder ConfigureSpecializedHost(this WebApplicationBuilder appBuilder)
     {
         var appOptions = appBuilder.Configuration.GetSection(BiAppOptions.Name).Get<BiAppOptions>();
 

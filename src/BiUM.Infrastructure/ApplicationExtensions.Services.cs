@@ -1,11 +1,13 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.File;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.Caching.Redis;
+using BiUM.Infrastructure.Services.File;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Services.Serialization;
 using Microsoft.AspNetCore.Builder;
@@ -17,12 +19,15 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using SimpleHtmlToPdf;
+using SimpleHtmlToPdf.Interfaces;
+using SimpleHtmlToPdf.UnmanagedHandler;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static WebApplicationBuilder ConfigureInfrastructure(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureInfrastructureServices(this WebApplicationBuilder builder)
     {
         var appOptionsSection = builder.Configuration.GetSection(BiAppOptions.Name);
 
@@ -115,6 +120,15 @@ public static partial class ApplicationExtensions
         builder.Services.AddSingleton<ICorrelationContextSerializer, CorrelationContextSerializer>();
 
         return builder;
+    }
+
+    public static IServiceCollection AddFileServices(this IServiceCollection services)
+    {
+        services.AddSingleton<BindingWrapper>();
+        services.AddSingleton<IConverter, HtmlConverter>();
+        services.AddTransient<IFileService, FileService>();
+
+        return services;
     }
 
     private static IServiceCollection AddRabbitMQServices(this IServiceCollection services, IConfiguration configuration)

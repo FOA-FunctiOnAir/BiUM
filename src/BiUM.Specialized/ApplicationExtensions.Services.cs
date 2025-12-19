@@ -1,15 +1,16 @@
 ﻿using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.File;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Services.File;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Crud;
-using BiUM.Specialized.Services.File;
 using BiUM.Specialized.Services.HttpClients;
 using FluentValidation;
 using Grpc.Core;
 using MediatR;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SimpleHtmlToPdf;
@@ -24,13 +25,13 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static IServiceCollection AddSpecializedServices(this IServiceCollection services, IConfiguration configuration)
+    public static WebApplicationBuilder ConfigureSpecializedServices(this WebApplicationBuilder builder)
     {
-        services.AddControllersWithViews();
+        builder.Services.AddControllersWithViews();
 
-        services.AddRazorPages();
+        builder.Services.AddRazorPages();
 
-        services.AddControllers()
+        builder.Services.AddControllers()
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.CrudController).Assembly)
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainCrudController).Assembly)
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainTranslationController).Assembly)
@@ -43,22 +44,22 @@ public static partial class ApplicationExtensions
         });
 
         // Customise default API behaviour
-        services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+        builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
 
         // Configure Grpc
-        services.AddGrpc();
-        services.AddGrpcReflection();
+        builder.Services.AddGrpc();
+        builder.Services.AddGrpcReflection();
 
-        services.Configure<BiGrpcOptions>(configuration.GetSection(BiGrpcOptions.Name));
-        services.Configure<BiMailOptions>(configuration.GetSection(BiMailOptions.Name));
+        builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
+        builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));
 
-        services.AddScoped<EntitySaveChangesInterceptor>();
+        builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 
-        services.AddTransient<ICrudService, CrudService>();
-        services.AddTransient<IHttpClientsService, HttpClientService>();
-        services.AddTransient<ITranslationService, TranslationService>();
+        builder.Services.AddTransient<ICrudService, CrudService>();
+        builder.Services.AddTransient<IHttpClientsService, HttpClientService>();
+        builder.Services.AddTransient<ITranslationService, TranslationService>();
 
-        return services;
+        return builder;
     }
 
     public static IServiceCollection AddInfrastructureAdditionalServices(this IServiceCollection services, IConfiguration configuration, Assembly assembly)
@@ -66,15 +67,6 @@ public static partial class ApplicationExtensions
         services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
         services.AddValidatorsFromAssembly(assembly);
         services.AddMediatR(assembly);
-
-        return services;
-    }
-
-    public static IServiceCollection AddFileServices(this IServiceCollection services)
-    {
-        services.AddSingleton<BindingWrapper>();
-        services.AddSingleton<IConverter, HtmlConverter>();
-        services.AddTransient<IFileService, FileService>();
 
         return services;
     }

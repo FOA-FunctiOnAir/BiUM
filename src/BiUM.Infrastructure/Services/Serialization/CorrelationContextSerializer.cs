@@ -1,5 +1,5 @@
 ﻿using BiUM.Core.Models;
-using BiUM.Infrastructure.Services.Serialization;
+using BiUM.Core.Serialization;
 using MessagePack;
 using MessagePack.Resolvers;
 using System;

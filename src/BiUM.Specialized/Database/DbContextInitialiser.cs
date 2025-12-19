@@ -21,7 +21,7 @@ public class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     {
         try
         {
-            _context.Database.EnsureCreated();
+            await _context.Database.EnsureCreatedAsync();
 
             if (_context.Database.IsSqlServer())
             {
@@ -35,7 +35,8 @@ public class DbContextInitialiser<TDbContext> : IDbContextInitialiser
         }
     }
 
-    public virtual async Task SeedAsync()
+    public virtual Task SeedAsync()
     {
+        return Task.CompletedTask;
     }
 }

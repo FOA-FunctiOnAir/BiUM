@@ -1,11 +1,11 @@
 using AutoMapper;
 using BiUM.Contract;
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Common.Translation;

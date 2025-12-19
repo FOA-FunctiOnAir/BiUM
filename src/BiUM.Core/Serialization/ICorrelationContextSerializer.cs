@@ -1,6 +1,6 @@
 ﻿using BiUM.Core.Models;
 
-namespace BiUM.Infrastructure.Services.Serialization;
+namespace BiUM.Core.Serialization;
 
 public interface ICorrelationContextSerializer
 {

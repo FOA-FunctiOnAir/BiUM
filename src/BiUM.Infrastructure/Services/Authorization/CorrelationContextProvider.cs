@@ -1,12 +1,12 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Consts;
 using BiUM.Core.Models;
-using BiUM.Infrastructure.Services.Authorization;
-using BiUM.Infrastructure.Services.Serialization;
+using BiUM.Core.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 
-namespace BiUM.Specialized.Services.Authorization;
+namespace BiUM.Infrastructure.Services.Authorization;
 
 /// <summary>
 /// This class provides functionality to retrieve and deserialize the CorrelationContext

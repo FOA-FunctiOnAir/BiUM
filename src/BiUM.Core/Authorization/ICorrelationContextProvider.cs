@@ -1,6 +1,6 @@
 ﻿using BiUM.Core.Models;
 
-namespace BiUM.Infrastructure.Services.Authorization;
+namespace BiUM.Core.Authorization;
 
 public interface ICorrelationContextProvider
 {

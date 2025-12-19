@@ -1,7 +1,7 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
-using BiUM.Infrastructure.Services.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;

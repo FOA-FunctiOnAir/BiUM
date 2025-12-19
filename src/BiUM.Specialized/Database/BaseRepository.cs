@@ -1,9 +1,9 @@
 using AutoMapper;
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Database;
 using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Services;
 using Microsoft.EntityFrameworkCore;

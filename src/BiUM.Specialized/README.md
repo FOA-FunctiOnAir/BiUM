@@ -24,7 +24,7 @@ services.AddInfrastructureAdditionalServices(configuration, assembly);
 
 ### Application Configuration
 ```csharp
-app.AddSpecializedApps();
+app.UseSpecialized();
 ```
 
 ### Database Initialization

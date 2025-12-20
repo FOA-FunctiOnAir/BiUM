@@ -3,15 +3,15 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCoreServices(Assembly.GetExecutingAssembly());
-builder.Services.AddInfrastructureServices(builder.Host, builder.Configuration);
-builder.Services.AddSpecializedServices(builder.Configuration);
+builder.Services.ConfigureCoreServices(typeof(Program).Assembly);
+builder.ConfigureInfrastructureServices();
+builder.ConfigureSpecializedServices();
 
 builder.Services.AddDomainAPIServices();
 builder.Services.AddDomainApplicationServices(builder.Configuration);
 await builder.Services.AddDomainInfrastructureServices(builder.Configuration);
 
-builder.WebHost.AddSpecializedWebHost(builder.Services, builder.Configuration);
+builder.ConfigureSpecializedHost();
 
 var app = builder.Build();
 
@@ -23,9 +23,9 @@ if (app.Environment.IsDevelopment())
 
 await app.Services.SyncAll();
 
-app.AddCoreApps();
-app.AddInfrastructureApps();
-app.AddSpecializedApps();
+app.UseCore();
+app.UseInfrastructure();
+app.UseSpecialized();
 
 app.AddDomainInfrastructureApps();
 

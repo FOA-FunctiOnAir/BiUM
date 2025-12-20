@@ -1,5 +1,7 @@
 using BiUM.Test.Application;
-using System.Reflection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +11,7 @@ builder.ConfigureSpecializedServices();
 
 builder.Services.AddDomainAPIServices();
 builder.Services.AddDomainApplicationServices(builder.Configuration);
-await builder.Services.AddDomainInfrastructureServices(builder.Configuration);
+builder.Services.AddDomainInfrastructureServices(builder.Configuration);
 
 builder.ConfigureSpecializedHost();
 

@@ -1,7 +1,7 @@
-using BiUM.Test.Domain.Entities;
 using BiUM.Bolt.Database.Entities;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Interceptors;
+using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 

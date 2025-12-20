@@ -1,19 +1,21 @@
-﻿using BiUM.Test.Application.Repositories;
+﻿using BiUM.Specialized.Database;
+using BiUM.Test.Application.Repositories;
 using BiUM.Test.Infrastructure.Persistence;
 using BiUM.Test.Infrastructure.Repositories;
-using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
-    public async static Task<IServiceCollection> AddDomainInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddDomainInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
         services.AddScoped<ITestDbContext>(provider => provider.GetRequiredService<TestDbContext>());
 
-        await services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
+        services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
         services.AddScoped<IBoltDbContext>(provider => provider.GetRequiredService<BoltDbContext>());
 
         services.AddScoped<ICurrencyRepository, CurrencyRepository>();
@@ -21,21 +23,22 @@ public static class ConfigureServices
         return services;
     }
 
-    public async static Task<bool> SyncAll(this IServiceProvider services)
+    public static async Task SyncAll(this IServiceProvider services)
     {
         try
         {
             // Initialise and seed database
             using var scope = services.CreateScope();
 
-            await scope.InitialiseDatabase();
+            await scope.ServiceProvider.InitialiseDatabase();
 
-            await scope.SyncBolt();
+            await scope.ServiceProvider.SyncBolt();
 
-            await scope.SyncDatabase();
+            await scope.ServiceProvider.SyncDatabase();
         }
-        catch { }
-
-        return true;
+        catch
+        {
+            // ignore
+        }
     }
 }

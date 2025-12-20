@@ -1,8 +1,10 @@
-﻿using BiUM.Test.Application.Dtos;
-using BiUM.Test.Application.Repositories;
-using BiUM.Core.Common.Enums;
+﻿using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.MediatR;
+using BiUM.Test.Application.Dtos;
+using BiUM.Test.Application.Repositories;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BiUM.Test.Application.Features.Currencies.Queries.GetCurrencies;
 

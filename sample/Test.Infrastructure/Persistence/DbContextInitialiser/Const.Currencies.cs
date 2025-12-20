@@ -1,4 +1,6 @@
-﻿namespace BiUM.Test.Infrastructure.Persistence.DbContextInitialiser;
+﻿using System;
+
+namespace BiUM.Test.Infrastructure.Persistence.DbContextInitialiser;
 
 public partial class TestDbContextInitialiser
 {

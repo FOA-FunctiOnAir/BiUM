@@ -3,6 +3,8 @@ using BiUM.Core.Common.Configs;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
+using System.Threading.Tasks;
 
 namespace BiUM.Test.Infrastructure.Persistence;
 

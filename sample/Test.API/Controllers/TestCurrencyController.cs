@@ -1,3 +1,4 @@
+using BiUM.Specialized.Common.API;
 using BiUM.Test.Application.Dtos;
 using BiUM.Test.Application.Features.Currencies.Commands.DeleteCurrency;
 using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
@@ -6,8 +7,9 @@ using BiUM.Test.Application.Features.Currencies.Queries.GetCurrencies;
 using BiUM.Test.Application.Features.Currencies.Queries.GetCurrency;
 using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
 using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
-using BiUM.Specialized.Common.API;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace BiUM.Test.API.Controllers;
 

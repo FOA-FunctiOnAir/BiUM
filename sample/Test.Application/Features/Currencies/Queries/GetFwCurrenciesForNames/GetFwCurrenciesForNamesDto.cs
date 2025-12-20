@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
-using BiUM.Test.Domain.Entities;
 using BiUM.Specialized.Common.Mapper;
+using BiUM.Test.Domain.Entities;
+using System.Linq;
 
 namespace BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
 

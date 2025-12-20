@@ -1,13 +1,17 @@
-﻿using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
+﻿using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Database;
+using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Test.Application.Repositories;
 using BiUM.Test.Domain.Entities;
-using BiUM.Specialized.Common.API;
-using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BiUM.Test.Infrastructure.Repositories;
 
-public partial class CurrencyRepository : BaseRepository, ICurrencyRepository
+public partial class CurrencyRepository
 {
     public async Task<ApiEmptyResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken)
     {

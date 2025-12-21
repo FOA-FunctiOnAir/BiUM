@@ -1,8 +1,6 @@
 ﻿using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.File;
 using BiUM.Core.HttpClients;
-using BiUM.Infrastructure.Services.File;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Crud;
@@ -12,10 +10,10 @@ using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using SimpleHtmlToPdf;
-using SimpleHtmlToPdf.Interfaces;
-using SimpleHtmlToPdf.UnmanagedHandler;
+using Npgsql;
+using OpenTelemetry.Trace;
 using System;
 using System.Reflection;
 using System.Text.Json;
@@ -49,6 +47,30 @@ public static partial class ApplicationExtensions
         // Configure Grpc
         builder.Services.AddGrpc();
         builder.Services.AddGrpcReflection();
+
+        builder.Services.AddOpenTelemetry()
+            .WithTracing(tracing => tracing
+                .AddGrpcCoreInstrumentation()
+                .AddGrpcClientInstrumentation(options =>
+                {
+                    options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
+                    {
+                        activity.SetTag("request.version", httpRequestMessage.Version);
+                    };
+                    options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
+                    {
+                        activity.SetTag("response.version", httpResponseMessage.Version);
+                    };
+                })
+                .AddNpgsql()
+                .AddSqlClientInstrumentation(options =>
+                    options.EnrichWithSqlCommand = (activity, rawObject) =>
+                    {
+                        if (rawObject is SqlCommand command)
+                        {
+                            activity.SetTag("db.command.Timeout", command.CommandTimeout);
+                        }
+                    }));
 
         builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
         builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));

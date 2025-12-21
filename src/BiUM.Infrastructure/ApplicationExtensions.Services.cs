@@ -22,11 +22,14 @@ using OpenTelemetry.Trace;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
+    private static readonly TimeSpan FastRedisDurationLimit = TimeSpan.FromMilliseconds(100);
+
     public static WebApplicationBuilder ConfigureInfrastructureServices(this WebApplicationBuilder builder)
     {
         var appOptionsSection = builder.Configuration.GetSection(BiAppOptions.Name);
@@ -66,9 +69,27 @@ public static partial class ApplicationExtensions
                 .AddOtlpExporter()
                 .AddConsoleExporter(builder.Configuration, builder.Environment))
             .WithTracing(tracing => tracing
+                .AddSource(serviceName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddSource(serviceName)
+                .AddEntityFrameworkCoreInstrumentation(options =>
+                {
+                    options.EnrichWithIDbCommand = (activity, command) =>
+                    {
+                        activity.SetTag("db.name", command.Connection?.Database);
+                        activity.SetTag("activity.duration", activity.Duration.TotalMilliseconds);
+                    };
+                })
+                .AddRedisInstrumentation(options =>
+                    options.Enrich = (activity, context) =>
+                    {
+                        activity.SetTag("redis.duration", context.ProfiledCommand.ElapsedTime.TotalMilliseconds);
+
+                        if (context.ProfiledCommand.ElapsedTime < FastRedisDurationLimit)
+                        {
+                            activity.SetTag("redis.is_fast", true);
+                        }
+                    })
                 .AddOtlpExporter()
                 .AddConsoleExporter(builder.Configuration, builder.Environment));
 

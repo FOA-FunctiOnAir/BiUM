@@ -7,6 +7,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.22" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.22" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageReference Include="Npgsql.OpenTelemetry" Version="8.0.8" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcCore" Version="1.0.0-beta.8" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.14.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.14.0-beta.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,7 +5,6 @@
 
 ## Key Features
 -   **API Configuration**: Sets up controllers, JSON serialization (CamelCase, Enums), Swagger/OpenAPI, and CORS policies.
--   **Authentication & Authorization**: Configures JWT Bearer authentication and defines authorization policies (e.g., "CanPurge").
 -   **Common Services**: Registers implementations for:
     -   `ICrudService`: Generic CRUD operations.
     -   `IDateTimeService`: Date and time utilities.

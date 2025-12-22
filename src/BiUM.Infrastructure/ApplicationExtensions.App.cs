@@ -14,17 +14,23 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static IApplicationBuilder UseInfrastructure(this WebApplication app)
+    public static WebApplication UseInfrastructure(this WebApplication app)
     {
         var appOptionsAccessor = app.Services.GetService<IOptions<BiAppOptions>>();
 
         var appOptions = appOptionsAccessor?.Value;
 
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() ||
+            appOptions is not { Environment: "Production" or "Sandbox" })
         {
-            if (appOptions is not null)
+            app.UseSwagger();
+
+            if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    options.DocumentTitle = $"BiApp.{appOptions?.Domain ?? "Unknown"}";
+                });
             }
         }
 
@@ -85,7 +91,8 @@ public static partial class ApplicationExtensions
 
         app.MapHealthChecks("/health/live", new HealthCheckOptions
         {
-            Predicate = r => r.Tags.Contains("live")
+            Predicate = r => r.Tags.Contains("live"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         });
 
         app.MapHealthChecks("/health/ready", new HealthCheckOptions

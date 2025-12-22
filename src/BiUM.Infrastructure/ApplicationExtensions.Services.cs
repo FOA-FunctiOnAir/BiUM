@@ -13,6 +13,7 @@ using BiUM.Specialized.Services.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Logs;
@@ -71,12 +72,27 @@ public static partial class ApplicationExtensions
             .WithTracing(tracing => tracing
                 .AddSource(serviceName)
                 .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
+                .AddHttpClientInstrumentation(options =>
+                {
+                    options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
+                    {
+                        activity.SetTag("http.request.version", httpRequestMessage.Version);
+                    };
+                    options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
+                    {
+                        activity.SetTag("http.response.version", httpResponseMessage.Version);
+                    };
+                    options.EnrichWithException = (activity, exception) =>
+                    {
+                        activity.SetTag("error.stack_trace", exception.StackTrace);
+                    };
+                })
                 .AddEntityFrameworkCoreInstrumentation(options =>
                 {
                     options.EnrichWithIDbCommand = (activity, command) =>
                     {
                         activity.SetTag("db.name", command.Connection?.Database);
+                        activity.SetTag("db.command.timeout", command.CommandTimeout);
                         activity.SetTag("activity.duration", activity.Duration.TotalMilliseconds);
                     };
                 })
@@ -95,13 +111,14 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddEndpointsApiExplorer();
 
-        if (appOptions is not null)
+        if (builder.Environment.IsDevelopment() ||
+            appOptions is not { Environment: "Production" or "Sandbox" })
         {
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc(
-                    appOptions.DomainVersion,
+                    appOptions?.DomainVersion ?? "v1",
                     new OpenApiInfo
                     {
                         Title = $"BiApp {appOptions.Domain} APIs",

@@ -10,7 +10,6 @@ using Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OpenTelemetry.Trace;
@@ -55,22 +54,19 @@ public static partial class ApplicationExtensions
                 {
                     options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
                     {
+                        activity.SetTag("request.method", httpRequestMessage.Method);
+                        activity.SetTag("request.uri", httpRequestMessage.RequestUri);
                         activity.SetTag("request.version", httpRequestMessage.Version);
                     };
                     options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
                     {
+                        activity.SetTag("response.status_code", (int)httpResponseMessage.StatusCode);
+                        activity.SetTag("response.reason_phrase", httpResponseMessage.ReasonPhrase);
                         activity.SetTag("response.version", httpResponseMessage.Version);
                     };
                 })
                 .AddNpgsql()
-                .AddSqlClientInstrumentation(options =>
-                    options.EnrichWithSqlCommand = (activity, rawObject) =>
-                    {
-                        if (rawObject is SqlCommand command)
-                        {
-                            activity.SetTag("db.command.Timeout", command.CommandTimeout);
-                        }
-                    }));
+                .AddSqlClientInstrumentation());
 
         builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
         builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));

@@ -18,6 +18,8 @@ public static partial class ApplicationExtensions
 
         appBuilder.WebHost.ConfigureKestrel(options =>
         {
+            options.AddServerHeader = false;
+
             options.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1);
 
             if (grpcOptions?.Enable == true)

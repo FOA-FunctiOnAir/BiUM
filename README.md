@@ -1,23 +1,40 @@
+> [!IMPORTANT]
+> **For AI Agents**: Please refer to [AGENTS.md](AGENTS.md) for context, conventions, and operational guidelines before proceeding with any tasks.
+
 # Introduction
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project.
+
+**BiUM** is the foundational shared library for the FunctionOnAir (FOA) microservices ecosystem. It provides core building blocks, abstractions, and infrastructure implementations used across all business applications to ensure consistency in logging, data access, messaging, and error handling.
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+
+To use BiUM in your project, install the `BiUM.Specialized` package:
+
+```bash
+dotnet add package BiUM.Specialized --source "https://nuget.pkg.github.com/FOA-FunctiOnAir/index.json"
+```
 
 # Build and Test
-TODO: Describe and show how to build your code and run the tests.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better.
+1. Restore dependencies:
+   ```bash
+   dotnet restore
+   ```
+2. Build the solution:
+   ```bash
+   dotnet build
+   ```
+3. Run tests:
+   ```bash
+   dotnet test
+   ```
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+# Modules
+
+- **BiUM.Core**: Interfaces and base classes.
+- **BiUM.Infrastructure**: Concrete implementations (EF Core, Services).
+- **BiUM.Bolt**: Lightweight data access.
+- **BiUM.Specialized**: Advanced components (Interceptors, Mapping).
+- **BiUM.Contract**: Shared DTOs.
 
 <!-- Push steps
 1 - Run this command line to remove all credentials : dotnet nuget locals all --clear

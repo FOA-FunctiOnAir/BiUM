@@ -110,6 +110,10 @@ Key settings in `appsettings.json` often include:
 - `RabbitMQ`: Message broker settings.
 - `Redis`: Caching settings.
 
+## AI Agent Guidelines
+
+**Documentation Updates**: If an AI Agent modifies the project code, it must also update the relevant documentation (README.md, etc.) to reflect these changes if necessary.
+
 ## 7. Related Agents/Services
 
 As the core library, **BiUM** is a dependency for **ALL** other agents and services in the ecosystem.

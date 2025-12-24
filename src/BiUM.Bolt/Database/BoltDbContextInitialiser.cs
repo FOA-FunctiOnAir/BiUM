@@ -88,7 +88,10 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
             FormattableStringFactory.Create(query),
             cancellationToken);
 
-        if (!transactions.Any()) { return; }
+        if (!transactions.Any())
+        {
+            return;
+        }
 
         var isError = false;
         var transactionId = Guid.Empty;
@@ -106,15 +109,37 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
                 var uniqueIds = allIds.Distinct().ToArray();
 
-                if (uniqueIds.Length == 0) continue;
+                if (uniqueIds.Length == 0)
+                {
+                    continue;
+                }
 
-                if (_boltContext.GetType().GetProperty(transaction.TableName)?.GetValue(_boltContext) is not IQueryable<IEntity> linqBoltQuery) continue;
+                var boltContextDbSetProp = _boltContext.GetType().GetProperty(transaction.TableName);
+
+                if (boltContextDbSetProp?.GetValue(_boltContext) is not IQueryable<IEntity> linqBoltQuery)
+                {
+                    continue;
+                }
 
                 var boltEntities = await linqBoltQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
-                if (_context.GetType().GetProperty(transaction.TableName)?.GetValue(_context) is not IQueryable<IEntity> linqTargetQuery) continue;
+                var contextDbSetProp = _context.GetType().GetProperty(transaction.TableName);
+
+                if (contextDbSetProp?.GetValue(_context) is not IQueryable<IEntity> linqTargetQuery)
+                {
+                    continue;
+                }
 
                 var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+
+                var entityClrType = boltContextDbSetProp!.PropertyType.GetGenericArguments()[0];
+                var entityType = _boltContext.Model.FindEntityType(entityClrType);
+                var hasParentId = entityType?.FindProperty("ParentId") != null;
+
+                if (hasParentId)
+                {
+                    boltEntities = OrderHierarchically(boltEntities, entityClrType);
+                }
 
                 if (transaction.Delete)
                 {
@@ -199,11 +224,49 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         }
     }
 
-    public async Task<IList<TResultEntity>> GetResultsFromTable<TTargetDbContext, TResultEntity>(TTargetDbContext context, FormattableString queryString, CancellationToken cancellationToken)
+    private async Task<IList<TResultEntity>> GetResultsFromTable<TTargetDbContext, TResultEntity>(TTargetDbContext context, FormattableString queryString, CancellationToken cancellationToken)
         where TTargetDbContext : DbContext
     {
         var query = context.Database.SqlQuery<TResultEntity>(queryString);
 
         return await query.ToArrayAsync(cancellationToken);
+    }
+
+    private static List<IEntity> OrderHierarchically(List<IEntity> entities, Type entityClrType)
+    {
+        var parentProp = entityClrType.GetProperty("ParentId");
+
+        if (parentProp == null)
+        {
+            return entities;
+        }
+
+        var lookup = entities.ToLookup(e =>
+        {
+            var pid = parentProp.GetValue(e);
+
+            return pid == null ? Guid.Empty : (Guid)pid;
+        });
+
+        var result = new List<IEntity>();
+
+        void Visit(IEntity entity)
+        {
+            result.Add(entity);
+
+            var id = entity.Id;
+
+            foreach (var child in lookup[id])
+            {
+                Visit(child);
+            }
+        }
+
+        foreach (var root in lookup[Guid.Empty])
+        {
+            Visit(root);
+        }
+
+        return result;
     }
 }

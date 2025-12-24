@@ -3,7 +3,7 @@
 
 # Introduction
 
-**BiUM** is the foundational shared library for the FunctionOnAir (FOA) microservices ecosystem. It provides core building blocks, abstractions, and infrastructure implementations used across all business applications to ensure consistency in logging, data access, messaging, and error handling.
+**BiUM** is the foundational shared library for the FunctiOnAir (FOA) microservices ecosystem. It provides core building blocks, abstractions, and infrastructure implementations used across all business applications to ensure consistency in logging, data access, messaging, and error handling.
 
 # Getting Started
 

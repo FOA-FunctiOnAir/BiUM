@@ -1,3 +1,4 @@
+using BiUM.Core.Common.Utils;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -31,7 +32,7 @@ public class TranslationBaseEntity : BaseAuditableEntity, ITranslationBaseEntity
 
     public TranslationBaseEntity() : base()
     {
-        Id = Guid.NewGuid();
+        Id = GuidGenerator.New();
         Column = string.Empty;
     }
 }

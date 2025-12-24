@@ -1,7 +1,7 @@
-﻿using BiUM.Bolt.Database.Entities;
+using BiUM.Bolt.Database.Entities;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.Utils;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

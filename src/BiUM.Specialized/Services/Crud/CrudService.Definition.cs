@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Enums;
+using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Crud;
@@ -92,7 +93,7 @@ public partial class CrudService
 
         var newDomainCrudVersion = new DomainCrudVersion()
         {
-            CorrelationId = Guid.NewGuid(),
+            CorrelationId = GuidGenerator.New(),
             TenantId = domainCrud.TenantId,
             CrudId = domainCrud.Id,
             TableName = domainCrud.TableName,
@@ -101,7 +102,7 @@ public partial class CrudService
 
         newDomainCrudVersion.DomainCrudVersionColumns = domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn()
         {
-            CorrelationId = Guid.NewGuid(),
+            CorrelationId = GuidGenerator.New(),
             CrudVersionId = newDomainCrudVersion.Id,
             PropertyName = c.PropertyName,
             ColumnName = c.ColumnName,

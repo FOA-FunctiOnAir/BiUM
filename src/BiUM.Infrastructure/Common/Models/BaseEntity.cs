@@ -1,3 +1,4 @@
+using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Events;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ public class BaseEntity : BaseAuditableEntity, IBaseEntity
 
     public BaseEntity()
     {
-        Id = Guid.NewGuid();
+        Id = GuidGenerator.New();
         _domainEvents = [];
     }
 

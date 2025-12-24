@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.API;
+using BiUM.Core.Common.API;
 using System;
 using System.Collections.Generic;
 using System.Threading;

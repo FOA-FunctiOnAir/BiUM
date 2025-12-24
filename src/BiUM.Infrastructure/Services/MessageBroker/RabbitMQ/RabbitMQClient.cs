@@ -266,7 +266,7 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async ValueTask DisposeAsync()
     {
-        _logger.LogInformation("RabbitMQClient disposed");
+        _logger?.LogInformation("RabbitMQClient disposed");
 
         await _channel?.CloseAsync();
         await _connection?.CloseAsync();

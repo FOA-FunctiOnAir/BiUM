@@ -1,12 +1,17 @@
-﻿using System;
+using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BiUM.Specialized.Common.Utils;
+namespace BiUM.Core.Common.Utils;
 
 public static class GuidGenerator
 {
     private static readonly Guid MyNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
+
+    public static Guid New()
+    {
+        return Guid.NewGuid();
+    }
 
     public static Guid NewGuid(string seed)
     {

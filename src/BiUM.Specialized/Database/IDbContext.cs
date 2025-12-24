@@ -15,6 +15,11 @@ public interface IDbContext
     DbSet<DomainCrudTranslation> DomainCrudTranslations { get; }
     DbSet<DomainCrudVersion> DomainCrudVersions { get; }
     DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns { get; }
+    DbSet<DomainDynamicApi> DomainDynamicApis { get; }
+    DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters { get; }
+    DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations { get; }
+    DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions { get; }
+    DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters { get; }
     DbSet<DomainTranslation> DomainTranslations { get; }
     DbSet<DomainTranslationDetail> DomainTranslationDetails { get; }
 

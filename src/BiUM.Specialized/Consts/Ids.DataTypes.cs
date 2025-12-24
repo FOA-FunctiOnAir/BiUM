@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.Utils;
+using BiUM.Core.Common.Utils;
 using System;
 
 namespace BiUM.Specialized.Consts;

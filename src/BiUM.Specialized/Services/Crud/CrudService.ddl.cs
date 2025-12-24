@@ -1,4 +1,5 @@
-﻿using BiUM.Infrastructure.Common.Models;
+using BiUM.Core.Common.Utils;
+using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -412,7 +413,7 @@ END;
         var dynDict = version.DomainCrudVersionColumns!.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
         var includeProps = data.Keys.Where(k => dynDict.ContainsKey(k)).ToList();
 
-        var newId = Guid.NewGuid();
+        var newId = GuidGenerator.New();
 
         var colSql = new StringBuilder();
         var valSql = new StringBuilder();

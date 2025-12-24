@@ -1,7 +1,6 @@
-﻿using BiUM.Infrastructure.Common.Models;
+using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +10,6 @@ namespace BiUM.Specialized.Database;
 public class BaseDbContext : DbContext, IDbContext
 {
     public bool HardDelete = false;
-
-    private DatabaseFacade Database => base.Database;
 
     private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
@@ -38,6 +35,11 @@ public class BaseDbContext : DbContext, IDbContext
     public DbSet<DomainCrudTranslation> DomainCrudTranslations => Set<DomainCrudTranslation>();
     public DbSet<DomainCrudVersion> DomainCrudVersions => Set<DomainCrudVersion>();
     public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
+    public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
+    public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
+    public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
+    public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
+    public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
@@ -78,9 +80,13 @@ public class BaseDbContext : DbContext, IDbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (_entitySaveChangesInterceptor is not null)
-            optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
+        {
+            _ = optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
+        }
         if (_boltEntitySaveChangesInterceptor is not null)
-            optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
+        {
+            _ = optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
+        }
 
         base.OnConfiguring(optionsBuilder);
     }

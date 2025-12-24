@@ -17,4 +17,8 @@
     <ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
     <ProjectReference Include="..\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\DynamicApi\" />
+  </ItemGroup>
 </Project>

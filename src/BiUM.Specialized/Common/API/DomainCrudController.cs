@@ -45,7 +45,7 @@ public class DomainCrudController : ApiControllerBase
     [HttpGet]
     public async Task<ApiResponse<DomainCrudDto>> GetDomainCrudAsync(string id, CancellationToken cancellationToken)
     {
-        Guid.TryParse(id, out var guidId);
+        _ = Guid.TryParse(id, out var guidId);
 
         var response = await _crudService.GetDomainCrudAsync(guidId, cancellationToken);
 

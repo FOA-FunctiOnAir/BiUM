@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Middlewares;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -79,6 +80,8 @@ public static partial class ApplicationExtensions
 
                 args.SetObserved();
             };
+
+        app.UseMiddleware<CorrelationContextActivityMiddleware>();
 
         app.UseRouting();
 

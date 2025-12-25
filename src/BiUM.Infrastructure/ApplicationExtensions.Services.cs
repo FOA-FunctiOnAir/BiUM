@@ -24,6 +24,7 @@ using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -59,55 +60,63 @@ public static partial class ApplicationExtensions
         });
 
         builder.Services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService(serviceName))
-            .WithMetrics(metrics => metrics
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation()
-                .AddProcessInstrumentation()
-                .AddMeter("Microsoft.AspNetCore.Hosting")
-                .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-                .AddOtlpExporter()
-                .AddConsoleExporter(builder.Configuration, builder.Environment))
-            .WithTracing(tracing => tracing
-                .AddSource(serviceName)
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation(options =>
-                {
-                    options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
+            .ConfigureResource(resource =>
+                resource
+                    .AddService(serviceName)
+                    .AddAttributes(new Dictionary<string, object>
                     {
-                        activity.SetTag("http.request.version", httpRequestMessage.Version);
-                    };
-                    options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
+                        ["deployment.environment"] = string.IsNullOrEmpty(appOptions?.Environment) ? builder.Environment.EnvironmentName : appOptions.Environment
+                    }))
+            .WithMetrics(metrics =>
+                metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddProcessInstrumentation()
+                    .AddMeter("Microsoft.AspNetCore.Hosting")
+                    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+                    .AddOtlpExporter()
+                    .AddConsoleExporter(builder.Configuration, builder.Environment))
+            .WithTracing(tracing =>
+                tracing
+                    .AddSource(serviceName)
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation(options =>
                     {
-                        activity.SetTag("http.response.version", httpResponseMessage.Version);
-                    };
-                    options.EnrichWithException = (activity, exception) =>
-                    {
-                        activity.SetTag("error.stack_trace", exception.StackTrace);
-                    };
-                })
-                .AddEntityFrameworkCoreInstrumentation(options =>
-                {
-                    options.EnrichWithIDbCommand = (activity, command) =>
-                    {
-                        activity.SetTag("db.name", command.Connection?.Database);
-                        activity.SetTag("db.command.timeout", command.CommandTimeout);
-                        activity.SetTag("activity.duration", activity.Duration.TotalMilliseconds);
-                    };
-                })
-                .AddRedisInstrumentation(options =>
-                    options.Enrich = (activity, context) =>
-                    {
-                        activity.SetTag("redis.duration", context.ProfiledCommand.ElapsedTime.TotalMilliseconds);
-
-                        if (context.ProfiledCommand.ElapsedTime < FastRedisDurationLimit)
+                        options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
                         {
-                            activity.SetTag("redis.is_fast", true);
-                        }
+                            activity.SetTag("http.request.version", httpRequestMessage.Version);
+                        };
+                        options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
+                        {
+                            activity.SetTag("http.response.version", httpResponseMessage.Version);
+                        };
+                        options.EnrichWithException = (activity, exception) =>
+                        {
+                            activity.SetTag("error.stack_trace", exception.StackTrace);
+                        };
                     })
-                .AddOtlpExporter()
-                .AddConsoleExporter(builder.Configuration, builder.Environment));
+                    .AddEntityFrameworkCoreInstrumentation(options =>
+                    {
+                        options.EnrichWithIDbCommand = (activity, command) =>
+                        {
+                            activity.SetTag("db.name", command.Connection?.Database);
+                            activity.SetTag("db.command.timeout", command.CommandTimeout);
+                            activity.SetTag("activity.duration", activity.Duration.TotalMilliseconds);
+                        };
+                    })
+                    .AddRedisInstrumentation(options =>
+                        options.Enrich = (activity, context) =>
+                        {
+                            activity.SetTag("redis.duration", context.ProfiledCommand.ElapsedTime.TotalMilliseconds);
+
+                            if (context.ProfiledCommand.ElapsedTime < FastRedisDurationLimit)
+                            {
+                                activity.SetTag("redis.is_fast", true);
+                            }
+                        })
+                    .AddOtlpExporter()
+                    .AddConsoleExporter(builder.Configuration, builder.Environment));
 
         builder.Services.AddEndpointsApiExplorer();
 
@@ -121,8 +130,8 @@ public static partial class ApplicationExtensions
                     appOptions?.DomainVersion ?? "v1",
                     new OpenApiInfo
                     {
-                        Title = $"BiApp {appOptions.Domain} APIs",
-                        Version = appOptions.DomainVersion
+                        Title = $"BiApp {appOptions?.Domain} APIs",
+                        Version = appOptions?.DomainVersion ?? "v1"
                     });
             });
         }
@@ -150,7 +159,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddRedisServices(builder.Configuration);
 
         // Configure RabbitMQ
-        builder.Services.AddRabbitMQServices(builder.Configuration);
+        builder.Services.AddRabbitMqServices(builder.Configuration);
 
         builder.Services.AddTransient<IDateTimeService, DateTimeService>();
 
@@ -169,7 +178,7 @@ public static partial class ApplicationExtensions
         return services;
     }
 
-    private static IServiceCollection AddRabbitMQServices(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddRabbitMqServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
         services.AddSingleton<IRabbitMQClient, RabbitMQClient>();

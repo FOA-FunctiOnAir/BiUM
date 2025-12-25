@@ -54,15 +54,11 @@ public static partial class ApplicationExtensions
                 {
                     options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
                     {
-                        activity.SetTag("request.method", httpRequestMessage.Method);
-                        activity.SetTag("request.uri", httpRequestMessage.RequestUri);
-                        activity.SetTag("request.version", httpRequestMessage.Version);
+                        activity.SetTag("grpc.request.uri", httpRequestMessage.RequestUri);
                     };
                     options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
                     {
-                        activity.SetTag("response.status_code", (int)httpResponseMessage.StatusCode);
-                        activity.SetTag("response.reason_phrase", httpResponseMessage.ReasonPhrase);
-                        activity.SetTag("response.version", httpResponseMessage.Version);
+                        activity.SetTag("grpc.response.status_code", (int)httpResponseMessage.StatusCode);
                     };
                 })
                 .AddNpgsql()

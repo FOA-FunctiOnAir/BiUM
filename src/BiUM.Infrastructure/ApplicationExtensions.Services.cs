@@ -83,14 +83,6 @@ public static partial class ApplicationExtensions
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation(options =>
                     {
-                        options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
-                        {
-                            activity.SetTag("http.request.version", httpRequestMessage.Version);
-                        };
-                        options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
-                        {
-                            activity.SetTag("http.response.version", httpResponseMessage.Version);
-                        };
                         options.EnrichWithException = (activity, exception) =>
                         {
                             activity.SetTag("error.stack_trace", exception.StackTrace);
@@ -101,8 +93,6 @@ public static partial class ApplicationExtensions
                         options.EnrichWithIDbCommand = (activity, command) =>
                         {
                             activity.SetTag("db.name", command.Connection?.Database);
-                            activity.SetTag("db.command.timeout", command.CommandTimeout);
-                            activity.SetTag("activity.duration", activity.Duration.TotalMilliseconds);
                         };
                     })
                     .AddRedisInstrumentation(options =>

@@ -4,17 +4,22 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Middlewares;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
+    private const string UnhandledExceptionOccurred = "An unhandled exception occurred";
+    private const string UnhandledExceptionOccurredWithNoException = $"{UnhandledExceptionOccurred}, no exception was provided by IExceptionHandlerFeature";
+
     public static WebApplication UseInfrastructure(this WebApplication app)
     {
         var appOptionsAccessor = app.Services.GetService<IOptions<BiAppOptions>>();
@@ -47,16 +52,50 @@ public static partial class ApplicationExtensions
 
                 if (exceptionHandlerFeature?.Error is null)
                 {
+                    var problemDetails = new ProblemDetails
+                    {
+                        Type = "unknown",
+                        Title = UnhandledExceptionOccurred,
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = UnhandledExceptionOccurredWithNoException
+                    };
+
+                    await Results.Problem(problemDetails).ExecuteAsync(context);
+
+                    logger.LogError(UnhandledExceptionOccurredWithNoException);
+
                     return;
                 }
 
-                context.Response.StatusCode = 500;
-
-                await context.Response.WriteAsync("An unexpected error occurred");
-
                 var exception = exceptionHandlerFeature.Error;
 
-                logger.LogError(exception, "An unhandled exception occurred");
+                if (app.Environment.IsDevelopment() ||
+                    appOptions is not { Environment: "Production" or "Sandbox" })
+                {
+                    var problemDetails = new ProblemDetails
+                    {
+                        Type = exception.ToProblemType(),
+                        Title = exception.Message,
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = exception.ToString()
+                    };
+
+                    await Results.Problem(problemDetails).ExecuteAsync(context);
+                }
+                else
+                {
+                    var problemDetails = new ProblemDetails
+                    {
+                        Type = exception.ToProblemType(),
+                        Title = UnhandledExceptionOccurred,
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = exception.Message
+                    };
+
+                    await Results.Problem(problemDetails).ExecuteAsync(context);
+                }
+
+                logger.LogError(exception, UnhandledExceptionOccurred);
             }
         });
 
@@ -110,6 +149,47 @@ public static partial class ApplicationExtensions
         }));
 
         return app;
+    }
+
+    private static string ToProblemType(this Exception exception)
+    {
+        var type = exception.GetType().Name;
+
+        if (type.EndsWith(nameof(Exception), StringComparison.Ordinal))
+        {
+            type = type.Remove(type.Length - nameof(Exception).Length);
+        }
+
+        return  type.PascalToSnakeCase();
+    }
+
+    private static string PascalToSnakeCase(this string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var sb = new StringBuilder();
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (char.IsUpper(text[i]))
+            {
+                if (i > 0)
+                {
+                    sb.Append('_');
+                }
+
+                sb.Append(char.ToLowerInvariant(text[i]));
+            }
+            else
+            {
+                sb.Append(text[i]);
+            }
+        }
+
+        return sb.ToString();
     }
 
     private sealed class Application;

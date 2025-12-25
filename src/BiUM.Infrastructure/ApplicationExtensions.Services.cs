@@ -134,11 +134,13 @@ public static partial class ApplicationExtensions
             {
                 o.CpuThresholds = new ResourceUsageThresholds
                 {
-                    DegradedUtilizationPercentage = 85, UnhealthyUtilizationPercentage = 95,
+                    DegradedUtilizationPercentage = 90,
+                    UnhealthyUtilizationPercentage = 95
                 };
                 o.MemoryThresholds = new ResourceUsageThresholds
                 {
-                    DegradedUtilizationPercentage = 85, UnhealthyUtilizationPercentage = 95,
+                    DegradedUtilizationPercentage = 90,
+                    UnhealthyUtilizationPercentage = 95
                 };
             })
             .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live", "ready"]);

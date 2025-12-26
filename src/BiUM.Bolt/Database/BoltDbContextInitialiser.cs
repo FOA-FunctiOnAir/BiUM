@@ -146,13 +146,13 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     .Where(x => uniqueIds.Contains(x.Id))
                     .ToListAsync(cancellationToken);
 
-                //var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
-                //var hasParentId = entityType?.FindProperty("ParentId") != null;
+                var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
+                var hasParentId = entityType?.FindProperty("ParentId") != null;
 
-                //if (hasParentId)
-                //{
-                //    boltEntities = OrderHierarchically(boltEntities, boltEntityClrType);
-                //}
+                if (hasParentId)
+                {
+                    boltEntities = OrderHierarchically(boltEntities, boltEntityClrType);
+                }
 
                 if (transaction.Delete)
                 {

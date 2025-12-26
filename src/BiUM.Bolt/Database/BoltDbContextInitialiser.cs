@@ -193,7 +193,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
             {
                 Id = GuidGenerator.New(),
                 Active = true,
-                LastTransactionId = lastTransactionId,
+                LastTransactionId = lastTransactionId ?? boltStatus?.LastTransactionId,
                 Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
             };
 

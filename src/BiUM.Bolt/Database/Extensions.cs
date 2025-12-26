@@ -1,13 +1,14 @@
-﻿using BiUM.Bolt.Database.Entities;
+using BiUM.Bolt.Database.Entities;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Guid = System.Guid;
 
 namespace BiUM.Bolt.Database;
 
@@ -16,6 +17,7 @@ public static class Extensions
     public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -24,22 +26,24 @@ public static class Extensions
         where TDbContext : DbContext
         where TEntity : IEntity
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (entity is null) return false;
+        if (entity is null)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntity = await linqQuery.AsNoTracking().Where(x => x.Id == entity.Id).ToListAsync(cancellationToken);
 
-        if (existEntity.Count != 0)
-        {
-            dbContext.Update(entity);
-        }
-        else
-        {
-            dbContext.Add(entity);
-        }
+        _ = existEntity.Count != 0 ? dbContext.Update(entity) : dbContext.Add(entity);
 
         var boltTransaction = new BoltTransaction()
         {
@@ -49,7 +53,7 @@ public static class Extensions
             SortOrder = order
         };
 
-        dbContext.Add(boltTransaction);
+        _ = dbContext.Add(boltTransaction);
 
         return true;
     }
@@ -57,6 +61,7 @@ public static class Extensions
     public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -65,11 +70,20 @@ public static class Extensions
         where TDbContext : DbContext
         where TEntity : IEntity
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (entities is null || entities.Count == 0) return false;
+        if (entities is null || entities.Count == 0)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => entities.Select(e => e.Id).Contains(x.Id)).ToListAsync(cancellationToken);
 
@@ -80,7 +94,7 @@ public static class Extensions
         {
             foreach (var entity in insertEntities)
             {
-                dbContext.Add(entity);
+                _ = dbContext.Add(entity);
             }
         }
 
@@ -88,7 +102,7 @@ public static class Extensions
         {
             foreach (var entity in updateEntities)
             {
-                dbContext.Update(entity);
+                _ = dbContext.Update(entity);
             }
         }
 
@@ -100,7 +114,7 @@ public static class Extensions
             SortOrder = order
         };
 
-        dbContext.Add(boltTransaction);
+        _ = dbContext.Add(boltTransaction);
 
         return true;
     }
@@ -108,6 +122,7 @@ public static class Extensions
     public static async Task<bool> Delete<TDbContext, TEntity>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -116,11 +131,20 @@ public static class Extensions
         where TDbContext : DbContext
         where TEntity : IEntity
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (entity is null) return false;
+        if (entity is null)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntity = await linqQuery.AsNoTracking().Where(x => x.Id == entity.Id).ToListAsync(cancellationToken);
 
@@ -130,7 +154,7 @@ public static class Extensions
             {
                 baseEntity.Deleted = true;
 
-                dbContext.Update(baseEntity);
+                _ = dbContext.Update(baseEntity);
             }
 
             var boltTransaction = new BoltTransaction()
@@ -141,7 +165,7 @@ public static class Extensions
                 SortOrder = order
             };
 
-            dbContext.Add(boltTransaction);
+            _ = dbContext.Add(boltTransaction);
         }
 
         return true;
@@ -150,6 +174,7 @@ public static class Extensions
     public static async Task<bool> Delete<TDbContext>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -157,11 +182,20 @@ public static class Extensions
         CancellationToken cancellationToken)
         where TDbContext : DbContext
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (id == Guid.Empty) return false;
+        if (id == Guid.Empty)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => x.Id == id).ToListAsync(cancellationToken);
 
@@ -173,7 +207,7 @@ public static class Extensions
             {
                 baseEntity.Deleted = true;
 
-                dbContext.Update(baseEntity);
+                _ = dbContext.Update(baseEntity);
             }
 
             var boltTransaction = new BoltTransaction()
@@ -184,7 +218,7 @@ public static class Extensions
                 SortOrder = order
             };
 
-            dbContext.Add(boltTransaction);
+            _ = dbContext.Add(boltTransaction);
         }
 
         return true;
@@ -193,6 +227,7 @@ public static class Extensions
     public static async Task<bool> Delete<TDbContext, TEntity>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -201,11 +236,20 @@ public static class Extensions
         where TDbContext : DbContext
         where TEntity : IEntity
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (entities is null || entities.Count == 0) return false;
+        if (entities is null || entities.Count == 0)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => entities.Select(e => e.Id).Contains(x.Id)).ToListAsync(cancellationToken);
 
@@ -219,7 +263,7 @@ public static class Extensions
                 {
                     baseEntity.Deleted = true;
 
-                    dbContext.Update(baseEntity);
+                    _ = dbContext.Update(baseEntity);
                 }
             }
 
@@ -231,7 +275,7 @@ public static class Extensions
                 SortOrder = order
             };
 
-            dbContext.Add(boltTransaction);
+            _ = dbContext.Add(boltTransaction);
         }
 
         return true;
@@ -240,6 +284,7 @@ public static class Extensions
     public static async Task<bool> Delete<TDbContext>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
+        CorrelationContext correlationContext,
         BoltOptions boltOptions,
         int order,
         string name,
@@ -247,15 +292,24 @@ public static class Extensions
         CancellationToken cancellationToken)
         where TDbContext : DbContext
     {
-        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development") return false;
+        if (boltOptions is null || !boltOptions.Enable || boltOptions.Branch != "Development")
+        {
+            return false;
+        }
 
-        if (ids is null || ids.Count == 0) return false;
+        if (ids is null || ids.Count == 0)
+        {
+            return false;
+        }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery) return false;
+        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        {
+            return false;
+        }
 
         var existEntities = await linqQuery.AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync(cancellationToken);
 
-        if (existEntities.Any())
+        if (existEntities.Count != 0)
         {
             foreach (var entity in existEntities)
             {
@@ -263,7 +317,7 @@ public static class Extensions
                 {
                     baseEntity.Deleted = true;
 
-                    dbContext.Update(baseEntity);
+                    _ = dbContext.Update(baseEntity);
                 }
             }
 
@@ -275,7 +329,7 @@ public static class Extensions
                 SortOrder = order
             };
 
-            dbContext.Add(boltTransaction);
+            _ = dbContext.Add(boltTransaction);
         }
 
         return true;

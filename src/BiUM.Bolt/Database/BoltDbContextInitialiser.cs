@@ -22,7 +22,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 {
     private readonly BoltOptions _boltOptions;
     private readonly TBoltDbContext _boltContext;
-    private static readonly ConcurrentDictionary<Type, Func<DbContext, IQueryable>> _queryFactoryCache = new();
+    private static readonly ConcurrentDictionary<Type, Func<DbContext, IQueryable>> QueryFactoryCache = new();
 
     public BoltDbContextInitialiser(ILogger<BoltDbContextInitialiser<TBoltDbContext, TDbContext>> logger, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext context)
         : base(logger, context)
@@ -31,15 +31,15 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         _boltContext = boltContext;
     }
 
-    public virtual async Task InitialiseAsync()
+    public virtual async Task InitialiseAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            _ = await _boltContext.Database.EnsureCreatedAsync();
+            _ = await _boltContext.Database.EnsureCreatedAsync(cancellationToken);
 
             if (_boltContext.Database.IsSqlServer())
             {
-                await _boltContext.Database.MigrateAsync();
+                await _boltContext.Database.MigrateAsync(cancellationToken);
             }
         }
         catch (Exception ex)
@@ -83,12 +83,12 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         var lastTransactionQueryStatement = lastTransaction is null ? string.Empty : $" WHERE \"ID\" != '{lastTransaction.Id}' AND (\"CREATED\" > '{lastTransaction.Created:yyyy-MM-dd}' or (\"CREATED\" = '{lastTransaction.Created:yyyy-MM-dd}' and \"CREATED_TIME\" > '{lastTransaction.CreatedTime:HH:mm:ss}'))";
         var lastTransactionQuery = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(lastTransactionQueryStatement) ? "" : lastTransactionQueryStatement) + " ORDER BY \"CREATED\" ASC, \"SORT_ORDER\" ASC, \"CREATED_TIME\" ASC";
 
-        var transactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
+        var allTransactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
             _boltContext,
             FormattableStringFactory.Create(lastTransactionQuery),
             cancellationToken);
 
-        if (!transactions.Any())
+        if (!allTransactions.Any())
         {
             return;
         }
@@ -96,77 +96,94 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         var isError = false;
         var transactionId = Guid.Empty;
         Guid? lastTransactionId = null;
+        Guid? lastCorrelationId = null;
+        List<Guid> executedCorrelations = [];
 
         try
         {
-            foreach (var transaction in transactions)
+            foreach (var mainTransaction in allTransactions)
             {
-                transactionId = transaction.Id;
-
-                var ids = transaction.Ids?.Trim().Split(";");
-                var guidIds = ids?.Select(x => new Guid(x.Trim()));
-                var allIds = guidIds ?? [];
-
-                var uniqueIds = allIds.Distinct().ToArray();
-
-                if (uniqueIds.Length == 0)
+                if (executedCorrelations.Contains(mainTransaction.CorrelationId))
                 {
                     continue;
                 }
 
-                var boltContextDbSetProp = _boltContext.GetType().GetProperty(transaction.TableName);
+                lastCorrelationId = mainTransaction.CorrelationId;
 
-                if (boltContextDbSetProp is null)
+                var groupTransactions = allTransactions
+                    .Where(t => t.CorrelationId == mainTransaction.CorrelationId)
+                    .OrderBy(t => new { t.Created, t.SortOrder, t.CreatedTime })
+                    .ToList();
+
+                foreach (var transaction in groupTransactions)
                 {
-                    continue;
-                }
+                    transactionId = transaction.Id;
 
-                var boltEntityClrType = boltContextDbSetProp.PropertyType.GetGenericArguments()[0];
+                    var ids = transaction.Ids?.Trim().Split(";");
+                    var guidIds = ids?.Select(x => new Guid(x.Trim()));
+                    var allIds = guidIds ?? [];
 
-                var boltQuery = GetQueryableIgnoringFilters(_boltContext, boltEntityClrType);
+                    var uniqueIds = allIds.Distinct().ToArray();
 
-                var boltEntities = await boltQuery
-                    .Cast<IEntity>()
-                    .Where(x => uniqueIds.Contains(x.Id))
-                    .ToListAsync(cancellationToken);
+                    if (uniqueIds.Length == 0)
+                    {
+                        continue;
+                    }
 
-                var contextDbSetProp = _context.GetType().GetProperty(transaction.TableName);
+                    var boltContextDbSetProp = _boltContext.GetType().GetProperty(transaction.TableName);
 
-                if (contextDbSetProp is null)
-                {
-                    continue;
-                }
+                    if (boltContextDbSetProp is null)
+                    {
+                        continue;
+                    }
 
-                var targetEntityClrType = contextDbSetProp.PropertyType.GetGenericArguments()[0];
+                    var boltEntityClrType = boltContextDbSetProp.PropertyType.GetGenericArguments()[0];
 
-                var targetQuery = GetQueryableIgnoringFilters(_context, targetEntityClrType);
+                    var boltQuery = GetQueryableIgnoringFilters(_boltContext, boltEntityClrType);
 
-                var targetEntities = await targetQuery
-                    .Cast<IEntity>()
-                    .Where(x => uniqueIds.Contains(x.Id))
-                    .ToListAsync(cancellationToken);
+                    var boltEntities = await boltQuery
+                        .Cast<IEntity>()
+                        .Where(x => uniqueIds.Contains(x.Id))
+                        .ToListAsync(cancellationToken);
 
-                var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
-                var hasParentId = entityType?.FindProperty("ParentId") != null;
+                    var contextDbSetProp = _context.GetType().GetProperty(transaction.TableName);
 
-                if (hasParentId)
-                {
-                    boltEntities = OrderHierarchically(boltEntities, boltEntityClrType);
-                }
+                    if (contextDbSetProp is null)
+                    {
+                        continue;
+                    }
 
-                if (transaction.Delete)
-                {
-                    var deleteEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
+                    var targetEntityClrType = contextDbSetProp.PropertyType.GetGenericArguments()[0];
 
-                    _context.RemoveRange(deleteEntities);
-                }
-                else
-                {
-                    var insertEntities = boltEntities.Where(b => targetEntities.All(t => t.Id != b.Id));
-                    var updateEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
+                    var targetQuery = GetQueryableIgnoringFilters(_context, targetEntityClrType);
 
-                    _context.AddRange(insertEntities);
-                    _context.UpdateRange(updateEntities);
+                    var targetEntities = await targetQuery
+                        .Cast<IEntity>()
+                        .Where(x => uniqueIds.Contains(x.Id))
+                        .ToListAsync(cancellationToken);
+
+                    var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
+                    var hasParentId = entityType?.FindProperty("ParentId") != null;
+
+                    if (hasParentId)
+                    {
+                        boltEntities = OrderHierarchically(boltEntities, boltEntityClrType);
+                    }
+
+                    if (transaction.Delete)
+                    {
+                        var deleteEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
+
+                        _context.RemoveRange(deleteEntities);
+                    }
+                    else
+                    {
+                        var insertEntities = boltEntities.Where(b => targetEntities.All(t => t.Id != b.Id));
+                        var updateEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
+
+                        _context.AddRange(insertEntities);
+                        _context.UpdateRange(updateEntities);
+                    }
                 }
 
                 _ = await _context.SaveChangesAsync(cancellationToken);
@@ -174,6 +191,8 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 lastTransactionId = transactionId;
 
                 _context.ChangeTracker.Clear();
+
+                executedCorrelations.Add(mainTransaction.CorrelationId);
             }
         }
         catch (Exception ex)
@@ -194,7 +213,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 Id = GuidGenerator.New(),
                 Active = true,
                 LastTransactionId = lastTransactionId ?? boltStatus?.LastTransactionId,
-                Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
+                Error = $"CorrelationId:{lastCorrelationId}, TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
             };
 
             _ = _context.Add(newBoltStatus);
@@ -205,7 +224,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         {
             if (!isError)
             {
-                var last = transactions
+                var last = allTransactions
                     .OrderByDescending(x => x.Created)
                     .ThenByDescending(x => x.CreatedTime)
                     .ThenByDescending(x => x.SortOrder)
@@ -235,7 +254,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
     private static IQueryable GetQueryableIgnoringFilters(DbContext context, Type entityClrType)
     {
-        var factory = _queryFactoryCache.GetOrAdd(entityClrType, type =>
+        var factory = QueryFactoryCache.GetOrAdd(entityClrType, type =>
         {
             var setMethod = typeof(DbContext)
                 .GetMethods()

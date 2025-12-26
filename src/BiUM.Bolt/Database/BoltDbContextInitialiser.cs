@@ -19,8 +19,8 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     where TBoltDbContext : DbContext
     where TDbContext : DbContext
 {
-    public readonly BoltOptions _boltOptions;
-    public readonly TBoltDbContext _boltContext;
+    private readonly BoltOptions _boltOptions;
+    private readonly TBoltDbContext _boltContext;
 
     public BoltDbContextInitialiser(ILogger<BoltDbContextInitialiser<TBoltDbContext, TDbContext>> logger, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext context)
         : base(logger, context)
@@ -33,7 +33,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     {
         try
         {
-            await _boltContext.Database.EnsureCreatedAsync();
+            _ = await _boltContext.Database.EnsureCreatedAsync();
 
             if (_boltContext.Database.IsSqlServer())
             {
@@ -57,10 +57,10 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
             return;
         }
 
-        BoltStatus boltStatus = null;
-        BoltTransaction lastTransaction = null;
+        BoltStatus? boltStatus = null;
+        BoltTransaction? lastTransaction = null;
 
-        var boltStatuses = await GetResultsFromTable<TDbContext, BoltStatus>(_context, $"SELECT * FROM dbo.\"__BOLT_STATUS\"", cancellationToken);
+        var boltStatuses = await GetResultsFromTable<TDbContext, BoltStatus>(_context, $"SELECT * FROM dbo.\"__BOLT_STATUS\" WHERE \"ACTIVE\" = true", cancellationToken);
 
         if (boltStatuses.Any())
         {
@@ -71,7 +71,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         {
             var boltTransactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
                 _boltContext,
-                FormattableStringFactory.Create($"SELECT * FROM dbo.\"__BOLT_TRANSACTION\" WHERE \"ID\" = '{boltStatus.LastTransactionId.ToString()}'"),
+                FormattableStringFactory.Create($"SELECT * FROM dbo.\"__BOLT_TRANSACTION\" WHERE \"ID\" = '{boltStatus.LastTransactionId}'"),
                 cancellationToken);
 
             if (boltTransactions.Any())
@@ -80,7 +80,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
             }
         }
 
-        var queryStatement = lastTransaction is null ? string.Empty : $" WHERE \"ID\" != '{lastTransaction.Id.ToString()}' AND (\"CREATED\" > '{lastTransaction.Created.ToString("yyyy-MM-dd")}' or (\"CREATED\" = '{lastTransaction.Created.ToString("yyyy-MM-dd")}' and \"CREATED_TIME\" > '{lastTransaction.CreatedTime.ToString("HH:mm:ss")}'))";
+        var queryStatement = lastTransaction is null ? string.Empty : $" WHERE \"ID\" != '{lastTransaction.Id}' AND (\"CREATED\" > '{lastTransaction.Created:yyyy-MM-dd}' or (\"CREATED\" = '{lastTransaction.Created:yyyy-MM-dd}' and \"CREATED_TIME\" > '{lastTransaction.CreatedTime:HH:mm:ss}'))";
         var query = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(queryStatement) ? "" : queryStatement) + " ORDER BY \"CREATED\" ASC, \"SORT_ORDER\" ASC, \"CREATED_TIME\" ASC";
 
         var transactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
@@ -121,7 +121,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     continue;
                 }
 
-                var boltEntities = await linqBoltQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+                var boltEntities = await linqBoltQuery.IgnoreQueryFilters().AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 var contextDbSetProp = _context.GetType().GetProperty(transaction.TableName);
 
@@ -130,7 +130,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     continue;
                 }
 
-                var targetEntities = await linqTargetQuery.AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
+                var targetEntities = await linqTargetQuery.IgnoreQueryFilters().AsNoTracking().Where(x => uniqueIds.Contains(x.Id)).ToListAsync(cancellationToken);
 
                 var entityClrType = boltContextDbSetProp!.PropertyType.GetGenericArguments()[0];
                 var entityType = _boltContext.Model.FindEntityType(entityClrType);
@@ -156,7 +156,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     _context.UpdateRange(updateEntities);
                 }
 
-                await _context.SaveChangesAsync(cancellationToken);
+                _ = await _context.SaveChangesAsync(cancellationToken);
 
                 lastTransactionId = transactionId;
 
@@ -169,26 +169,24 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
             _context.ChangeTracker.Clear();
 
-            if (boltStatus is null)
+            if (boltStatus is not null)
             {
-                boltStatus = new BoltStatus()
-                {
-                    Id = boltStatusId,
-                    LastTransactionId = lastTransactionId,
-                    Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
-                };
+                boltStatus.Active = false;
 
-                _context.Add(boltStatus);
-            }
-            else
-            {
-                boltStatus.LastTransactionId = lastTransactionId ?? boltStatus.LastTransactionId;
-                boltStatus.Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}";
-
-                _context.Update(boltStatus);
+                _ = _context.Update(boltStatus);
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
+            var newBoltStatus = new BoltStatus()
+            {
+                Id = boltStatusId,
+                Active = true,
+                LastTransactionId = lastTransactionId,
+                Error = $"TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
+            };
+
+            _ = _context.Add(newBoltStatus);
+
+            _ = await _context.SaveChangesAsync(cancellationToken);
         }
         finally
         {
@@ -200,31 +198,29 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     .ThenByDescending(x => x.SortOrder)
                     .First();
 
-                if (boltStatus is null)
+                if (boltStatus is not null)
                 {
-                    boltStatus = new BoltStatus()
-                    {
-                        Id = boltStatusId,
-                        LastTransactionId = last.Id,
-                        Error = null
-                    };
+                    boltStatus.Active = false;
 
-                    _context.Add(boltStatus);
-                }
-                else
-                {
-                    boltStatus.LastTransactionId = last.Id;
-                    boltStatus.Error = null;
-
-                    _context.Update(boltStatus);
+                    _ = _context.Update(boltStatus);
                 }
 
-                await _context.SaveChangesAsync(cancellationToken);
+                var newBoltStatus = new BoltStatus()
+                {
+                    Id = boltStatusId,
+                    Active = true,
+                    LastTransactionId = last.Id,
+                    Error = null
+                };
+
+                _ = _context.Add(newBoltStatus);
+
+                _ = await _context.SaveChangesAsync(cancellationToken);
             }
         }
     }
 
-    private async Task<IList<TResultEntity>> GetResultsFromTable<TTargetDbContext, TResultEntity>(TTargetDbContext context, FormattableString queryString, CancellationToken cancellationToken)
+    private static async Task<IList<TResultEntity>> GetResultsFromTable<TTargetDbContext, TResultEntity>(TTargetDbContext context, FormattableString queryString, CancellationToken cancellationToken)
         where TTargetDbContext : DbContext
     {
         var query = context.Database.SqlQuery<TResultEntity>(queryString);

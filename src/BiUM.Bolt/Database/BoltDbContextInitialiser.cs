@@ -112,7 +112,8 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
                 var groupTransactions = allTransactions
                     .Where(t => t.CorrelationId == mainTransaction.CorrelationId)
-                    .OrderBy(t => new { t.Created, t.SortOrder, t.CreatedTime })
+                    .OrderBy(t => t.Created.ToDateTime(t.CreatedTime))
+                    .ThenBy(t => t.SortOrder)
                     .ToList();
 
                 foreach (var transaction in groupTransactions)

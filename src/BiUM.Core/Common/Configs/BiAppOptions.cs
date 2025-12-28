@@ -1,4 +1,4 @@
-﻿namespace BiUM.Core.Common.Configs;
+namespace BiUM.Core.Common.Configs;
 
 public class BiAppOptions
 {

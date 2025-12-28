@@ -1,4 +1,4 @@
-﻿using MediatR.Pipeline;
+using MediatR.Pipeline;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;

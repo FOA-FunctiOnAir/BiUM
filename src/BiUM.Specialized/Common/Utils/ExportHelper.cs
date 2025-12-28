@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.Models;
+using BiUM.Specialized.Common.Models;
 using System;
 using System.Text;
 using System.Text.Json;

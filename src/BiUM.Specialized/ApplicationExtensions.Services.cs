@@ -1,4 +1,4 @@
-﻿using AutoMapper.Internal;
+using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Specialized.Interceptors;

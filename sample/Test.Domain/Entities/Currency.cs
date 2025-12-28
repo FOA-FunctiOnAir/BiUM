@@ -1,4 +1,4 @@
-﻿using BiUM.Infrastructure.Common.Models;
+using BiUM.Infrastructure.Common.Models;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 

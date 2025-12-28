@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Authorization;
+using BiUM.Core.Authorization;
 using Microsoft.AspNetCore.Http;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ public class CorrelationContextActivityMiddleware
     {
         var correlationContext = correlationContextProvider.Get();
 
-        if (correlationContext is not  null)
+        if (correlationContext is not null)
         {
             var activity = Activity.Current;
 

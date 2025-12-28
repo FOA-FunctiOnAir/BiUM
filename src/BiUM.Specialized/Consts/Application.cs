@@ -1,4 +1,4 @@
-﻿namespace BiUM.Specialized.Consts;
+namespace BiUM.Specialized.Consts;
 
 public class Application
 {

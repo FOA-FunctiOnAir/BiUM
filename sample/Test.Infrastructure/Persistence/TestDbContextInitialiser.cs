@@ -1,4 +1,4 @@
-﻿using BiUM.Bolt.Database;
+using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Logging;

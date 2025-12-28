@@ -1,4 +1,4 @@
-﻿using BiUM.Infrastructure.Common.Events;
+using BiUM.Infrastructure.Common.Events;
 using System;
 using System.Collections.Generic;
 

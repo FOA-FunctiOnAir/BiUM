@@ -1,4 +1,4 @@
-﻿namespace BiUM.Infrastructure.Common.Events;
+namespace BiUM.Infrastructure.Common.Events;
 
 public interface IEvent : IBaseEvent
 {

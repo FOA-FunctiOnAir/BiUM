@@ -1,4 +1,4 @@
-﻿using BiUM.Contract;
+using BiUM.Contract;
 using BiUM.Specialized.Services;
 using BiUM.Test.Application.Repositories;
 using BiUM.Test.Contract;

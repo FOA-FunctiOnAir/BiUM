@@ -69,6 +69,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
-        };
+        }
+        ;
     }
 }

@@ -86,7 +86,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
                 }
             }
-        };
+        }
+        ;
     }
 }
 

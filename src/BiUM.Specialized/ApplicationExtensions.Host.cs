@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Configs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;

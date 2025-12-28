@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test.Application.Repositories;
 using System.Collections.Generic;

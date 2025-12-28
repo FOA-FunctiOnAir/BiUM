@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -29,7 +29,7 @@ public static class OpenTelemetryExtensions
 
         if (logMetrics != true)
         {
-            return  metrics;
+            return metrics;
         }
 
         return metrics.AddConsoleExporter();
@@ -46,7 +46,7 @@ public static class OpenTelemetryExtensions
 
         if (logTracing != true)
         {
-            return  tracing;
+            return tracing;
         }
 
         return tracing.AddConsoleExporter();

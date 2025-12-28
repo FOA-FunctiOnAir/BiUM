@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Enums;
+using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
 using System;
 using System.IO;

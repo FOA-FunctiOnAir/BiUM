@@ -1,4 +1,4 @@
-﻿namespace BiUM.Specialized.Common.Models;
+namespace BiUM.Specialized.Common.Models;
 
 public class ExportDto
 {

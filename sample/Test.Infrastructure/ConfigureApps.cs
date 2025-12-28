@@ -1,4 +1,4 @@
-﻿using BiUM.Test.Infrastructure.GrpcServices;
+using BiUM.Test.Infrastructure.GrpcServices;
 using Microsoft.AspNetCore.Builder;
 
 namespace Microsoft.Extensions.DependencyInjection;

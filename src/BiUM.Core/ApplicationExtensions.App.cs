@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Middlewares;
+using BiUM.Core.Common.Middlewares;
 using Microsoft.AspNetCore.Builder;
 
 namespace Microsoft.Extensions.DependencyInjection;

@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Configs;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -160,7 +160,7 @@ public static partial class ApplicationExtensions
             type = type.Remove(type.Length - nameof(Exception).Length);
         }
 
-        return  type.PascalToSnakeCase();
+        return type.PascalToSnakeCase();
     }
 
     private static string PascalToSnakeCase(this string text)

@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Database;
+using BiUM.Specialized.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using System;

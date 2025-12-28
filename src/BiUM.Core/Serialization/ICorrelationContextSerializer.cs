@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Models;
+using BiUM.Core.Models;
 
 namespace BiUM.Core.Serialization;
 

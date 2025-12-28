@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Mapping;
+using BiUM.Specialized.Mapping;
 using System.Reflection;
 
 namespace BiUM.Test.Application;

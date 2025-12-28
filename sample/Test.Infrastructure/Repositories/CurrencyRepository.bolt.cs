@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Common.API;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;

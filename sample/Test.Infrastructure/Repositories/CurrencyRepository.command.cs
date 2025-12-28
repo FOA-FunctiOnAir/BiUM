@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Test.Application.Repositories;

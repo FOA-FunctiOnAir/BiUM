@@ -1,4 +1,4 @@
-﻿using BiUM.Core.File;
+using BiUM.Core.File;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.Settings;

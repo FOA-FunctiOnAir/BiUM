@@ -1,4 +1,4 @@
-﻿using BiUM.Test.Infrastructure.Persistence;
+using BiUM.Test.Infrastructure.Persistence;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

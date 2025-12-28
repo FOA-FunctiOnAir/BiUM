@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.MediatR;
+using BiUM.Specialized.Common.MediatR;
 
 namespace BiUM.Test.Application.Features.Currencies.Commands.UpdateBoltCurrency;
 

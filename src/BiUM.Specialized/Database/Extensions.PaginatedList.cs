@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BiUM.Specialized.Common.API;
 using Microsoft.EntityFrameworkCore;
 using System;

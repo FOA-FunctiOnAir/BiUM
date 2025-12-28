@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Database;
+using BiUM.Specialized.Database;
 using BiUM.Test.Application.Repositories;
 using BiUM.Test.Infrastructure.Persistence;
 using System;

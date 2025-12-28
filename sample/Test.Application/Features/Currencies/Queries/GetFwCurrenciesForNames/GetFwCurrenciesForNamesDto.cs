@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BiUM.Specialized.Common.Mapper;
 using BiUM.Test.Domain.Entities;
 using System.Linq;

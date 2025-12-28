@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.MediatR;
+using BiUM.Specialized.Common.MediatR;
 using BiUM.Test.Application.Dtos;
 using System.Collections.Generic;
 

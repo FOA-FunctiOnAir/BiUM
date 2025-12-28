@@ -1,4 +1,4 @@
-﻿using BiUM.Specialized.Common.Models;
+using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
 using BiUM.Test.Domain.Entities;
 

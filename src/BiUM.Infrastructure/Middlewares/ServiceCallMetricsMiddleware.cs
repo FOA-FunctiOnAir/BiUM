@@ -1,5 +1,5 @@
 using BiUM.Core.Common.Configs;
-using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

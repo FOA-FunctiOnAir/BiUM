@@ -1,6 +1,6 @@
 using System;
 
-namespace BiUM.Core.MessageBroker;
+namespace BiUM.Core.MessageBroker.Events;
 
 [Event("observability")]
 public class ServiceCalledEvent : BaseEvent

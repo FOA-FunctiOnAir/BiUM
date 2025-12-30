@@ -2,7 +2,7 @@ using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.HttpClients;
-using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;

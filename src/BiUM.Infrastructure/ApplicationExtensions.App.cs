@@ -121,6 +121,7 @@ public static partial class ApplicationExtensions
             };
 
         app.UseMiddleware<CorrelationContextActivityMiddleware>();
+        app.UseMiddleware<ServiceCallMetricsMiddleware>();
 
         app.UseRouting();
 

@@ -1,5 +1,6 @@
 using BiUM.Bolt.Database;
 using BiUM.Bolt.Database.Entities;
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
@@ -15,18 +16,20 @@ namespace BiUM.Test.Infrastructure.Persistence;
 
 public class BoltDbContext : TestDbContext, IBoltDbContext
 {
-    private readonly CorrelationContext _correlationContext;
     private readonly BoltOptions _boltOptions;
+    private readonly CorrelationContext _correlationContext;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
 
     public BoltDbContext(
-        CorrelationContext correlationContext,
+        ICorrelationContextProvider correlationContextProvider,
         DbContextOptions<TestDbContext> dbOptions,
         DbContextOptions<BoltDbContext> boltDbOptions,
         IOptions<BoltOptions> boltOptions,
         BoltEntitySaveChangesInterceptor entitySaveChangesInterceptor
     ) : base(dbOptions, boltDbOptions, entitySaveChangesInterceptor, true)
     {
-        _correlationContext = correlationContext;
+        _correlationContextProvider = correlationContextProvider;
+        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
         _boltOptions = boltOptions.Value;
     }
 

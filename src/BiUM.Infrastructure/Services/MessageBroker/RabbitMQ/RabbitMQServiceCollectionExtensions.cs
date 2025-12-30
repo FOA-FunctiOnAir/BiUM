@@ -1,4 +1,3 @@
-using BiUM.Infrastructure.Common.Events;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
@@ -9,8 +8,6 @@ public static class RabbitMQServiceCollectionExtensions
 {
     public static IServiceCollection AddRabbitMQEventHandlers(this IServiceCollection services)
     {
-        var handlerInterfaceType = typeof(IEventHandler<>);
-
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
         var handlerTypes = assemblies
@@ -20,14 +17,14 @@ public static class RabbitMQServiceCollectionExtensions
             {
                 Type = t,
                 HandlerInterface = t.GetInterfaces()
-                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == handlerInterfaceType)
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == RabbitMQUtils.EventHandlerType)
             })
             .Where(x => x.HandlerInterface is not null)
             .ToList();
 
         foreach (var handler in handlerTypes)
         {
-            services.AddScoped(handler.HandlerInterface!, handler.Type);
+            _ = services.AddScoped(handler.HandlerInterface!, handler.Type);
         }
 
         return services;

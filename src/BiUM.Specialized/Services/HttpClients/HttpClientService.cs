@@ -2,6 +2,8 @@ using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.HttpClients;
+using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
@@ -10,6 +12,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -33,9 +36,11 @@ public class HttpClientService : IHttpClientsService
     private static readonly TimeSpan Timeout = new(0, 5, 0);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
+    private readonly BiAppOptions? _biAppOptions;
+    private readonly HttpClientsOptions _httpClientOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly HttpClientsOptions _httpClientOptions;
+    private readonly IRabbitMQClient? _rabbitMQClient;
 
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
@@ -44,13 +49,17 @@ public class HttpClientService : IHttpClientsService
     };
 
     public HttpClientService(
+        IOptions<BiAppOptions>? biAppOptions,
+        IOptions<HttpClientsOptions> httpClientOptions,
         IHttpClientFactory httpClientFactory,
         IHttpContextAccessor httpContextAccessor,
-        IOptions<HttpClientsOptions> httpClientOptions)
+        IRabbitMQClient? rabbitMQClient)
     {
+        _biAppOptions = biAppOptions?.Value;
+        _httpClientOptions = httpClientOptions.Value;
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
-        _httpClientOptions = httpClientOptions.Value;
+        _rabbitMQClient = rabbitMQClient;
     }
 
     public async Task<IApiResponse> CallService(
@@ -96,6 +105,10 @@ public class HttpClientService : IHttpClientsService
         CancellationToken cancellationToken = default)
     {
         var result = new ApiResponse<TType>();
+        var stopwatch = Stopwatch.StartNew();
+        var originalUrl = url;
+        string? finalUrl = null;
+        int? statusCode = null;
 
         try
         {
@@ -105,17 +118,26 @@ public class HttpClientService : IHttpClientsService
 
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
-            var targetUrl = AppendParametersAsQueryString(url, parameters);
+            finalUrl = AppendParametersAsQueryString(url, parameters);
 
-            var request = CreateRequestMessage(HttpMethod.Get, targetUrl);
+            var request = CreateRequestMessage(HttpMethod.Get, finalUrl);
 
             TryAddCorrelationContext(request);
 
             var response = await httpClient.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+            statusCode = (int)response.StatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
                 result.AddMessage("HttpClientService.Get", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
+
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Get.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: false);
 
                 return result;
             }
@@ -125,6 +147,13 @@ public class HttpClientService : IHttpClientsService
             if (external == true)
             {
                 result.Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Get.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: true);
 
                 return result;
             }
@@ -140,11 +169,26 @@ public class HttpClientService : IHttpClientsService
                 result.Value = default;
             }
 
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl),
+                endpoint: finalUrl,
+                httpMethod: HttpMethod.Get.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: true);
+
             return result;
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
             result.AddMessage($"HttpClientService.GetException-{ex.GetType().Name}", ex.GetFullMessage(), MessageSeverity.Error);
+
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+                endpoint: finalUrl ?? originalUrl,
+                httpMethod: HttpMethod.Get.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: false);
 
             return result;
         }
@@ -157,10 +201,15 @@ public class HttpClientService : IHttpClientsService
         CancellationToken cancellationToken = default)
     {
         var result = new ApiEmptyResponse();
+        var stopwatch = Stopwatch.StartNew();
+        var originalUrl = url;
+        string? finalUrl = null;
+        int? statusCode = null;
 
         try
         {
             url = _httpClientOptions.GetFullUrl(url);
+            finalUrl = url;
 
             var httpClient = GetHttpClient(url);
 
@@ -173,16 +222,32 @@ public class HttpClientService : IHttpClientsService
             TryAddCorrelationContext(request);
 
             var response = await httpClient.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+            statusCode = (int)response.StatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
                 result.AddMessage("HttpClientService.Post", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
+
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Post.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: false);
 
                 return result;
             }
 
             if (external == true)
             {
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Post.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: true);
+
                 return result;
             }
 
@@ -193,11 +258,26 @@ public class HttpClientService : IHttpClientsService
                 result = fetchedResponse;
             }
 
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl),
+                endpoint: finalUrl,
+                httpMethod: HttpMethod.Post.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: true);
+
             return result;
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
             result.AddMessage($"HttpClientService.PostException-{ex.GetType().Name}", ex.GetFullMessage(), MessageSeverity.Error);
+
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+                endpoint: finalUrl ?? originalUrl,
+                httpMethod: HttpMethod.Post.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: false);
 
             return result;
         }
@@ -210,10 +290,15 @@ public class HttpClientService : IHttpClientsService
         CancellationToken cancellationToken = default)
     {
         var result = new ApiResponse<TType>();
+        var stopwatch = Stopwatch.StartNew();
+        var originalUrl = url;
+        string? finalUrl = null;
+        int? statusCode = null;
 
         try
         {
             url = _httpClientOptions.GetFullUrl(url);
+            finalUrl = url;
 
             var httpClient = GetHttpClient(url);
 
@@ -226,10 +311,19 @@ public class HttpClientService : IHttpClientsService
             TryAddCorrelationContext(request);
 
             var response = await httpClient.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+            statusCode = (int)response.StatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
                 result.AddMessage("HttpClientService.Post", response.ReasonPhrase ?? nameof(response.ReasonPhrase), MessageSeverity.Error);
+
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Post.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: false);
 
                 return result;
             }
@@ -239,6 +333,13 @@ public class HttpClientService : IHttpClientsService
             if (external == true)
             {
                 result.Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                await PublishServiceCalledEventAsync(
+                    serviceName: ExtractServiceName(finalUrl),
+                    endpoint: finalUrl,
+                    httpMethod: HttpMethod.Post.Method,
+                    executionTimeMs: stopwatch.ElapsedMilliseconds,
+                    isSuccess: true);
 
                 return result;
             }
@@ -254,11 +355,26 @@ public class HttpClientService : IHttpClientsService
                 result.Value = default;
             }
 
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl),
+                endpoint: finalUrl,
+                httpMethod: HttpMethod.Post.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: true);
+
             return result;
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
             result.AddMessage($"HttpClientService.PostException<Type>-{ex.GetType().Name}", ex.GetFullMessage(), MessageSeverity.Error);
+
+            await PublishServiceCalledEventAsync(
+                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+                endpoint: finalUrl ?? originalUrl,
+                httpMethod: HttpMethod.Post.Method,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: false);
 
             return result;
         }
@@ -526,62 +642,101 @@ public class HttpClientService : IHttpClientsService
         Dictionary<string, dynamic>? parameters,
         CancellationToken cancellationToken)
     {
-        string? url;
+        var stopwatch = Stopwatch.StartNew();
+        string? finalUrl = null;
+        string? httpMethodStr = null;
+        int? statusCode = null;
+        bool isSuccess = false;
 
-        if (service.Type == Ids.Parameter.ServiceType.Values.Crud || service.Type == Ids.Parameter.ServiceType.Values.DynamicApi)
+        try
         {
-            if (string.IsNullOrEmpty(service.MicroserviceRootPath))
+            string? url;
+
+            if (service.Type == Ids.Parameter.ServiceType.Values.Crud || service.Type == Ids.Parameter.ServiceType.Values.DynamicApi)
             {
-                throw new InvalidOperationException("Microservice root path is not defined for the internal service call.");
+                if (string.IsNullOrEmpty(service.MicroserviceRootPath))
+                {
+                    throw new InvalidOperationException("Microservice root path is not defined for the internal service call.");
+                }
+
+                url = _httpClientOptions.GetFullUrl(service.MicroserviceRootPath, service.Url);
+            }
+            else
+            {
+                url = _httpClientOptions.GetFullUrl(service.Url);
             }
 
-            url = _httpClientOptions.GetFullUrl(service.MicroserviceRootPath, service.Url);
+            var httpClient = GetHttpClient(service);
+
+            var httpMethod = ResolveHttpMethod(service.HttpType);
+            httpMethodStr = httpMethod.Method;
+
+            HttpRequestMessage? request;
+
+            if (httpMethod == HttpMethod.Get)
+            {
+                finalUrl = AppendParametersAsQueryString(url, parameters);
+
+                request = CreateRequestMessage(HttpMethod.Get, finalUrl);
+            }
+            else if (httpMethod == HttpMethod.Post)
+            {
+                finalUrl = url;
+                request = CreateRequestMessage(HttpMethod.Post, url);
+
+                request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+            }
+            else if (httpMethod == HttpMethod.Put)
+            {
+                finalUrl = url;
+                request = CreateRequestMessage(HttpMethod.Put, url);
+
+                request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+            }
+            else if (httpMethod == HttpMethod.Delete)
+            {
+                finalUrl = AppendParametersAsQueryString(url, parameters);
+
+                request = CreateRequestMessage(HttpMethod.Delete, finalUrl);
+            }
+            else
+            {
+                throw new NotSupportedException($"HTTP method '{httpMethod.Method}' is not supported for internal service calls.");
+            }
+
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+            statusCode = (int)response.StatusCode;
+            isSuccess = response.IsSuccessStatusCode;
+
+            await PublishServiceCalledEventAsync(
+                serviceName: service.Name ?? ExtractServiceName(finalUrl ?? url),
+                endpoint: finalUrl ?? url,
+                httpMethod: httpMethodStr,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: isSuccess,
+                microserviceId: service.MicroserviceId,
+                serviceId: service.Id);
+
+            return response ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
         }
-        else
+        catch (Exception ex)
         {
-            url = _httpClientOptions.GetFullUrl(service.Url);
+            stopwatch.Stop();
+
+            await PublishServiceCalledEventAsync(
+                serviceName: service.Name ?? ExtractServiceName(finalUrl ?? service.Url),
+                endpoint: finalUrl ?? service.Url,
+                httpMethod: httpMethodStr ?? "UNKNOWN",
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: false,
+                microserviceId: service.MicroserviceId,
+                serviceId: service.Id);
+
+            throw;
         }
-
-        var httpClient = GetHttpClient(service);
-
-        var httpMethod = ResolveHttpMethod(service.HttpType);
-
-        HttpRequestMessage? request;
-
-        if (httpMethod == HttpMethod.Get)
-        {
-            var targetUrl = AppendParametersAsQueryString(url, parameters);
-
-            request = CreateRequestMessage(HttpMethod.Get, targetUrl);
-        }
-        else if (httpMethod == HttpMethod.Post)
-        {
-            request = CreateRequestMessage(HttpMethod.Post, url);
-
-            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
-        }
-        else if (httpMethod == HttpMethod.Put)
-        {
-            request = CreateRequestMessage(HttpMethod.Put, url);
-
-            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
-        }
-        else if (httpMethod == HttpMethod.Delete)
-        {
-            var targetUrl = AppendParametersAsQueryString(url, parameters);
-
-            request = CreateRequestMessage(HttpMethod.Delete, targetUrl);
-        }
-        else
-        {
-            throw new NotSupportedException($"HTTP method '{httpMethod.Method}' is not supported for internal service calls.");
-        }
-
-        TryAddCorrelationContext(request);
-
-        var response = await httpClient.SendAsync(request, cancellationToken);
-
-        return response ?? new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
     }
 
     private async Task<HttpResponseMessage> ExecuteExternalCallAsync(
@@ -589,54 +744,94 @@ public class HttpClientService : IHttpClientsService
         Dictionary<string, dynamic>? parameters,
         CancellationToken cancellationToken)
     {
+        var stopwatch = Stopwatch.StartNew();
         var url = service.Url;
+        string? finalUrl = null;
+        string? httpMethodStr = null;
+        int? statusCode = null;
+        bool isSuccess = false;
 
-        var httpMethod = ResolveHttpMethod(service.HttpType);
-
-        var authInfo = service.Authentication;
-
-        if (authInfo is not null && authInfo.AuthType == Ids.Parameter.ServiceAuthType.Values.ApiKeyQuery)
+        try
         {
-            if (!string.IsNullOrEmpty(authInfo.ApiKey))
+            var httpMethod = ResolveHttpMethod(service.HttpType);
+            httpMethodStr = httpMethod.Method;
+
+            var authInfo = service.Authentication;
+
+            if (authInfo is not null && authInfo.AuthType == Ids.Parameter.ServiceAuthType.Values.ApiKeyQuery)
             {
-                var queryKeyName = string.IsNullOrEmpty(authInfo.ApiKeyHeaderName) ? "apiKey" : authInfo.ApiKeyHeaderName;
+                if (!string.IsNullOrEmpty(authInfo.ApiKey))
+                {
+                    var queryKeyName = string.IsNullOrEmpty(authInfo.ApiKeyHeaderName) ? "apiKey" : authInfo.ApiKeyHeaderName;
 
-                parameters ??= [];
+                    parameters ??= [];
 
-                parameters[queryKeyName] = authInfo.ApiKey;
+                    parameters[queryKeyName] = authInfo.ApiKey;
+                }
             }
-        }
 
-        HttpRequestMessage request;
+            HttpRequestMessage request;
 
-        if (httpMethod == HttpMethod.Get || httpMethod == HttpMethod.Delete)
-        {
-            url = AppendParametersAsQueryString(url, parameters);
-
-            request = new HttpRequestMessage(httpMethod, url);
-        }
-        else if (httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put)
-        {
-            request = new HttpRequestMessage(httpMethod, url);
-
-            if (parameters is not null && parameters.Count > 0)
+            if (httpMethod == HttpMethod.Get || httpMethod == HttpMethod.Delete)
             {
-                request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+                finalUrl = AppendParametersAsQueryString(url, parameters);
+
+                request = new HttpRequestMessage(httpMethod, finalUrl);
             }
+            else if (httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put)
+            {
+                finalUrl = url;
+                request = new HttpRequestMessage(httpMethod, url);
+
+                if (parameters is not null && parameters.Count > 0)
+                {
+                    request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+                }
+            }
+            else
+            {
+                finalUrl = url;
+                request = new HttpRequestMessage(httpMethod, url);
+            }
+
+            if (authInfo is not null)
+            {
+                await ApplyAuthenticationAsync(request, authInfo, finalUrl ?? url, parameters, cancellationToken);
+            }
+
+            var httpClient = GetHttpClient(finalUrl ?? url);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+            stopwatch.Stop();
+            statusCode = (int)response.StatusCode;
+            isSuccess = response.IsSuccessStatusCode;
+
+            await PublishServiceCalledEventAsync(
+                serviceName: service.Name ?? ExtractServiceName(finalUrl ?? url),
+                endpoint: finalUrl ?? url,
+                httpMethod: httpMethodStr,
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: isSuccess,
+                microserviceId: service.MicroserviceId,
+                serviceId: service.Id);
+
+            return response;
         }
-        else
+        catch (Exception ex)
         {
-            request = new HttpRequestMessage(httpMethod, url);
+            stopwatch.Stop();
+
+            await PublishServiceCalledEventAsync(
+                serviceName: service.Name ?? ExtractServiceName(finalUrl ?? url),
+                endpoint: finalUrl ?? url,
+                httpMethod: httpMethodStr ?? "UNKNOWN",
+                executionTimeMs: stopwatch.ElapsedMilliseconds,
+                isSuccess: false,
+                microserviceId: service.MicroserviceId,
+                serviceId: service.Id);
+
+            throw;
         }
-
-        if (authInfo is not null)
-        {
-            await ApplyAuthenticationAsync(request, authInfo, url, parameters, cancellationToken);
-        }
-
-        var httpClient = GetHttpClient(url);
-
-        return await httpClient.SendAsync(request, cancellationToken);
     }
 
     private static HttpMethod ResolveHttpMethod(Guid httpType)
@@ -882,5 +1077,76 @@ public class HttpClientService : IHttpClientsService
         {
             return null;
         }
+    }
+
+    private async Task PublishServiceCalledEventAsync(
+        string serviceName,
+        string endpoint,
+        string httpMethod,
+        long executionTimeMs,
+        bool isSuccess,
+        Guid? microserviceId = null,
+        Guid? serviceId = null)
+    {
+        if (_rabbitMQClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var serviceCalledEvent = new ServiceCalledEvent
+            {
+                MicroserviceId = microserviceId,
+                ServiceId = serviceId,
+                ServiceName = serviceName,
+                Endpoint = endpoint,
+                HttpMethod = httpMethod,
+                ExecutionTimeMs = executionTimeMs,
+                Success = isSuccess
+            };
+
+            await _rabbitMQClient.PublishAsync(serviceCalledEvent);
+        }
+        catch
+        {
+        }
+    }
+
+    private string ExtractServiceName(string url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return FormatServiceName(_biAppOptions?.Domain ?? "unknown");
+        }
+
+        try
+        {
+            var uri = new Uri(url);
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            var serviceName = segments.Length > 0 && segments[0] == "api" && segments.Length > 1 ? segments[1] : uri.Host;
+
+            return FormatServiceName(serviceName);
+        }
+        catch
+        {
+            return FormatServiceName(_biAppOptions?.Domain ?? "unknown");
+        }
+    }
+
+    private static string FormatServiceName(string serviceName)
+    {
+        if (string.IsNullOrEmpty(serviceName))
+        {
+            return "unknown";
+        }
+
+        if (serviceName.StartsWith("BiApp.", StringComparison.OrdinalIgnoreCase))
+        {
+            return serviceName;
+        }
+
+        return $"BiApp.{serviceName}";
     }
 }

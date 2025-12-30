@@ -24,15 +24,15 @@ public class CorrelationContextActivityMiddleware
 
             if (activity is not null)
             {
-                activity.SetTag("correlation.id", correlationContext.CorrelationId);
-                activity.SetTag("tenant.id", correlationContext.TenantId);
-                activity.SetTag("application.id", correlationContext.ApplicationId);
-                activity.SetTag("language.id", correlationContext.LanguageId);
+                _ = activity.SetTag("correlation.id", correlationContext.CorrelationId);
+                _ = activity.SetTag("tenant.id", correlationContext.TenantId);
+                _ = activity.SetTag("application.id", correlationContext.ApplicationId);
+                _ = activity.SetTag("language.id", correlationContext.LanguageId);
 
                 if (correlationContext.User is not null)
                 {
-                    activity.SetTag("user.id", correlationContext.User.Id);
-                    activity.SetTag("user.identity", correlationContext.User.Identity);
+                    _ = activity.SetTag("user.id", correlationContext.User.Id);
+                    _ = activity.SetTag("user.identity", correlationContext.User.Identity);
                 }
             }
         }

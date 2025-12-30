@@ -1,8 +1,10 @@
+using BiUM.Core.Audit;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
+[Auditable]
 [Table("__CRUD_COLUMN", Schema = "dbo")]
 public class DomainCrudColumn : BaseEntity
 {

@@ -1,9 +1,11 @@
+using BiUM.Core.Audit;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
+[Auditable]
 [Table("__DYNAMIC_API", Schema = "dbo")]
 public class DomainDynamicApi : TenantBaseEntity
 {

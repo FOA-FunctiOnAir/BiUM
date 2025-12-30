@@ -1,8 +1,10 @@
+using BiUM.Core.Audit;
 using BiUM.Infrastructure.Common.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Bolt.Database.Entities;
 
+[Auditable(false)]
 [Table("__BOLT_TRANSACTION", Schema = "dbo")]
 public class BoltTransaction : BaseEntity
 {

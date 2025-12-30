@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Test.API.Controllers;
 
+
 [BiUMRoute("test")]
 public class TestRedisController : ApiControllerBase
 {

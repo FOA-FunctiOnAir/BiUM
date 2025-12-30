@@ -1,9 +1,11 @@
+using BiUM.Core.Audit;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
+[Auditable]
 [Table("__CRUD", Schema = "dbo")]
 public class DomainCrud : TenantBaseEntity
 {

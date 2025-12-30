@@ -12,13 +12,13 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddDomainInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
-        services.AddScoped<ITestDbContext>(provider => provider.GetRequiredService<TestDbContext>());
+        _ = services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
+        _ = services.AddScoped<ITestDbContext>(provider => provider.GetRequiredService<TestDbContext>());
 
-        services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
-        services.AddScoped<IBoltDbContext>(provider => provider.GetRequiredService<BoltDbContext>());
+        _ = services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
+        _ = services.AddScoped<IBoltDbContext>(provider => provider.GetRequiredService<BoltDbContext>());
 
-        services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+        _ = services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 
         return services;
     }

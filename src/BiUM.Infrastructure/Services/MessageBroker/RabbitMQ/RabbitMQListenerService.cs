@@ -1,13 +1,11 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.RabbitMQ;
-using BiUM.Infrastructure.Common.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,21 +16,82 @@ public class RabbitMQListenerService : BackgroundService
 {
     private static readonly ConcurrentDictionary<(Type handlerIface, Type eventType), Func<object, object, CancellationToken, Task>> _invokerCache = new();
 
+    private readonly BiAppOptions _biAppOptions;
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly IServiceProvider _serviceProvider;
     private readonly IRabbitMQClient _client;
     private readonly ILogger<RabbitMQListenerService> _logger;
+    private readonly ConcurrentDictionary<Type, string> _consumerTags = new();
 
     public RabbitMQListenerService(
         IServiceProvider serviceProvider,
         IRabbitMQClient client,
+        IOptions<BiAppOptions> biAppOptions,
         IOptions<RabbitMQOptions> rabbitMQOptions,
         ILogger<RabbitMQListenerService> logger)
     {
         _serviceProvider = serviceProvider;
         _client = client;
+        _biAppOptions = biAppOptions.Value;
         _rabbitMQOptions = rabbitMQOptions.Value;
         _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        if (!_rabbitMQOptions.Enable) return;
+
+        var handlerTypes = RabbitMQUtils.GetAllHandlerTypes();
+        var consumerName = _biAppOptions.Domain;
+
+        foreach (var handlerType in handlerTypes)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            var (eventType, handlerInterface) = RabbitMQUtils.GetInterfaceAndGenericType(handlerType);
+
+            var invoker = _invokerCache.GetOrAdd(
+                (handlerInterface, eventType),
+                key => BuildInvokerWithCreateDelegate(key.handlerIface, key.eventType)
+            );
+
+            try
+            {
+                await _client.StartConsumingAsync(eventType, async obj =>
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var handler = scope.ServiceProvider.GetRequiredService(handlerInterface);
+                    await invoker(handler, obj, cancellationToken).ConfigureAwait(false);
+                }, consumerName);
+
+                _logger.LogInformation("Started consuming events for {EventType}", eventType.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start consuming events for {EventType}", eventType.Name);
+            }
+        }
+
+        try
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("RabbitMQListenerService cancellation requested");
+        }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Stopping RabbitMQListenerService...");
+
+        await base.StopAsync(cancellationToken);
+
+        _logger.LogInformation("RabbitMQListenerService stopped");
     }
 
     private static Func<object, object, CancellationToken, Task> BuildInvokerWithCreateDelegate(Type handlerInterface, Type eventType)
@@ -57,82 +116,5 @@ public class RabbitMQListenerService : BackgroundService
         var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task>>(invokeCall, h, m, ct);
 
         return lambda.Compile();
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-        if (!_rabbitMQOptions.Enable) return;
-
-        var handlerTypes = GetAllHandlerTypes();
-
-        foreach (var handlerType in handlerTypes)
-        {
-            var eventType = handlerType.GetInterface("IEventHandler`1")!.GenericTypeArguments[0];
-            var handlerInterface = typeof(IEventHandler<>).MakeGenericType(eventType);
-
-            var invoker = _invokerCache.GetOrAdd(
-                (handlerInterface, eventType),
-                key => BuildInvokerWithCreateDelegate(key.handlerIface, key.eventType)
-            );
-
-            await _client.StartConsumingAsync(eventType, async obj =>
-            {
-                _logger.LogWarning("Event StartConsuming started for {EventType}", eventType.FullName);
-                try
-                {
-                    using var scope = _serviceProvider.CreateScope();
-
-                    var handler = scope.ServiceProvider.GetRequiredService(handlerInterface);
-
-                    await invoker(handler, obj, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Event handler failed for {EventType}", eventType.FullName);
-                }
-            });
-        }
-    }
-
-    protected async Task ExecuteAsync_Old(CancellationToken stoppingToken)
-    {
-        if (!_rabbitMQOptions.Enable) return;
-
-        var handlerTypes = GetAllHandlerTypes();
-
-        foreach (var handlerType in handlerTypes)
-        {
-            var eventType = handlerType.GetInterface("IEventHandler`1")!.GenericTypeArguments[0];
-
-            var handlerGenericType = typeof(IEventHandler<>).MakeGenericType(eventType);
-
-            await _client.StartConsumingAsync(eventType, async (obj) =>
-            {
-                _logger.LogWarning("Event StartConsuming started for {EventType}", eventType.FullName);
-
-                try
-                {
-                    using var scope = _serviceProvider.CreateScope();
-
-                    var handler = scope.ServiceProvider.GetRequiredService(handlerGenericType);
-                    var method = handlerType.GetMethod("HandleAsync")!;
-
-                    await (Task)method.Invoke(handler, [obj, stoppingToken])!;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Event handler failed for {EventType}", eventType.FullName);
-                }
-            });
-        }
-    }
-
-    private static Type[] GetAllHandlerTypes()
-    {
-        return AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(s => s.GetTypes())
-            .Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>)))
-            .ToArray();
     }
 }

@@ -1,9 +1,11 @@
+using BiUM.Core.Audit;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
+[Auditable]
 [Table("__TRANSLATION", Schema = "dbo")]
 public class DomainTranslation : BaseEntity
 {

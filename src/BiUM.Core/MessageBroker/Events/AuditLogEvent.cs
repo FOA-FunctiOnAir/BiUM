@@ -5,6 +5,8 @@ namespace BiUM.Core.MessageBroker.Events;
 [Event("audit")]
 public class AuditLogEvent : BaseEvent
 {
+    public string ServiceName { get; set; } = string.Empty;
+
     public string EntityName { get; set; } = string.Empty;
 
     public string EntityId { get; set; } = string.Empty;

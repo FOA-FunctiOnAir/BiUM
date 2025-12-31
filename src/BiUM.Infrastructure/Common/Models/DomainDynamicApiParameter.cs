@@ -1,10 +1,8 @@
-using BiUM.Core.Audit;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-[Auditable]
 [Table("__DYNAMIC_API_PARAMETER", Schema = "dbo")]
 public class DomainDynamicApiParameter : BaseEntity
 {

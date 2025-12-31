@@ -23,6 +23,7 @@ public partial class CurrencyRepository
         {
             currency = new Currency()
             {
+                Id = command.Id!.Value,
                 Name = command.NameTr.ToTranslationString(),
                 Code = command.Code,
             };

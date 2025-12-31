@@ -24,11 +24,11 @@ public static partial class ApplicationExtensions
 {
     public static WebApplicationBuilder ConfigureSpecializedServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddControllersWithViews();
+        _ = builder.Services.AddControllersWithViews();
 
-        builder.Services.AddRazorPages();
+        _ = builder.Services.AddRazorPages();
 
-        builder.Services.AddControllers()
+        _ = builder.Services.AddControllers()
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.CrudController).Assembly)
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainCrudController).Assembly)
             .AddApplicationPart(typeof(BiUM.Specialized.Common.API.DomainTranslationController).Assembly)
@@ -37,50 +37,51 @@ public static partial class ApplicationExtensions
         {
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
 
         // Customise default API behaviour
-        builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+        _ = builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
 
         // Configure Grpc
-        builder.Services.AddGrpc();
-        builder.Services.AddGrpcReflection();
+        _ = builder.Services.AddGrpc();
+        _ = builder.Services.AddGrpcReflection();
 
-        builder.Services.AddOpenTelemetry()
+        _ = builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing
                 .AddGrpcCoreInstrumentation()
                 .AddGrpcClientInstrumentation(options =>
                 {
                     options.EnrichWithHttpRequestMessage = (activity, httpRequestMessage) =>
                     {
-                        activity.SetTag("grpc.request.uri", httpRequestMessage.RequestUri);
+                        _ = activity.SetTag("grpc.request.uri", httpRequestMessage.RequestUri);
                     };
                     options.EnrichWithHttpResponseMessage = (activity, httpResponseMessage) =>
                     {
-                        activity.SetTag("grpc.response.status_code", (int)httpResponseMessage.StatusCode);
+                        _ = activity.SetTag("grpc.response.status_code", (int)httpResponseMessage.StatusCode);
                     };
                 })
                 .AddNpgsql()
                 .AddSqlClientInstrumentation());
 
-        builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
-        builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));
+        _ = builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
+        _ = builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));
 
-        builder.Services.AddScoped<EntitySaveChangesInterceptor>();
+        _ = builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 
-        builder.Services.AddTransient<ICrudService, CrudService>();
-        builder.Services.AddTransient<IHttpClientsService, HttpClientService>();
-        builder.Services.AddTransient<ITranslationService, TranslationService>();
+        _ = builder.Services.AddTransient<ICrudService, CrudService>();
+        _ = builder.Services.AddTransient<IHttpClientsService, HttpClientService>();
+        _ = builder.Services.AddTransient<ITranslationService, TranslationService>();
 
         return builder;
     }
 
     public static IServiceCollection AddInfrastructureAdditionalServices(this IServiceCollection services, IConfiguration configuration, Assembly assembly)
     {
-        services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
-        services.AddValidatorsFromAssembly(assembly);
-        services.AddMediatR(assembly);
+        _ = services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
+        _ = services.AddValidatorsFromAssembly(assembly);
+        _ = services.AddMediatR(assembly);
 
         return services;
     }
@@ -88,18 +89,14 @@ public static partial class ApplicationExtensions
     public static IServiceCollection AddGrpcClient<TClient>(this IServiceCollection services, IConfiguration configuration, string serviceKey)
         where TClient : ClientBase<TClient>
     {
-        var grpcOptions = configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>();
-
-        if (grpcOptions is null)
-        {
-            throw new InvalidOperationException($"{BiGrpcOptions.Name} not found in configuration");
-        }
+        var grpcOptions = configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>()
+            ?? throw new InvalidOperationException($"{BiGrpcOptions.Name} not found in configuration");
 
         var url = grpcOptions.GetServiceUrl(serviceKey);
 
-        services.AddScoped<ForwardHeadersGrpcInterceptor>();
+        _ = services.AddScoped<ForwardHeadersGrpcInterceptor>();
 
-        services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
+        _ = services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
             .AddInterceptor<ForwardHeadersGrpcInterceptor>();
 
         return services;

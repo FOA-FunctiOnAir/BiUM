@@ -93,7 +93,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
         var now = _dateTimeService.Now.ToUniversalTime();
 
-        foreach (var entry in baseDbContext.ChangeTracker.Entries<BaseEntity>())
+        foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
             if (entry.State == EntityState.Added)
             {
@@ -129,7 +129,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
         var userId = _correlationContext.User?.Id ?? Guid.Empty;
 
-        foreach (var entry in baseDbContext.ChangeTracker.Entries<BaseEntity>())
+        foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
             if (entry.State is EntityState.Detached or EntityState.Unchanged)
             {
@@ -148,7 +148,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
             if (entry.State == EntityState.Added)
             {
-                afterJson = JsonSerializer.Serialize(entry.Entity);
+                afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
                 changeCount = 1;
             }
             else if (entry.State == EntityState.Modified)
@@ -157,25 +157,23 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     .Where(p => p.IsModified && !p.Metadata.IsPrimaryKey())
                     .ToList();
 
-                if (!changedProps.Any())
+                if (changedProps.Count == 0)
                 {
                     continue;
                 }
 
                 var before = new Dictionary<string, object?>();
-                var after = new Dictionary<string, object?>();
                 var fields = new List<string>();
 
                 foreach (var prop in changedProps)
                 {
                     before[prop.Metadata.Name] = prop.OriginalValue;
-                    after[prop.Metadata.Name] = prop.CurrentValue;
 
                     fields.Add(prop.Metadata.Name);
                 }
 
                 beforeJson = JsonSerializer.Serialize(before);
-                afterJson = JsonSerializer.Serialize(after);
+                afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
                 changedFieldsJson = JsonSerializer.Serialize(fields);
                 changeCount = changedProps.Count;
             }

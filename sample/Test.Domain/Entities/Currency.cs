@@ -1,6 +1,7 @@
 using BiUM.Infrastructure.Common.Models;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Test.Domain.Entities;
 
@@ -13,5 +14,6 @@ public class Currency : BaseEntity
     [Column("CODE")]
     public required string Code { get; set; }
 
+    [JsonIgnore]
     public virtual ICollection<CurrencyTranslation>? CurrencyTranslations { get; set; }
 }

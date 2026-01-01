@@ -123,6 +123,7 @@ public class RabbitMQClient : IRabbitMQClient
         }
 
         await _channelLock.WaitAsync();
+
         try
         {
             if (_channel?.IsOpen == true)
@@ -245,6 +246,11 @@ public class RabbitMQClient : IRabbitMQClient
     public async Task PublishAsync<T>(T message)
         where T : IBaseEvent
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return;
+        }
+
         EnsureCorrelationContext(message);
         EnsureEventTimestamps(message);
 
@@ -297,6 +303,11 @@ public class RabbitMQClient : IRabbitMQClient
     public async Task PublishAsync<T>(string target, T message)
         where T : IBaseEvent
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return;
+        }
+
         EnsureCorrelationContext(message);
         EnsureEventTimestamps(message);
 
@@ -332,6 +343,11 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async Task SendMessageAsync(Message message, string exchangeName = "", string queueName = "", bool persistent = false)
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return;
+        }
+
         var channel = await GetChannelAsync();
 
         await EnsureQueueDeclaredAsync(queueName);
@@ -345,6 +361,11 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async Task<T?> ReceiveMessageAsync<T>(CancellationToken token)
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return default;
+        }
+
         var channel = await GetChannelAsync();
         var queueName = RabbitMQUtils.GetQueueName(typeof(T), _biAppOptions);
 
@@ -386,6 +407,11 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async Task<object?> ReceiveMessageAsync(Type eventType, CancellationToken token)
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return default;
+        }
+
         var channel = await GetChannelAsync();
         var queueName = RabbitMQUtils.GetQueueName(eventType, _biAppOptions);
 
@@ -425,6 +451,11 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async Task<Message> ReceiveMessageAsync(string queueName = "")
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return null;
+        }
+
         var channel = await GetChannelAsync();
 
         await EnsureQueueDeclaredAsync(queueName);
@@ -453,6 +484,11 @@ public class RabbitMQClient : IRabbitMQClient
 
     public async Task StartConsumingAsync(Type eventType, Func<object, Task> callback, string consumerName)
     {
+        if (!_rabbitMQOptions.Enable)
+        {
+            return;
+        }
+
         var channel = await GetChannelAsync();
 
         var attr = eventType.GetCustomAttribute<EventAttribute>();

@@ -69,6 +69,7 @@ csharp_space_between_square_brackets = false
 # Sorting preferences
 dotnet_sort_system_directives_first = false
 dotnet_separate_import_directive_groups = false
+dotnet_remove_unnecessary_usings = true
 
 # Code style defaults
 csharp_using_directive_placement = outside_namespace:silent

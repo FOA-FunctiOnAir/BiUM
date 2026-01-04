@@ -1,25 +1,34 @@
 # BiUM.Core
 
-## Overview
-`BiUM.Core` is the foundational library for the BiUM solution, containing common utilities, interfaces, and shared services used across the application.
+## 📖 Overview
+**BiUM.Core** is the foundational library for the BiUM solution, containing common utilities, interfaces, and shared services used across the application to ensure consistency and modularity.
 
-## Key Components
--   **Common**: Shared utilities and helper classes.
--   **Caching**: Interfaces and implementations for caching mechanisms.
--   **Database**: Core database abstractions.
--   **HttpClients**: HTTP client configurations and services.
--   **Logging**: Logging abstractions and configurations.
--   **MessageBroker**: Interfaces for message brokering.
--   **Models**: Shared data models.
--   **File Services**: Integration with `SimpleHtmlToPdf` for HTML to PDF conversion.
+## 🔑 Key Components
 
-## Usage
-This project is referenced by almost all other projects in the solution to ensure access to core functionalities and standardizations.
+- **Common**:
+  - `Configs`: Options pattern classes (`BoltOptions`, `RabbitMQOptions`).
+  - `Utils`: Helper methods (`DateTime`, `String` extensions).
+- **Caching**: `ICacheService` interfaces for distributed and memory caching.
+- **Database**:
+  - `IRepository<T>`: Generic repository interface.
+  - `IUnitOfWork`: Transaction management abstraction.
+- **MessageBroker**: `IEventBus` interface for publishing integration events.
+- **Logging**: Abstractions for structured logging.
+- **HttpClients**: Base classes for typed HTTP clients.
+
+## 📦 Usage
+
+Add the project reference or install the NuGet package:
+
+```bash
+dotnet add package BiUM.Core
+```
 
 ### Service Registration
-To use the core services, register them in your startup configuration:
+Register core services in your startup configuration:
 
 ```csharp
+// Registers MediatR, AutoMapper validators, and core services
 services.AddCoreServices(assembly);
 services.AddFileServices(assembly);
 ```

@@ -1,32 +1,44 @@
 # BiUM.Specialized
 
-## Overview
-`BiUM.Specialized` is a high-level library that integrates various components to build specialized applications within the BiUM ecosystem. It provides extensive configuration for APIs, authentication, authorization, and common application services.
+## 📖 Overview
+**BiUM.Specialized** is the high-level integration library that ties together Core, Infrastructure, and Contracts. It offers opinionated configurations for building FOA microservices, including API setup, Interceptors, and common Application Services.
 
-## Key Features
--   **API Configuration**: Sets up controllers, JSON serialization (CamelCase, Enums), Swagger/OpenAPI, and CORS policies.
--   **Common Services**: Registers implementations for:
-    -   `ICrudService`: Generic CRUD operations.
-    -   `IDateTimeService`: Date and time utilities.
-    -   `IHttpClientsService`: HTTP client wrapper.
-    -   `ITranslationService`: Translation services.
-    -   `IFileService`: File handling services.
--   **Middleware**: Configures global exception handling, logging (Serilog), health checks, and routing.
--   **Database**: Provides extension methods for database initialization and seeding.
+## 🔑 Key Features
 
-## Usage
-### Service Registration
+- **API Configuration**:
+  - Automatic Swagger/OpenAPI setup.
+  - Global Exception Handling Middleware.
+  - CORS policies.
+  - JsonOptions (CamelCase, Enums as Strings).
+- **Interceptors**:
+  - `GrpcGlobalExceptionHandlerInterceptor`: Standardized gRPC error handling.
+  - `EntitySaveChangesInterceptor`: Auditing for EF Core entities.
+- **Common Services**:
+  - `ICrudService`: Generic service for standard CRUD operations.
+  - `IFileService`: Abstraction for file handling.
+- **Mapping**: AutoMapper profiles and extensions.
+
+## 📦 Usage
+
+### 1. Service Registration
+In `Program.cs`:
+
 ```csharp
+// Registers Infrastructure, Specialized services, and configurations
 services.AddSpecializedServices(configuration);
 services.AddInfrastructureAdditionalServices(configuration, assembly);
 ```
 
-### Application Configuration
+### 2. Application Middleware
+In `Program.cs`:
+
 ```csharp
-app.UseSpecialized();
+app.UseSpecialized(); // Sets up ExceptionHandler, Swagger, HealthChecks, etc.
 ```
 
-### Database Initialization
+### 3. Database Initialization
+Use the extensions to migrate and seed the database:
+
 ```csharp
 await scope.InitialiseDatabase();
 await scope.SyncDatabase();

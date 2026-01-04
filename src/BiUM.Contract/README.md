@@ -1,14 +1,21 @@
 # BiUM.Contract
 
-## Overview
-`BiUM.Contract` is a shared library that defines common gRPC messages and contracts used across the BiUM solution. It ensures consistency in gRPC communication structures.
+## 📖 Overview
+**BiUM.Contract** defines shared data structures, DTOs, and gRPC service contracts used for communication between microservices.
 
-## Key Components
--   **common.proto**: Defines standard gRPC messages such as:
-    -   `GrpcRequestMeta`: Metadata for requests.
-    -   `GrpcResponseMeta`: Standard response metadata including success status and messages.
-    -   `GrpcResponseMessage`: Structure for messages (code, message, exception, severity).
-    -   `GrpcIdNameMessage`: A simple ID-Name pair message.
+## 🔑 Key Components
 
-## Usage
-This project is referenced by other services that need to implement or consume these standard gRPC contracts.
+- **common.proto**: Standard gRPC message definitions used across the ecosystem.
+  - `GrpcRequestMeta`: Standard request metadata (trace IDs, user context).
+  - `GrpcResponseMeta`: Standard response metadata (success status, error codes).
+  - `GrpcIdNameMessage`: Reusable ID/Name pair message.
+
+## 📦 Usage
+
+Add this package to any service needing to consume or implement shared contracts.
+
+```bash
+dotnet add package BiUM.Contract
+```
+
+The `.proto` files are packed into the NuGet package and can be imported into other proto files.

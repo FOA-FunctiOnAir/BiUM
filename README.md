@@ -1,82 +1,55 @@
 > [!IMPORTANT]
 > **For AI Agents**: Please refer to [AGENTS.md](AGENTS.md) for context, conventions, and operational guidelines before proceeding with any tasks.
 
-# Introduction
+# BiUM (BiApp Universal Modules)
 
-**BiUM** is the foundational shared library for the FunctiOnAir (FOA) microservices ecosystem. It provides core building blocks, abstractions, and infrastructure implementations used across all business applications to ensure consistency in logging, data access, messaging, and error handling.
+**BiUM** is the foundational shared library for the **FunctiOnAir (FOA)** microservices ecosystem. It provides core building blocks, abstractions, and infrastructure implementations used across all business applications to ensure consistency in logging, data access, messaging, and error handling.
 
-# Getting Started
+## 🚀 Getting Started
 
-To use BiUM in your project, install the `BiUM.Specialized` package:
+To use BiUM in your project, install the `BiUM.Specialized` package. This package aggregates core functionalities and common configurations.
 
 ```bash
 dotnet add package BiUM.Specialized --source "https://nuget.pkg.github.com/FOA-FunctiOnAir/index.json"
 ```
 
-# Build and Test
+## 🛠️ Build and Test
 
-1. Restore dependencies:
+1. **Restore dependencies**:
    ```bash
    dotnet restore
    ```
-2. Build the solution:
+2. **Build the solution**:
    ```bash
    dotnet build
    ```
-3. Run tests:
+3. **Run tests**:
    ```bash
    dotnet test
    ```
 
-# Modules
+## 📦 Modules
 
-- **BiUM.Core**: Interfaces and base classes.
-- **BiUM.Infrastructure**: Concrete implementations (EF Core, Services).
-- **BiUM.Bolt**: Lightweight data access.
-- **BiUM.Specialized**: Advanced components (Interceptors, Mapping).
-- **BiUM.Contract**: Shared DTOs.
+BiUM is modular, allowing you to consume only what you need:
 
-<!-- Push steps
-1 - Run this command line to remove all credentials : dotnet nuget locals all --clear
-2 - Go to Solution .sln|.slnx path where nuget.config file is available run : dotnet restore --interactive
-3 - Add these attributes to the project that you want to pack :
-  --<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  --<PackageId>EasyAccess</PackageId>
-  --<Version>1.0.1</Version>
-  --<Authors>BiApp</Authors>
-  --<Company>FunctionAir</Company>
-4 - Go to the project .csproj and run : dotnet pack / dotnet pack --configuration Release
-5 - then go to the ./bin/debug folder where your .nupkg available and run : dotnet nuget push --source "EasyAccess" --api-key az .\EasyAccess.1.0.1.nupkg -->
+- **[BiUM.Core](src/BiUM.Core/README.md)**: The heart of the library. Contains interfaces, base classes, core utilities, and abstractions for Caching, Database, Logging, and Messaging.
+- **[BiUM.Infrastructure](src/BiUM.Infrastructure/README.md)**: Concrete implementations of Core abstractions, including EF Core, Redis, RabbitMQ, and OpenTelemetry integrations.
+- **[BiUM.Bolt](src/BiUM.Bolt/README.md)**: A lightweight, specialized data access module for high-performance scenarios, enabling easier database configuration.
+- **[BiUM.Specialized](src/BiUM.Specialized/README.md)**: High-level components for application setup, including API configurations, Interceptors, Mapping, and domain-agnostic services.
+- **[BiUM.Contract](src/BiUM.Contract/README.md)**: Shared Data Transfer Objects (DTOs) and gRPC contracts for inter-service communication.
 
-# How to install Github Nuget Package
+## 📦 NuGet Package Installation Guide
 
-This is a readme file to understand how to install Github nuget packages.
+To consume BiUM packages from the GitHub Package Registry, you must configure your NuGet client with authentication.
 
-## How to Authenticate.
-To download a NuGet package from GitHub Packages, you need to configure your NuGet client to use the GitHub Packages source and provide authentication. Here's how to do that:
+### 1. Generate a Personal Access Token (PAT)
+1. Go to **GitHub Settings** > **Developer settings** > **Personal access tokens**.
+2. Generate a new token (Classic).
+3. Select the `read:packages` scope.
+4. Copy the token.
 
-1. **Configure the NuGet client with your GitHub Packages feed**: You need to add the GitHub Packages feed to your NuGet configuration. This is usually done by adding a nuget.config file to your solution directory or modifying the global NuGet configuration on your machine.
-
-2. **Authenticate with GitHub Packages**: You need to authenticate your NuGet client with GitHub by providing either a personal access token (PAT) with at least ***'read:packages'*** scope or using the **GITHUB_TOKEN** if you are fetching packages as part of a GitHub Actions workflow.
-
-Here are the steps to configure NuGet to work with GitHub Packages:
-
-
-## Step 1: Create a Personal Access Token (PAT)
-
-
-1. Go to your GitHub settings.
-
-2. Under "Developer settings," click on "Personal access tokens."
-Click "Generate new token."
-
-3. Give your token a name, select the ***'read:packages'*** scope to download packages.
-
-4. Click **"Generate token"** and copy the generated token immediately as you won't be able to see it again.
-
-## Step 2: Add the GitHub Packages source to your NuGet configuration
-
-Create a ***'nuget.config'*** file in your solution directory with the following content:
+### 2. Configure `nuget.config`
+Add a `nuget.config` file to your solution root:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -85,27 +58,26 @@ Create a ***'nuget.config'*** file in your solution directory with the following
     <clear />
     <add key="bium" value="https://nuget.pkg.github.com/foa-functionair/index.json" />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-    <add key="bium.local" value="%userprofile%\.nuget\bium" />
   </packageSources>
+  <packageSourceCredentials>
+    <bium>
+      <add key="Username" value="GITHUB_USERNAME" />
+      <add key="ClearTextPassword" value="GITHUB_TOKEN" />
+    </bium>
+  </packageSourceCredentials>
 </configuration>
 ```
+*Replace `GITHUB_USERNAME` with your GitHub username and `GITHUB_TOKEN` with your PAT.*
 
-Replace **GITHUB_USERNAME** with your GitHub username, and **GITHUB_TOKEN** with the personal access token you created.
+> [!NOTE]
+> For CI/CD (GitHub Actions), use the automatically provided `GITHUB_TOKEN` instead of a PAT.
 
-## Step 3: Downloading the Package
+## 📚 Project Documentation
 
-Once your nuget.config is configured, you can download the package using the dotnet CLI or the NuGet CLI:
+Detailed documentation for each module is available in their respective directories:
 
-```sh
-dotnet add package BiUM.Core --source "https://nuget.pkg.github.com/FOA-FunctiOnAir/index.json" --project .\PROJECT_PATH\
-```
-
-**Note**: If you're using this configuration on a build server or any kind of automation, make sure you protect your personal access token. If you are doing this as part of a GitHub Actions workflow, you can use the GITHUB_TOKEN instead of a PAT for authentication within the workflow.
-
-# Project Documentation
-
-- [BiUM.Bolt](src/BiUM.Bolt/README.md) - Database configuration and initialization.
-- [BiUM.Contract](src/BiUM.Contract/README.md) - Shared gRPC contracts.
-- [BiUM.Core](src/BiUM.Core/README.md) - Core utilities and shared services.
-- [BiUM.Infrastructure](src/BiUM.Infrastructure/README.md) - Infrastructure implementations (gRPC, Redis, RabbitMQ, Serilog).
-- [BiUM.Specialized](src/BiUM.Specialized/README.md) - High-level application configuration and specialized services.
+- [BiUM.Bolt Documentation](src/BiUM.Bolt/README.md)
+- [BiUM.Contract Documentation](src/BiUM.Contract/README.md)
+- [BiUM.Core Documentation](src/BiUM.Core/README.md)
+- [BiUM.Infrastructure Documentation](src/BiUM.Infrastructure/README.md)
+- [BiUM.Specialized Documentation](src/BiUM.Specialized/README.md)

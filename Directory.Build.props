@@ -8,7 +8,5 @@
 
     <IsPackable>false</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-
-    <GenerateLocalPackages>false</GenerateLocalPackages>
   </PropertyGroup>
 </Project>

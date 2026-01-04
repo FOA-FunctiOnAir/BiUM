@@ -31,16 +31,9 @@ public class ServiceCallMetricsMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (_rabbitMQClient is null || _biAppOptions is null)
+        if (_rabbitMQClient is null || _biAppOptions is null || ShouldIgnoreRequest(context))
         {
-            await _next(context);
-
-            return;
-        }
-
-        if (ShouldIgnoreRequest(context))
-        {
-            await _next(context);
+            await _next.Invoke(context);
 
             return;
         }
@@ -99,14 +92,9 @@ public class ServiceCallMetricsMiddleware
     {
         if (string.IsNullOrEmpty(serviceName))
         {
-            return "unknown";
+            return "Unknown";
         }
 
-        if (serviceName.StartsWith("BiApp.", StringComparison.OrdinalIgnoreCase))
-        {
-            return serviceName;
-        }
-
-        return $"BiApp.{serviceName}";
+        return serviceName.StartsWith("BiApp.", StringComparison.OrdinalIgnoreCase) ? serviceName : $"BiApp.{serviceName}";
     }
 }

@@ -164,7 +164,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                         .ToListAsync(cancellationToken);
 
                     var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
-                    var hasParentId = entityType?.FindProperty("ParentId") != null;
+                    var hasParentId = entityType?.FindProperty("ParentId") is not null;
 
                     if (hasParentId)
                     {
@@ -306,7 +306,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     {
         var parentProp = entityClrType.GetProperty("ParentId");
 
-        if (parentProp == null)
+        if (parentProp is null)
         {
             return entities;
         }
@@ -315,7 +315,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         {
             var pid = parentProp.GetValue(e);
 
-            return pid == null ? Guid.Empty : (Guid)pid;
+            return pid is null ? Guid.Empty : (Guid)pid;
         });
 
         var result = new List<IEntity>();

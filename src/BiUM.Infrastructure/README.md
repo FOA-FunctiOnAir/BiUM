@@ -1,21 +1,35 @@
 # BiUM.Infrastructure
 
-## Overview
-`BiUM.Infrastructure` provides the concrete implementations and configuration for infrastructure services defined in `BiUM.Core` and other layers. It handles the setup of external dependencies and cross-cutting concerns.
+## 📖 Overview
+**BiUM.Infrastructure** provides the concrete implementations for services defined in `BiUM.Core`. It handles external dependencies like databases, message brokers, and caching systems.
 
-## Key Services
--   **gRPC**: Configures gRPC services and reflection.
--   **Redis**: Implements `IRedisClient` and configures Redis connection options.
--   **RabbitMQ**: Implements `IRabbitMQClient`, configures listeners, and registers event handlers.
--   **Serilog**: Configures logging with Serilog, including console and file sinks (configurable via `Specialized` options).
--   **Health Checks**: Adds health check services.
+## 🔑 Key Implementations
 
-## Configuration
-The `AddInfrastructureServices` extension method accepts a `Specialized` configuration object or binds it from `IConfiguration`. This allows for flexible configuration of infrastructure components.
+- **Persistence**: Entity Framework Core base repositories and DbContexts.
+- **Message Broker**: RabbitMQ implementation for `IEventBus` using `MassTransit` or native clients.
+- **Caching**: Redis implementation for `ICacheService` (`StackExchange.Redis`).
+- **Logging**: OpenTelemetry configuration for Metrics, Tracing, and Logging.
+- **File Services**: HTML to PDF conversion using `SimpleHtmlToPdf`.
+- **Health Checks**: Standardized health checks for dependencies.
 
-## Usage
-To register infrastructure services:
+## 📦 Usage
+
+This layer is typically referenced by `BiUM.Specialized` or the application startup project directly.
+
+### Service Registration
 
 ```csharp
-services.AddInfrastructureServices(host, configuration);
+// Configures EF Core, RabbitMQ, Redis, and OpenTelemetry
+services.AddInfrastructureServices(hostBuilder, configuration);
+```
+
+### Configuration
+Ensure your `appsettings.json` has the required sections:
+
+```json
+{
+  "RabbitMQ": { ... },
+  "Redis": { ... },
+  "ConnectionStrings": { ... }
+}
 ```

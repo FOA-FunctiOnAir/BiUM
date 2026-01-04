@@ -1,19 +1,28 @@
 # BiUM.Bolt
 
-## Overview
-`BiUM.Bolt` is a library designed to facilitate the configuration and initialization of database connections, specifically targeting PostgreSQL. It provides extensions for `IServiceCollection` to easily register database contexts and initializers.
+## 📖 Overview
+**BiUM.Bolt** is a specialized module for configuring **PostgreSQL** data access. It simplifies `DbContext` registration and initialization, building upon `BiUM.Specialized`.
 
-## Key Features
--   **PostgreSQL Support**: Configures PostgreSQL connections with retry policies and connection pooling.
--   **Dynamic Connection Strings**: Supports dynamic connection string generation based on configuration options (`BoltOptions`).
--   **Database Initialization**: Includes interfaces and classes for database initialization (`IBaseBoltDbContextInitialiser`, `BoltDbContextInitialiser`).
--   **Interceptors**: Registers `BoltEntitySaveChangesInterceptor` for handling entity changes.
+## 🔑 Key Features
+- **PostgreSQL Focus**: Pre-configured connection pooling and retry policies for Npgsql.
+- **Dynamic Configuration**: `BoltOptions` allows connection strings to be resolved dynamically (e.g., via config or secrets).
+- **Initialization**: Provides `BoltDbContextInitialiser` for automated migrations and seeding.
+- **Interceptors**: Automatically registers auditing interceptors.
 
-## Usage
-To use `BiUM.Bolt`, call the `AddBolt` extension method in your startup configuration:
+## 📦 Usage
+
+Add the `AddBolt` extension in your startup:
 
 ```csharp
+// Registers DbContext with PostgreSQL and related services
 services.AddBolt<MyDbContext, MyDbContextInitialiser>(configuration);
 ```
 
-Ensure your configuration includes the necessary `BoltOptions` and connection strings.
+### Configuration (`appsettings.json`)
+
+```json
+"Bolt": {
+  "Enable": true,
+  "ConnectionString": "Host=localhost;Database=mydb;Username=postgres;Password=password"
+}
+```

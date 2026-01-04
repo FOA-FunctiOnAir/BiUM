@@ -18,6 +18,12 @@ public sealed class RequestDurationMiddleware
 
     public async Task Invoke(HttpContext context)
     {
+        if (!_logger.IsEnabled(LogLevel.Debug))
+        {
+            await _next.Invoke(context);
+            return;
+        }
+
         var startTs = Stopwatch.GetTimestamp();
 
         // execute the request pipeline
@@ -25,6 +31,6 @@ public sealed class RequestDurationMiddleware
 
         var elapsedTime = Stopwatch.GetElapsedTime(startTs);
 
-        _logger.LogInformation("Request {RequestId} took {ElapsedTime}ms", context.TraceIdentifier, elapsedTime);
+        _logger.LogDebug("Request {RequestId} took {ElapsedTime}ms", context.TraceIdentifier, elapsedTime);
     }
 }

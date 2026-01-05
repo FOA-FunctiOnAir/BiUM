@@ -2,8 +2,6 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 

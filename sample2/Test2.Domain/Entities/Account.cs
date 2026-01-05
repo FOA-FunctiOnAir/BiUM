@@ -2,7 +2,6 @@ using AutoMapper;
 using BiUM.Core.MessageBroker;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Test2.Domain.Events;
-using BiUM.Test2.Domain.Entities;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;

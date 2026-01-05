@@ -14,7 +14,6 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OpenTelemetry.Trace;
 using System;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

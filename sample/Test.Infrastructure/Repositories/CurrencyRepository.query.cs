@@ -1,7 +1,6 @@
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Test.Application.Dtos;
-using BiUM.Test.Application.Repositories;
 using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;

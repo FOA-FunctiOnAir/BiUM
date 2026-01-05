@@ -1,0 +1,67 @@
+name: Build Sample Application
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-sample2.yaml
+      - sample2/**/*
+      - Directory.Build.props
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - .github/workflows/build-sample2.yaml
+      - sample2/**/*
+      - Directory.Build.props
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./sample2
+
+    env:
+      SOLUTION: "Test2.slnx"
+      BUILD_CONFIG: "Release"
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v6
+
+      - name: Get .NET Version from root Directory.Build.props
+        id: dotnet_version
+        run: |
+          # 1. Grep the line, extracting only the matched segment
+          # 2. Sed capture group to get the digit after 'net'
+          MAJOR_VERSION=$(grep -oP '<TargetFramework>.*</TargetFramework>' ../Directory.Build.props | sed -E 's/.*net([0-9]+).*/\1/')
+
+          echo "Detected .NET Major Version: $MAJOR_VERSION"
+
+          # 3. Write to GitHub Output
+          echo "major=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.dotnet_version.outputs.major }}
+          dotnet-quality: "ga"
+
+      - name: Build
+        run: |
+          dotnet build \
+            $SOLUTION \
+            --configuration $BUILD_CONFIG \
+            --verbosity minimal \
+            --property:ContinuousIntegrationBuild=true \
+            --property:DebugType=none

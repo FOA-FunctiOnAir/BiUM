@@ -45,9 +45,9 @@ public class MappingProfile : AutoMapper.Profile
 
         var mappingMethodName = nameof(IMapFrom<>.Mapping);
 
-        var types = assembly.GetExportedTypes().Where(t => t.GetInterfaces().Any(x => HasInterface(x, mapFromType))).ToList();
+        var types = assembly.GetExportedTypes().Where(t => t.GetInterfaces().Any(x => HasInterface(x, mapFromType)));
 
-        var argumentTypes = new Type[] { typeof(AutoMapper.Profile) };
+        var argumentTypes = new[] { typeof(AutoMapper.Profile) };
 
         foreach (var type in types)
         {
@@ -62,20 +62,17 @@ public class MappingProfile : AutoMapper.Profile
 
             if (methodInfo is not null)
             {
-                _ = methodInfo.Invoke(instance, [this]);
+                methodInfo.Invoke(instance, [this]);
             }
             else
             {
-                var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType)).ToList();
+                var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType));
 
-                if (interfaces.Count > 0)
+                foreach (var @interface in interfaces)
                 {
-                    foreach (var @interface in interfaces)
-                    {
-                        var interfaceMethodInfo = @interface.GetMethod(mappingMethodName, argumentTypes);
+                    var interfaceMethodInfo = @interface.GetMethod(mappingMethodName, argumentTypes);
 
-                        _ = (interfaceMethodInfo?.Invoke(instance, [this]));
-                    }
+                    interfaceMethodInfo?.Invoke(instance, [this]);
                 }
             }
         }

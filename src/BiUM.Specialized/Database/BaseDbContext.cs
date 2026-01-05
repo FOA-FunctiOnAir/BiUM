@@ -9,7 +9,7 @@ namespace BiUM.Specialized.Database;
 
 public class BaseDbContext : DbContext, IDbContext
 {
-    private bool _hardDelete = false;
+    private bool _hardDeleteEnabled = false;
 
     private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
@@ -43,29 +43,26 @@ public class BaseDbContext : DbContext, IDbContext
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
-    public bool GetHardDelete()
+    public bool HardDeleteEnabled => _hardDeleteEnabled;
+
+    protected void EnableHardDelete()
     {
-        return _hardDelete;
+        _hardDeleteEnabled = true;
     }
 
-    protected void OpenHardDelete()
+    protected void DisableHardDelete()
     {
-        _hardDelete = true;
-    }
-
-    protected void CloseHardDelete()
-    {
-        _hardDelete = false;
+        _hardDeleteEnabled = false;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        _ = modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
-        _ = modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
-        _ = modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
-        _ = modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
-        _ = modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
-        _ = modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -75,8 +72,8 @@ public class BaseDbContext : DbContext, IDbContext
                 var prop = Expression.Property(parameter, nameof(BaseEntity.Deleted));
                 var filter = Expression.Lambda(Expression.Equal(prop, Expression.Constant(false)), parameter);
 
-                _ = modelBuilder.Entity(entityType.ClrType).HasIndex([prop.Member.Name]);
-                _ = modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+                modelBuilder.Entity(entityType.ClrType).HasIndex([prop.Member.Name]);
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
         }
 
@@ -87,18 +84,14 @@ public class BaseDbContext : DbContext, IDbContext
     {
         if (_entitySaveChangesInterceptor is not null)
         {
-            _ = optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
+            optionsBuilder.AddInterceptors(_entitySaveChangesInterceptor);
         }
+
         if (_boltEntitySaveChangesInterceptor is not null)
         {
-            _ = optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
+            optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
         }
 
         base.OnConfiguring(optionsBuilder);
-    }
-
-    public async Task<int> SavechangesAsync(CancellationToken cancellationToken = default)
-    {
-        return await base.SaveChangesAsync(cancellationToken);
     }
 }

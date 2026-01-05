@@ -1,5 +1,6 @@
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
+using BiUM.Core.Extensions;
 using BiUM.Core.MessageBroker;
 using System;
 using System.Linq;
@@ -73,13 +74,13 @@ public static class RabbitMQUtils
             throw new ArgumentException("Domain cannot be null or empty", nameof(domain));
         }
 
-        return "biapp-" + SnakeCase(domain);
+        return "biapp-" + domain.ToSnakeCase();
     }
 
     public static string GetQueueName(Type type, BiAppOptions biAppOptions, string? target = null)
     {
         var attribute = type.GetCustomAttribute<EventAttribute>();
-        var message = SnakeCase(type.Name);
+        var message = type.Name.ToSnakeCase();
 
         if (attribute?.Mode == EventDeliveryMode.Publish)
         {
@@ -107,9 +108,4 @@ public static class RabbitMQUtils
             .Replace("{{message}}", message)
             .ToLowerInvariant();
     }
-
-    public static string SnakeCase(string value)
-        => string.Concat(value.Select((x, i) =>
-                i > 0 && char.IsUpper(x) ? "_" + x : x.ToString()))
-            .ToLowerInvariant();
 }

@@ -1,6 +1,7 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
+using BiUM.Core.Extensions;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Models;
@@ -21,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
-public class RabbitMQClient : IRabbitMQClient
+public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 {
     private const string RetryCountHeader = "x-retry-count";
     private const string OriginalQueueHeader = "x-original-queue";
@@ -30,6 +31,8 @@ public class RabbitMQClient : IRabbitMQClient
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly ILogger<RabbitMQClient> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ConnectionFactory? _factory;
+
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
     private readonly SemaphoreSlim _channelLock = new(1, 1);
     private readonly ConcurrentDictionary<string, bool> _declaredExchanges = new();
@@ -37,7 +40,6 @@ public class RabbitMQClient : IRabbitMQClient
 
     private IConnection? _connection;
     private IChannel? _channel;
-    private ConnectionFactory? _factory;
 
     public RabbitMQClient(
         IOptions<BiAppOptions> biAppOptions,
@@ -64,185 +66,6 @@ public class RabbitMQClient : IRabbitMQClient
         };
     }
 
-    private async Task<IConnection> GetConnectionAsync()
-    {
-        if (_connection?.IsOpen == true)
-        {
-            return _connection;
-        }
-
-        await _connectionLock.WaitAsync();
-
-        try
-        {
-            if (_connection?.IsOpen == true)
-            {
-                return _connection;
-            }
-
-            if (_connection != null)
-            {
-                try
-                {
-                    await _connection.CloseAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error closing existing connection");
-                }
-            }
-
-            if (_factory == null)
-            {
-                throw new InvalidOperationException("RabbitMQ is not enabled or factory is not initialized");
-            }
-
-            var appName = $"{_biAppOptions.Environment}-{_biAppOptions.Domain}";
-            _connection = await _factory.CreateConnectionAsync(appName);
-
-            _connection.ConnectionShutdownAsync += async (sender, args) =>
-            {
-                _logger.LogWarning("RabbitMQ connection shutdown: {Reason}", args.ReplyText);
-            };
-
-            _logger.LogInformation("RabbitMQ connection established");
-
-            return _connection;
-        }
-        finally
-        {
-            _ = _connectionLock.Release();
-        }
-    }
-
-    private async Task<IChannel> GetChannelAsync()
-    {
-        if (_channel?.IsOpen == true)
-        {
-            return _channel;
-        }
-
-        await _channelLock.WaitAsync();
-
-        try
-        {
-            if (_channel?.IsOpen == true)
-            {
-                return _channel;
-            }
-
-            if (_channel != null)
-            {
-                try
-                {
-                    await _channel.CloseAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error closing existing channel");
-                }
-            }
-
-            var connection = await GetConnectionAsync();
-
-            _channel = await connection.CreateChannelAsync();
-
-            _channel.ChannelShutdownAsync += async (sender, args) =>
-            {
-                _logger.LogWarning("RabbitMQ channel shutdown: {Reason}", args.ReplyText);
-            };
-
-            if (!string.IsNullOrEmpty(_rabbitMQOptions.DeadLetterExchange))
-            {
-                await EnsureExchangeDeclaredAsync(_rabbitMQOptions.DeadLetterExchange, ExchangeType.Direct);
-            }
-
-            _logger.LogInformation("RabbitMQ channel created");
-
-            return _channel;
-        }
-        finally
-        {
-            _ = _channelLock.Release();
-        }
-    }
-
-    private async Task EnsureExchangeDeclaredAsync(string exchange, string exchangeType)
-    {
-        if (_declaredExchanges.ContainsKey(exchange))
-        {
-            return;
-        }
-
-        var channel = await GetChannelAsync();
-
-        await channel.ExchangeDeclareAsync(exchange: exchange, type: exchangeType, durable: true, autoDelete: false);
-
-        _ = _declaredExchanges.TryAdd(exchange, true);
-
-        _logger.LogDebug("Exchange declared: {Exchange}", exchange);
-    }
-
-    private async Task EnsureQueueDeclaredAsync(string queueName, Dictionary<string, object>? arguments = null)
-    {
-        if (_declaredQueues.ContainsKey(queueName))
-        {
-            return;
-        }
-
-        var channel = await GetChannelAsync();
-
-        _ = await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
-
-        _ = _declaredQueues.TryAdd(queueName, true);
-
-        _logger.LogDebug("Queue declared: {Queue}", queueName);
-    }
-
-    private static int GetRetryCount(IReadOnlyBasicProperties properties)
-    {
-        if (properties.Headers?.TryGetValue(RetryCountHeader, out var retryCountObj) == true)
-        {
-            if (retryCountObj is byte[] bytes)
-            {
-                return int.Parse(Encoding.UTF8.GetString(bytes));
-            }
-            if (retryCountObj is int count)
-            {
-                return count;
-            }
-        }
-
-        return 0;
-    }
-
-    private static void SetRetryCount(IBasicProperties properties, int count)
-    {
-        properties.Headers ??= new Dictionary<string, object?>();
-        properties.Headers[RetryCountHeader] = count;
-    }
-
-    private void EnsureCorrelationContext<T>(T message) where T : IBaseEvent
-    {
-        if (message.CorrelationContext == null || message.CorrelationContext == CorrelationContext.Empty)
-        {
-            using var scope = _serviceScopeFactory.CreateScope();
-
-            var correlationContextProvider = scope.ServiceProvider.GetRequiredService<ICorrelationContextProvider>();
-            var correlationContext = correlationContextProvider.Get() ?? CorrelationContext.Empty;
-
-            message.CorrelationContext = correlationContext;
-        }
-    }
-
-    private static void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
-    {
-        var now = DateTime.UtcNow;
-
-        message.Created = DateOnly.FromDateTime(now);
-        message.CreatedTime = TimeOnly.FromDateTime(now);
-    }
-
     public async Task PublishAsync<T>(T message)
         where T : IBaseEvent
     {
@@ -258,7 +81,7 @@ public class RabbitMQClient : IRabbitMQClient
 
         var type = message.GetType();
         var attr = type.GetCustomAttribute<EventAttribute>();
-        var routingKey = RabbitMQUtils.SnakeCase(type.Name);
+        var routingKey = type.Name.ToSnakeCase();
 
         if (attr?.Mode == EventDeliveryMode.Publish)
         {
@@ -492,7 +315,7 @@ public class RabbitMQClient : IRabbitMQClient
         var channel = await GetChannelAsync();
 
         var attr = eventType.GetCustomAttribute<EventAttribute>();
-        var message = RabbitMQUtils.SnakeCase(eventType.Name);
+        var message = eventType.Name.ToSnakeCase();
 
         string queueName;
         Dictionary<string, object>? queueArguments = null;
@@ -672,5 +495,184 @@ public class RabbitMQClient : IRabbitMQClient
 
         _connectionLock?.Dispose();
         _channelLock?.Dispose();
+    }
+
+    private async Task<IConnection> GetConnectionAsync()
+    {
+        if (_connection?.IsOpen == true)
+        {
+            return _connection;
+        }
+
+        await _connectionLock.WaitAsync();
+
+        try
+        {
+            if (_connection?.IsOpen == true)
+            {
+                return _connection;
+            }
+
+            if (_connection != null)
+            {
+                try
+                {
+                    await _connection.CloseAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error closing existing connection");
+                }
+            }
+
+            if (_factory == null)
+            {
+                throw new InvalidOperationException("RabbitMQ is not enabled or factory is not initialized");
+            }
+
+            var appName = $"{_biAppOptions.Environment}-{_biAppOptions.Domain}";
+            _connection = await _factory.CreateConnectionAsync(appName);
+
+            _connection.ConnectionShutdownAsync += async (sender, args) =>
+            {
+                _logger.LogWarning("RabbitMQ connection shutdown: {Reason}", args.ReplyText);
+            };
+
+            _logger.LogInformation("RabbitMQ connection established");
+
+            return _connection;
+        }
+        finally
+        {
+            _ = _connectionLock.Release();
+        }
+    }
+
+    private async Task<IChannel> GetChannelAsync()
+    {
+        if (_channel?.IsOpen == true)
+        {
+            return _channel;
+        }
+
+        await _channelLock.WaitAsync();
+
+        try
+        {
+            if (_channel?.IsOpen == true)
+            {
+                return _channel;
+            }
+
+            if (_channel != null)
+            {
+                try
+                {
+                    await _channel.CloseAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error closing existing channel");
+                }
+            }
+
+            var connection = await GetConnectionAsync();
+
+            _channel = await connection.CreateChannelAsync();
+
+            _channel.ChannelShutdownAsync += async (sender, args) =>
+            {
+                _logger.LogWarning("RabbitMQ channel shutdown: {Reason}", args.ReplyText);
+            };
+
+            if (!string.IsNullOrEmpty(_rabbitMQOptions.DeadLetterExchange))
+            {
+                await EnsureExchangeDeclaredAsync(_rabbitMQOptions.DeadLetterExchange, ExchangeType.Direct);
+            }
+
+            _logger.LogInformation("RabbitMQ channel created");
+
+            return _channel;
+        }
+        finally
+        {
+            _ = _channelLock.Release();
+        }
+    }
+
+    private async Task EnsureExchangeDeclaredAsync(string exchange, string exchangeType)
+    {
+        if (_declaredExchanges.ContainsKey(exchange))
+        {
+            return;
+        }
+
+        var channel = await GetChannelAsync();
+
+        await channel.ExchangeDeclareAsync(exchange: exchange, type: exchangeType, durable: true, autoDelete: false);
+
+        _ = _declaredExchanges.TryAdd(exchange, true);
+
+        _logger.LogDebug("Exchange declared: {Exchange}", exchange);
+    }
+
+    private async Task EnsureQueueDeclaredAsync(string queueName, Dictionary<string, object>? arguments = null)
+    {
+        if (_declaredQueues.ContainsKey(queueName))
+        {
+            return;
+        }
+
+        var channel = await GetChannelAsync();
+
+        _ = await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
+
+        _ = _declaredQueues.TryAdd(queueName, true);
+
+        _logger.LogDebug("Queue declared: {Queue}", queueName);
+    }
+
+    private static int GetRetryCount(IReadOnlyBasicProperties properties)
+    {
+        if (properties.Headers?.TryGetValue(RetryCountHeader, out var retryCountObj) == true)
+        {
+            if (retryCountObj is byte[] bytes)
+            {
+                return int.Parse(Encoding.UTF8.GetString(bytes));
+            }
+            if (retryCountObj is int count)
+            {
+                return count;
+            }
+        }
+
+        return 0;
+    }
+
+    private static void SetRetryCount(IBasicProperties properties, int count)
+    {
+        properties.Headers ??= new Dictionary<string, object?>();
+        properties.Headers[RetryCountHeader] = count;
+    }
+
+    private void EnsureCorrelationContext<T>(T message) where T : IBaseEvent
+    {
+        if (message.CorrelationContext == null || message.CorrelationContext == CorrelationContext.Empty)
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+
+            var correlationContextProvider = scope.ServiceProvider.GetRequiredService<ICorrelationContextProvider>();
+            var correlationContext = correlationContextProvider.Get() ?? CorrelationContext.Empty;
+
+            message.CorrelationContext = correlationContext;
+        }
+    }
+
+    private static void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
+    {
+        var now = DateTime.UtcNow;
+
+        message.Created = DateOnly.FromDateTime(now);
+        message.CreatedTime = TimeOnly.FromDateTime(now);
     }
 }

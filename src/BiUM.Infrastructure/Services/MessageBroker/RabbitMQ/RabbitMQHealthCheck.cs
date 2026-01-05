@@ -30,7 +30,7 @@ public class RabbitMQHealthCheck : IHealthCheck
             return HealthCheckResult.Healthy("RabbitMQ is disabled");
         }
 
-        if (_client == null)
+        if (_client is null)
         {
             return HealthCheckResult.Unhealthy("RabbitMQ client is not available");
         }
@@ -43,7 +43,7 @@ public class RabbitMQHealthCheck : IHealthCheck
                 RequestedConnectionTimeout = TimeSpan.FromSeconds(5)
             };
 
-            using var connection = await factory.CreateConnectionAsync();
+            await using var connection = await factory.CreateConnectionAsync(cancellationToken);
 
             if (connection.IsOpen)
             {

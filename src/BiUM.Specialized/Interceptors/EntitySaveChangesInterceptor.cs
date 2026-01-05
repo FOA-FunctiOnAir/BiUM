@@ -75,8 +75,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         SaveChangesCompletedEventData eventData,
         int result)
     {
-        _ = PublishEntityEventsAsync();
-        _ = PublishAuditLogEventsAsync();
+        PublishEntityEventsAsync().GetAwaiter().GetResult();
+        PublishAuditLogEventsAsync().GetAwaiter().GetResult();
 
         return base.SavedChanges(eventData, result);
     }
@@ -134,7 +134,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
-            else if (entry.State == EntityState.Deleted && !baseDbContext.GetHardDelete())
+            else if (entry.State == EntityState.Deleted && !baseDbContext.HardDeleteEnabled)
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.Deleted = true;
@@ -197,41 +197,48 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             var changedFieldsJson = "{}";
             var changeCount = 0;
 
-            if (entry.State == EntityState.Added)
+            switch (entry.State)
             {
-                afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
-                changeCount = 1;
-            }
-            else if (entry.State == EntityState.Modified)
-            {
-                var changedProps = entry.Properties
-                    .Where(p => p.IsModified && !p.Metadata.IsPrimaryKey())
-                    .ToList();
+                case EntityState.Added:
+                    afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
+                    changeCount = 1;
 
-                if (changedProps.Count == 0)
-                {
-                    continue;
-                }
+                    break;
 
-                var before = new Dictionary<string, object?>();
-                var fields = new List<string>();
+                case EntityState.Modified:
+                    {
+                        var changedProps = entry.Properties
+                            .Where(p => p.IsModified && !p.Metadata.IsPrimaryKey())
+                            .ToList();
 
-                foreach (var prop in changedProps)
-                {
-                    before[prop.Metadata.Name] = prop.OriginalValue;
+                        if (changedProps.Count == 0)
+                        {
+                            continue;
+                        }
 
-                    fields.Add(prop.Metadata.Name);
-                }
+                        var before = new Dictionary<string, object?>();
+                        var fields = new List<string>();
 
-                beforeJson = JsonSerializer.Serialize(before);
-                afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
-                changedFieldsJson = JsonSerializer.Serialize(fields);
-                changeCount = changedProps.Count;
-            }
-            else if (entry.State == EntityState.Deleted)
-            {
-                beforeJson = JsonSerializer.Serialize(entry.Entity);
-                changeCount = 1;
+                        foreach (var prop in changedProps)
+                        {
+                            before[prop.Metadata.Name] = prop.OriginalValue;
+
+                            fields.Add(prop.Metadata.Name);
+                        }
+
+                        beforeJson = JsonSerializer.Serialize(before);
+                        afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
+                        changedFieldsJson = JsonSerializer.Serialize(fields);
+                        changeCount = changedProps.Count;
+
+                        break;
+                    }
+
+                case EntityState.Deleted:
+                    beforeJson = JsonSerializer.Serialize(entry.Entity);
+                    changeCount = 1;
+
+                    break;
             }
 
             if (changeCount == 0)

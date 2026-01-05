@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>$(SolutionName).API</AssemblyName>
+    <RootNamespace>$(SolutionName).API</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.22" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.22" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Test2.Infrastructure\Test2.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

@@ -9,7 +9,7 @@ namespace BiUM.Specialized.Database;
 
 public class BaseDbContext : DbContext, IDbContext
 {
-    public bool HardDelete = false;
+    private bool _hardDelete = false;
 
     private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
@@ -43,24 +43,29 @@ public class BaseDbContext : DbContext, IDbContext
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
+    public bool GetHardDelete()
+    {
+        return _hardDelete;
+    }
+
     protected void OpenHardDelete()
     {
-        HardDelete = true;
+        _hardDelete = true;
     }
 
     protected void CloseHardDelete()
     {
-        HardDelete = false;
+        _hardDelete = false;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
+        _ = modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -70,7 +75,8 @@ public class BaseDbContext : DbContext, IDbContext
                 var prop = Expression.Property(parameter, nameof(BaseEntity.Deleted));
                 var filter = Expression.Lambda(Expression.Equal(prop, Expression.Constant(false)), parameter);
 
-                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+                _ = modelBuilder.Entity(entityType.ClrType).HasIndex([prop.Member.Name]);
+                _ = modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
         }
 

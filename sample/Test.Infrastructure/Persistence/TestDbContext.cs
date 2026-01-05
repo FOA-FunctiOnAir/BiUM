@@ -3,7 +3,6 @@ using BiUM.Specialized.Database;
 using BiUM.Specialized.Interceptors;
 using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace BiUM.Test.Infrastructure.Persistence;
 
@@ -32,10 +31,9 @@ public class TestDbContext : BaseDbContext, ITestDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        _ = modelBuilder.ApplyConfigurationsFromAssembly(typeof(IInfrastructureMarker).Assembly);
 
-        modelBuilder.Entity<Currency>().HasIndex(c => c.Deleted);
-        modelBuilder.Entity<CurrencyTranslation>().HasIndex(ct => new { ct.RecordId, ct.LanguageId });
+        _ = modelBuilder.Entity<CurrencyTranslation>().HasIndex(ct => new { ct.RecordId, ct.LanguageId });
 
         base.OnModelCreating(modelBuilder);
     }

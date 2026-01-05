@@ -1,13 +1,11 @@
 using BiUM.Core.Common.Utils;
-using BiUM.Core.MessageBroker;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BiUM.Infrastructure.Common.Models;
 
-public class BaseEntity : BaseAuditableEntity, IBaseEntity
+public partial class BaseEntity : BaseAuditableEntity, IBaseEntity
 {
     [Required]
     [Column("ID", Order = 1)]
@@ -50,17 +48,5 @@ public class BaseEntity : BaseAuditableEntity, IBaseEntity
     public BaseEntity()
     {
         Id = GuidGenerator.New();
-        _domainEvents = [];
-    }
-
-    [NotMapped]
-    private IList<IBaseEvent> _domainEvents { get; set; }
-
-    [NotMapped]
-    public IList<IBaseEvent> DomainEvents { get { return _domainEvents; } }
-
-    public void AddDomainEvent(BaseEvent baseEvent)
-    {
-        _domainEvents.Add(baseEvent);
     }
 }

@@ -28,19 +28,19 @@ public partial class CurrencyRepository
                 Code = command.Code,
             };
 
-            _context.Currencies.Add(currency);
+            _ = _context.Currencies.Add(currency);
         }
         else
         {
             currency.Name = command.NameTr.ToTranslationString();
             currency.Code = command.Code;
 
-            _context.Currencies.Update(currency);
+            _ = _context.Currencies.Update(currency);
         }
 
         await SaveTranslations(_context.CurrencyTranslations, currency!.Id, nameof(currency.Name), command.NameTr, cancellationToken);
 
-        await SaveChangesAsync(cancellationToken);
+        _ = await SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -53,14 +53,14 @@ public partial class CurrencyRepository
 
         if (entity is null)
         {
-            await AddMessage(response, "CurrencyNotFound", cancellationToken);
+            _ = await AddMessage(response, "CurrencyNotFound", cancellationToken);
 
             return response;
         }
 
-        _context.Currencies.Remove(entity);
+        _ = _context.Currencies.Remove(entity);
 
-        await SaveChangesAsync(cancellationToken);
+        _ = await SaveChangesAsync(cancellationToken);
 
         return response;
     }

@@ -235,7 +235,7 @@ public class RabbitMQClient : IRabbitMQClient
         }
     }
 
-    private void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
+    private static void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
     {
         var now = DateTime.UtcNow;
 
@@ -256,7 +256,7 @@ public class RabbitMQClient : IRabbitMQClient
 
         var channel = await GetChannelAsync();
 
-        var type = typeof(T);
+        var type = message.GetType();
         var attr = type.GetCustomAttribute<EventAttribute>();
         var routingKey = RabbitMQUtils.SnakeCase(type.Name);
 
@@ -266,7 +266,7 @@ public class RabbitMQClient : IRabbitMQClient
 
             await EnsureExchangeDeclaredAsync(exchange, ExchangeType.Direct);
 
-            var json = JsonSerializer.Serialize(message);
+            var json = JsonSerializer.Serialize(message, message.GetType());
             var body = Encoding.UTF8.GetBytes(json);
             var properties = new BasicProperties { Persistent = true };
 
@@ -287,12 +287,12 @@ public class RabbitMQClient : IRabbitMQClient
 
             await EnsureQueueDeclaredAsync(queueName);
 
-            var json2 = JsonSerializer.Serialize(message);
-            var body2 = Encoding.UTF8.GetBytes(json2);
+            var json = JsonSerializer.Serialize(message, message.GetType());
+            var body = Encoding.UTF8.GetBytes(json);
 
-            var props2 = new BasicProperties { Persistent = true };
+            var props = new BasicProperties { Persistent = true };
 
-            await channel.BasicPublishAsync(exchange: "", routingKey: queueName, mandatory: false, basicProperties: props2, body: body2);
+            await channel.BasicPublishAsync(exchange: "", routingKey: queueName, mandatory: false, basicProperties: props, body: body);
         }
         else
         {

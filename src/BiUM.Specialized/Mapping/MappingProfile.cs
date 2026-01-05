@@ -6,9 +6,36 @@ namespace BiUM.Specialized.Mapping;
 
 public class MappingProfile : AutoMapper.Profile
 {
+    public MappingProfile()
+    {
+        ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
+    }
+
     public MappingProfile(Assembly assembly)
     {
         ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
+        ApplyMappingsFromAssembly(assembly);
+    }
+
+    public MappingProfile(Assembly assembly, Assembly assembly2)
+    {
+        ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
+        ApplyMappingsFromAssembly(assembly);
+        ApplyMappingsFromAssembly(assembly2);
+    }
+
+    public MappingProfile(Assembly assembly, Assembly assembly2, Assembly assembly3)
+    {
+        ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
+        ApplyMappingsFromAssembly(assembly);
+        ApplyMappingsFromAssembly(assembly2);
+        ApplyMappingsFromAssembly(assembly3);
+    }
+
+    public void CreateAssemblyMap<TAssembly>()
+    {
+        var assembly = typeof(TAssembly).Assembly;
+
         ApplyMappingsFromAssembly(assembly);
     }
 
@@ -16,11 +43,9 @@ public class MappingProfile : AutoMapper.Profile
     {
         var mapFromType = typeof(IMapFrom<>);
 
-        var mappingMethodName = nameof(IMapFrom<object>.Mapping);
+        var mappingMethodName = nameof(IMapFrom<>.Mapping);
 
-        bool HasInterface(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == mapFromType;
-
-        var types = assembly.GetExportedTypes().Where(t => t.GetInterfaces().Any(HasInterface)).ToList();
+        var types = assembly.GetExportedTypes().Where(t => t.GetInterfaces().Any(x => HasInterface(x, mapFromType))).ToList();
 
         var argumentTypes = new Type[] { typeof(AutoMapper.Profile) };
 
@@ -37,11 +62,11 @@ public class MappingProfile : AutoMapper.Profile
 
             if (methodInfo is not null)
             {
-                methodInfo.Invoke(instance, new object[] { this });
+                _ = methodInfo.Invoke(instance, [this]);
             }
             else
             {
-                var interfaces = type.GetInterfaces().Where(HasInterface).ToList();
+                var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType)).ToList();
 
                 if (interfaces.Count > 0)
                 {
@@ -49,10 +74,36 @@ public class MappingProfile : AutoMapper.Profile
                     {
                         var interfaceMethodInfo = @interface.GetMethod(mappingMethodName, argumentTypes);
 
-                        interfaceMethodInfo?.Invoke(instance, new object[] { this });
+                        _ = (interfaceMethodInfo?.Invoke(instance, [this]));
                     }
                 }
             }
         }
+    }
+
+    private static bool HasInterface(Type type, Type mapFromType)
+    {
+        return type.IsGenericType && type.GetGenericTypeDefinition() == mapFromType;
+    }
+}
+
+public class MappingProfile<TAssembly> : MappingProfile
+{
+    public MappingProfile() : base(typeof(TAssembly).Assembly)
+    {
+    }
+}
+
+public class MappingProfile<TAssembly, TAssembly2> : MappingProfile
+{
+    public MappingProfile() : base(typeof(TAssembly).Assembly, typeof(TAssembly2).Assembly)
+    {
+    }
+}
+
+public class MappingProfile<TAssembly, TAssembly2, TAssembly3> : MappingProfile
+{
+    public MappingProfile() : base(typeof(TAssembly).Assembly, typeof(TAssembly2).Assembly, typeof(TAssembly3).Assembly)
+    {
     }
 }

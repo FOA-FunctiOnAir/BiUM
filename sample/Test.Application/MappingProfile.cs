@@ -1,12 +1,6 @@
 using BiUM.Specialized.Mapping;
-using System.Reflection;
+using BiUM.Test.Domain;
 
 namespace BiUM.Test.Application;
 
-public class TestMappingProfile : MappingProfile
-{
-    public TestMappingProfile() : base(Assembly.GetExecutingAssembly())
-    {
-
-    }
-}
+public class TestMappingProfile : MappingProfile<IApplicationMarker, IDomainMarker>;

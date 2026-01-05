@@ -77,8 +77,10 @@ public static partial class ApplicationExtensions
         return builder;
     }
 
-    public static IServiceCollection AddInfrastructureAdditionalServices(this IServiceCollection services, IConfiguration configuration, Assembly assembly)
+    public static IServiceCollection AddInfrastructureAdditionalServices<TAssembly>(this IServiceCollection services, IConfiguration configuration)
     {
+        var assembly = typeof(TAssembly).Assembly;
+
         _ = services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
         _ = services.AddValidatorsFromAssembly(assembly);
         _ = services.AddMediatR(assembly);

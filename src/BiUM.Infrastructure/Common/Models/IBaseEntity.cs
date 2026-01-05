@@ -1,6 +1,6 @@
+using AutoMapper;
 using BiUM.Core.MessageBroker;
 using System;
-using System.Collections.Generic;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -24,5 +24,9 @@ public interface IBaseEntity : IEntity
 
     public bool Test { get; set; }
 
-    public IList<IBaseEvent> DomainEvents { get; }
+    public IBaseEvent? AddCreatedEvent(IMapper? mapper, IBaseEvent? baseEvent);
+
+    public IBaseEvent? AddUpdatedEvent(IMapper? mapper, IBaseEvent? baseEvent);
+
+    public IBaseEvent? AddDeletedEvent(IMapper? mapper, IBaseEvent? baseEvent);
 }

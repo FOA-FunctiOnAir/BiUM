@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>$(SolutionName).Contract</AssemblyName>
+    <RootNamespace>$(SolutionName).Contract</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BiUM.Contract\BiUM.Contract.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.Core" Version="2.46.6" />
+    <PackageReference Include="Grpc.Tools" Version="2.76.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="test2.proto" GrpcServices="Both" AdditionalImportDirs="$(MSBuildProjectDirectory)/../../src/BiUM.Contract" />
+  </ItemGroup>
+</Project>

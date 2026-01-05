@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace BiUM.Test.Domain.Entities;
 
 [Table("CURRENCY", Schema = "dbo")]
-public class Currency : BaseEntity
+public partial class Currency : BaseEntity
 {
     [Column("NAME")]
     public required string Name { get; set; }

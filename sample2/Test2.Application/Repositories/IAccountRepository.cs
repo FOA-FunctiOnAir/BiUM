@@ -1,0 +1,46 @@
+using BiUM.Specialized.Common.API;
+using BiUM.Test2.Application.Dtos;
+using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
+using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
+using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace BiUM.Test2.Application.Repositories;
+
+public interface IAccountRepository
+{
+    #region Queries
+
+    Task<ApiResponse<AccountDto>> GetAccount(Guid id, CancellationToken cancellationToken);
+
+    Task<ApiResponse<AccountDto>> GetAccountByCode(string code, CancellationToken cancellationToken);
+
+    Task<PaginatedApiResponse<AccountsDto>> GetAccounts(Guid? id, string? name, string? code, int? pageStart, int? pageSize, CancellationToken cancellationToken);
+
+    #endregion
+
+    #region Command
+
+    Task<ApiEmptyResponse> SaveAccount(SaveAccountCommand command, CancellationToken cancellationToken);
+
+    Task<ApiEmptyResponse> DeleteAccount(Guid id, CancellationToken cancellationToken);
+
+    #endregion
+
+    #region Fw
+
+    Task<PaginatedApiResponse<GetFwAccountsForParameterDto>> GetFwAccountsForParameter(string? q, int? pageStart, int? pageSize, CancellationToken cancellationToken);
+
+    Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> GetFwAccountsForNames(IReadOnlyList<Guid>? ids, CancellationToken cancellationToken);
+
+    #endregion
+
+    #region Bolt
+
+    Task<ApiEmptyResponse> UpdateBoltAccount(Guid id, CancellationToken cancellationToken);
+
+    #endregion
+}

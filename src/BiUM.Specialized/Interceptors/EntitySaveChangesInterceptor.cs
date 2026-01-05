@@ -1,6 +1,8 @@
+using AutoMapper;
 using BiUM.Core.Audit;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Models;
@@ -26,19 +28,23 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     private readonly CorrelationContext _correlationContext;
     private readonly IDateTimeService _dateTimeService;
     private readonly IRabbitMQClient? _rabbitMQClient;
+    private readonly IMapper? _mapper;
     private readonly BiAppOptions? _biAppOptions;
 
+    private readonly List<IBaseEvent> _entityEventBuffer = [];
     private readonly List<AuditLogEvent> _auditBuffer = [];
 
     public EntitySaveChangesInterceptor(
         ICorrelationContextProvider correlationContextProvider,
         IDateTimeService dateTimeService,
         IRabbitMQClient? rabbitMQClient = null,
+        IMapper? mapper = null,
         IOptions<BiAppOptions>? biAppOptions = null)
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
         _rabbitMQClient = rabbitMQClient;
+        _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
 
         _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
@@ -69,6 +75,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         SaveChangesCompletedEventData eventData,
         int result)
     {
+        _ = PublishEntityEventsAsync();
         _ = PublishAuditLogEventsAsync();
 
         return base.SavedChanges(eventData, result);
@@ -79,9 +86,28 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
+        await PublishEntityEventsAsync();
         await PublishAuditLogEventsAsync();
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
+    }
+
+    public override void SaveChangesFailed(DbContextErrorEventData eventData)
+    {
+        _auditBuffer.Clear();
+        _entityEventBuffer.Clear();
+
+        base.SaveChangesFailed(eventData);
+    }
+
+    public override Task SaveChangesFailedAsync(
+        DbContextErrorEventData eventData,
+        CancellationToken cancellationToken = default)
+    {
+        _auditBuffer.Clear();
+        _entityEventBuffer.Clear();
+
+        return base.SaveChangesFailedAsync(eventData, cancellationToken);
     }
 
     private void UpdateEntities(DbContext? dbContext)
@@ -108,7 +134,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
-            else if (entry.State == EntityState.Deleted && !baseDbContext.HardDelete)
+            else if (entry.State == EntityState.Deleted && !baseDbContext.GetHardDelete())
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.Deleted = true;
@@ -117,6 +143,31 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
+
+            CollectEntityEvents(entry);
+        }
+    }
+
+    private void CollectEntityEvents(EntityEntry<IBaseEntity> entry)
+    {
+        IBaseEvent? baseEvent = null;
+
+        if (entry.State == EntityState.Added)
+        {
+            baseEvent = entry.Entity.AddCreatedEvent(_mapper, null);
+        }
+        else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
+        {
+            baseEvent = entry.Entity.AddUpdatedEvent(_mapper, null);
+        }
+        else if (entry.State == EntityState.Deleted)
+        {
+            baseEvent = entry.Entity.AddDeletedEvent(_mapper, null);
+        }
+
+        if (baseEvent is not null)
+        {
+            _entityEventBuffer.Add(baseEvent);
         }
     }
 
@@ -206,9 +257,24 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
     }
 
+    private async Task PublishEntityEventsAsync()
+    {
+        if (_rabbitMQClient is null || _entityEventBuffer.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var evt in _entityEventBuffer)
+        {
+            await _rabbitMQClient.PublishAsync(evt);
+        }
+
+        _entityEventBuffer.Clear();
+    }
+
     private async Task PublishAuditLogEventsAsync()
     {
-        if (_rabbitMQClient is null || !_auditBuffer.Any())
+        if (_rabbitMQClient is null || _auditBuffer.Count == 0)
         {
             return;
         }

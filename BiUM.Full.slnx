@@ -1,4 +1,12 @@
 <Solution>
+  <Folder Name="/sample2/">
+    <File Path="Directory.Build.props" />
+    <Project Path="sample2/Test2.API/Test2.API.csproj" />
+    <Project Path="sample2/Test2.Application/Test2.Application.csproj" />
+    <Project Path="sample2/Test2.Contract/Test2.Contract.csproj" />
+    <Project Path="sample2/Test2.Domain/Test2.Domain.csproj" />
+    <Project Path="sample2/Test2.Infrastructure/Test2.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />

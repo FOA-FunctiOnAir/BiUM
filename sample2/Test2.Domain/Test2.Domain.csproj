@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>$(SolutionName).Domain</AssemblyName>
+    <RootNamespace>$(SolutionName).Domain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BiUM.Specialized\BiUM.Specialized.csproj" />
+  </ItemGroup>
+</Project>

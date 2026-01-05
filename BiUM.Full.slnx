@@ -1,4 +1,12 @@
 <Solution>
+  <Folder Name="/sample/">
+    <File Path="sample/Directory.Build.props" />
+    <Project Path="sample/Test.API/Test.API.csproj" />
+    <Project Path="sample/Test.Application/Test.Application.csproj" />
+    <Project Path="sample/Test.Contract/Test.Contract.csproj" />
+    <Project Path="sample/Test.Domain/Test.Domain.csproj" />
+    <Project Path="sample/Test.Infrastructure/Test.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/sample2/">
     <File Path="Directory.Build.props" />
     <Project Path="sample2/Test2.API/Test2.API.csproj" />
@@ -27,13 +35,5 @@
     <Project Path="src/BiUM.Core/BiUM.Core.csproj" />
     <Project Path="src/BiUM.Infrastructure/BiUM.Infrastructure.csproj" />
     <Project Path="src/BiUM.Specialized/BiUM.Specialized.csproj" />
-  </Folder>
-  <Folder Name="/sample/">
-    <File Path="sample/Directory.Build.props" />
-    <Project Path="sample/Test.API/Test.API.csproj" />
-    <Project Path="sample/Test.Application/Test.Application.csproj" />
-    <Project Path="sample/Test.Contract/Test.Contract.csproj" />
-    <Project Path="sample/Test.Domain/Test.Domain.csproj" />
-    <Project Path="sample/Test.Infrastructure/Test.Infrastructure.csproj" />
   </Folder>
 </Solution>

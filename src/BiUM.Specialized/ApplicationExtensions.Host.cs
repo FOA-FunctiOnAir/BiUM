@@ -24,7 +24,7 @@ public static partial class ApplicationExtensions
 
             if (grpcOptions?.Enable == true)
             {
-                var grpcPort = grpcOptions.Port > 0 ? grpcOptions.Port : appPort + 1000;
+                var grpcPort = appPort + 1000;
 
                 options.ListenAnyIP(grpcPort, lo => lo.Protocols = HttpProtocols.Http2);
             }

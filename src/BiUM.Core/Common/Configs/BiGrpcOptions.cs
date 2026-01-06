@@ -9,10 +9,6 @@ public class BiGrpcOptions
 
     public bool Enable { get; set; }
 
-    public int Port { get; set; }
-
-    public string Protocol { get; set; }
-
     public Dictionary<string, string>? Domains { get; set; }
 
     public string GetServiceUrl(string serviceKey)

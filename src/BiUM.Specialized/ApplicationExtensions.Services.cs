@@ -11,6 +11,7 @@ using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using OpenTelemetry.Trace;
 using System;
@@ -95,7 +96,7 @@ public static partial class ApplicationExtensions
 
         var url = grpcOptions.GetServiceUrl(serviceKey);
 
-        services.AddScoped<ForwardHeadersGrpcInterceptor>();
+        services.TryAddScoped<ForwardHeadersGrpcInterceptor>();
 
         services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
             .AddInterceptor<ForwardHeadersGrpcInterceptor>();

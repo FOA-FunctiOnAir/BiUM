@@ -39,7 +39,7 @@ public class CrudController : ApiControllerBase
     {
         var response = new ApiResponse<IDictionary<string, object?>>();
 
-        _ = Guid.TryParse(id, out var guidId);
+        Guid.TryParse(id, out var guidId);
 
         var responseGet = await _crudService.GetAsync(code, guidId, cancellationToken);
 

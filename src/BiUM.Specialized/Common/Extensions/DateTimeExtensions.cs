@@ -10,7 +10,7 @@ public static partial class Extensions
 
     public static DateOnly ToDateOnly(this string source)
     {
-        _ = DateOnly.TryParseExact(source, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+        DateOnly.TryParseExact(source, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
 
         return date;
     }
@@ -43,7 +43,7 @@ public static partial class Extensions
 
     public static TimeOnly ToTimeOnly(this string source)
     {
-        _ = TimeOnly.TryParseExact(source, timeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var time);
+        TimeOnly.TryParseExact(source, timeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var time);
 
         return time;
     }

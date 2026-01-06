@@ -36,30 +36,30 @@ public static partial class ApplicationExtensions
     {
         var appOptionsSection = builder.Configuration.GetSection(BiAppOptions.Name);
 
-        _ = builder.Services.Configure<BiAppOptions>(appOptionsSection);
+        builder.Services.Configure<BiAppOptions>(appOptionsSection);
 
         var appOptions = appOptionsSection.Get<BiAppOptions>();
 
-        _ = builder.Services.Configure<HttpClientsOptions>(builder.Configuration.GetSection(HttpClientsOptions.Name));
+        builder.Services.Configure<HttpClientsOptions>(builder.Configuration.GetSection(HttpClientsOptions.Name));
 
-        _ = builder.Services.AddHttpContextAccessor();
+        builder.Services.AddHttpContextAccessor();
 
-        _ = builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient();
 
-        _ = builder.Services.AddHealthChecks();
+        builder.Services.AddHealthChecks();
 
         var serviceName = $"BiApp.{appOptions?.Domain ?? "Unknown"}";
 
-        _ = builder.Logging.ClearProviders();
-        _ = builder.Logging.AddOpenTelemetry(logging =>
+        builder.Logging.ClearProviders();
+        builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.IncludeScopes = true;
             logging.IncludeFormattedMessage = true;
-            _ = logging.AddOtlpExporter();
-            _ = logging.AddConsoleExporter(builder.Environment);
+            logging.AddOtlpExporter();
+            logging.AddConsoleExporter(builder.Environment);
         });
 
-        _ = builder.Services.AddOpenTelemetry()
+        builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource =>
                 resource
                     .AddService(serviceName)
@@ -85,36 +85,36 @@ public static partial class ApplicationExtensions
                     {
                         options.EnrichWithException = (activity, exception) =>
                         {
-                            _ = activity.SetTag("error.stack_trace", exception.StackTrace);
+                            activity.SetTag("error.stack_trace", exception.StackTrace);
                         };
                     })
                     .AddEntityFrameworkCoreInstrumentation(options =>
                     {
                         options.EnrichWithIDbCommand = (activity, command) =>
                         {
-                            _ = activity.SetTag("db.name", command.Connection?.Database);
+                            activity.SetTag("db.name", command.Connection?.Database);
                         };
                     })
                     .AddRedisInstrumentation(options =>
                         options.Enrich = (activity, context) =>
                         {
-                            _ = activity.SetTag("redis.duration", context.ProfiledCommand.ElapsedTime.TotalMilliseconds);
+                            activity.SetTag("redis.duration", context.ProfiledCommand.ElapsedTime.TotalMilliseconds);
 
                             if (context.ProfiledCommand.ElapsedTime < FastRedisDurationLimit)
                             {
-                                _ = activity.SetTag("redis.is_fast", true);
+                                activity.SetTag("redis.is_fast", true);
                             }
                         })
                     .AddOtlpExporter()
                     .AddConsoleExporter(builder.Configuration, builder.Environment));
 
-        _ = builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddEndpointsApiExplorer();
 
         if (builder.Environment.IsDevelopment() ||
             appOptions is not { Environment: "Production" or "Sandbox" })
         {
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            _ = builder.Services.AddSwaggerGen(options =>
+            builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc(
                     appOptions?.DomainVersion ?? "v1",
@@ -127,58 +127,58 @@ public static partial class ApplicationExtensions
         }
 
         // Health Checks
-        _ = builder.Services.AddHealthChecks()
+        builder.Services.AddHealthChecks()
             .AddApplicationLifecycleHealthCheck()
             .AddManualHealthCheck()
-            .AddResourceUtilizationHealthCheck(o =>
-            {
-                o.CpuThresholds = new ResourceUsageThresholds
-                {
-                    DegradedUtilizationPercentage = 90,
-                    UnhealthyUtilizationPercentage = 95
-                };
-                o.MemoryThresholds = new ResourceUsageThresholds
-                {
-                    DegradedUtilizationPercentage = 90,
-                    UnhealthyUtilizationPercentage = 95
-                };
-            })
+            // .AddResourceUtilizationHealthCheck(o =>
+            // {
+            //     o.CpuThresholds = new ResourceUsageThresholds
+            //     {
+            //         DegradedUtilizationPercentage = 90,
+            //         UnhealthyUtilizationPercentage = 95
+            //     };
+            //     o.MemoryThresholds = new ResourceUsageThresholds
+            //     {
+            //         DegradedUtilizationPercentage = 90,
+            //         UnhealthyUtilizationPercentage = 95
+            //     };
+            // })
             .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live", "ready"]);
 
-        _ = builder.Services.AddTelemetryHealthCheckPublisher();
+        builder.Services.AddTelemetryHealthCheckPublisher();
 
         // Configure Redis
-        _ = builder.Services.AddRedisServices(builder.Configuration);
+        builder.Services.AddRedisServices(builder.Configuration);
 
         // Configure RabbitMQ
-        _ = builder.Services.AddRabbitMqServices(builder.Configuration);
+        builder.Services.AddRabbitMqServices(builder.Configuration);
 
-        _ = builder.Services.AddTransient<IDateTimeService, DateTimeService>();
+        builder.Services.AddTransient<IDateTimeService, DateTimeService>();
 
-        _ = builder.Services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
-        _ = builder.Services.AddSingleton<ICorrelationContextSerializer, CorrelationContextSerializer>();
+        builder.Services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
+        builder.Services.AddSingleton<ICorrelationContextSerializer, CorrelationContextSerializer>();
 
         return builder;
     }
 
     public static IServiceCollection AddFileServices(this IServiceCollection services)
     {
-        _ = services.AddSingleton<BindingWrapper>();
-        _ = services.AddSingleton<IConverter, HtmlConverter>();
-        _ = services.AddTransient<IFileService, FileService>();
+        services.AddSingleton<BindingWrapper>();
+        services.AddSingleton<IConverter, HtmlConverter>();
+        services.AddTransient<IFileService, FileService>();
 
         return services;
     }
 
     private static IServiceCollection AddRabbitMqServices(this IServiceCollection services, IConfiguration configuration)
     {
-        _ = services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
-        _ = services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
-        _ = services.AddHostedService<RabbitMQListenerService>();
-        _ = services.AddRabbitMQEventHandlers();
+        services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
+        services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
+        services.AddHostedService<RabbitMQListenerService>();
+        services.AddRabbitMQEventHandlers();
 
         // Add RabbitMQ Health Check
-        _ = services.AddHealthChecks()
+        services.AddHealthChecks()
             .AddCheck<RabbitMQHealthCheck>("rabbitmq", tags: ["ready"]);
 
         return services;
@@ -186,8 +186,8 @@ public static partial class ApplicationExtensions
 
     private static IServiceCollection AddRedisServices(this IServiceCollection services, IConfiguration configuration)
     {
-        _ = services.Configure<RedisClientOptions>(configuration.GetSection(RedisClientOptions.Name));
-        _ = services.AddSingleton<IRedisClient, RedisClient>();
+        services.Configure<RedisClientOptions>(configuration.GetSection(RedisClientOptions.Name));
+        services.AddSingleton<IRedisClient, RedisClient>();
 
         return services;
     }

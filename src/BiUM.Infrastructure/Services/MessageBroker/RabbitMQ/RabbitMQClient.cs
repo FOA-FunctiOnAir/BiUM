@@ -208,22 +208,22 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
                 await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
-                _ = tcs.TrySetResult(message);
+                tcs.TrySetResult(message);
             }
             catch (Exception ex)
             {
                 await HandleMessageErrorAsync(channel, ea, queueName, ex);
-                _ = tcs.TrySetException(ex);
+                tcs.TrySetException(ex);
             }
 
             await Task.Yield();
         };
 
-        _ = await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
+        await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
 
-        _ = token.Register(() => tcs.TrySetCanceled(token));
+        token.Register(() => tcs.TrySetCanceled(token));
 
-        _ = await tcs.Task;
+        await tcs.Task;
 
         return tcs.Task.Result;
     }
@@ -253,21 +253,21 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
                 await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
-                _ = tcs.TrySetResult(obj);
+                tcs.TrySetResult(obj);
             }
             catch (Exception ex)
             {
                 await HandleMessageErrorAsync(channel, ea, queueName, ex);
-                _ = tcs.TrySetException(ex);
+                tcs.TrySetException(ex);
             }
             await Task.Yield();
         };
 
-        _ = await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
+        await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
 
-        _ = token.Register(() => tcs.TrySetCanceled(token));
+        token.Register(() => tcs.TrySetCanceled(token));
 
-        _ = await tcs.Task;
+        await tcs.Task;
 
         return tcs.Task.Result;
     }
@@ -298,9 +298,9 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             tcs.SetResult(receivedMessage!);
         };
 
-        _ = await channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer);
+        await channel.BasicConsumeAsync(queue: queueName, autoAck: true, consumer: consumer);
 
-        _ = await tcs.Task;
+        await tcs.Task;
 
         return tcs.Task.Result;
     }
@@ -389,7 +389,7 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             }
         };
 
-        _ = await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
+        await channel.BasicConsumeAsync(queue: queueName, autoAck: false, consumer: consumer);
 
         _logger.LogInformation("Started listening to {Queue}", queueName);
     }
@@ -544,7 +544,7 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
         finally
         {
-            _ = _connectionLock.Release();
+            _connectionLock.Release();
         }
     }
 
@@ -596,7 +596,7 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
         finally
         {
-            _ = _channelLock.Release();
+            _channelLock.Release();
         }
     }
 
@@ -611,7 +611,7 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         await channel.ExchangeDeclareAsync(exchange: exchange, type: exchangeType, durable: true, autoDelete: false);
 
-        _ = _declaredExchanges.TryAdd(exchange, true);
+        _declaredExchanges.TryAdd(exchange, true);
 
         _logger.LogDebug("Exchange declared: {Exchange}", exchange);
     }
@@ -625,9 +625,9 @@ public class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var channel = await GetChannelAsync();
 
-        _ = await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
+        await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
 
-        _ = _declaredQueues.TryAdd(queueName, true);
+        _declaredQueues.TryAdd(queueName, true);
 
         _logger.LogDebug("Queue declared: {Queue}", queueName);
     }

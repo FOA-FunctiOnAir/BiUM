@@ -5,11 +5,12 @@ namespace BiUM.Core.Common.Enums;
 [Flags]
 public enum EntityFeatures
 {
-    All = 0,
+    None = 0,
+    All = 1,
 
-    EntityAddedEvent = 1 << 0,
-    EntityUpdatedEvent = 1 << 1,
-    EntityDeletedEvent = 1 << 2,
+    EntityAddedEvent = 1 << 1,
+    EntityUpdatedEvent = 1 << 2,
+    EntityDeletedEvent = 1 << 3,
 
     EntityEvents =
         EntityAddedEvent |

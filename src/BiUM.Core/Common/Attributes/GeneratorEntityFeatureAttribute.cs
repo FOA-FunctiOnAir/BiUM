@@ -8,6 +8,11 @@ public class GeneratorEntityFeatureAttribute : Attribute
 {
     public EntityFeatures EntityFeatures { get; }
 
+    public GeneratorEntityFeatureAttribute()
+    {
+        EntityFeatures = EntityFeatures.All;
+    }
+
     public GeneratorEntityFeatureAttribute(EntityFeatures entityFeatures = EntityFeatures.All)
     {
         EntityFeatures = entityFeatures;

@@ -8,6 +8,11 @@ public class GeneratorColumnFeatureAttribute : Attribute
 {
     public EntityColumnFeatures EntityColumnFeatures { get; }
 
+    public GeneratorColumnFeatureAttribute()
+    {
+        EntityColumnFeatures = EntityColumnFeatures.None;
+    }
+
     public GeneratorColumnFeatureAttribute(EntityColumnFeatures entityColumnFeatures = EntityColumnFeatures.None)
     {
         EntityColumnFeatures = entityColumnFeatures;

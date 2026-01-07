@@ -7,8 +7,8 @@ public enum EntityColumnFeatures
 {
     None = 0,
 
-    EntityTranslation = 1,
+    EntityTranslation = 1 << 1,
 
-    NotSearchable = 101,
-    NotReturnForList = 102
+    NotSearchable = 1 << 16,
+    NotReturnForList = 1 << 17
 }

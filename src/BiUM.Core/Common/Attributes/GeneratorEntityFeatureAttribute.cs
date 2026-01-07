@@ -4,11 +4,11 @@ using System;
 namespace BiUM.Core.Common.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-public class GeneratorFeatureAttribute : Attribute
+public class GeneratorEntityFeatureAttribute : Attribute
 {
     public EntityFeatures EntityFeatures { get; }
 
-    public GeneratorFeatureAttribute(EntityFeatures entityFeatures = EntityFeatures.All)
+    public GeneratorEntityFeatureAttribute(EntityFeatures entityFeatures = EntityFeatures.All)
     {
         EntityFeatures = entityFeatures;
     }

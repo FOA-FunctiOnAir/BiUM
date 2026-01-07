@@ -3,7 +3,7 @@ using System;
 
 namespace BiUM.Core.Common.Attributes;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true, Inherited = false)]
 public class GeneratorColumnFeatureAttribute : Attribute
 {
     public EntityColumnFeatures EntityColumnFeatures { get; }

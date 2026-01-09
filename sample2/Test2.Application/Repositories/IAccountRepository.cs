@@ -14,6 +14,8 @@ public interface IAccountRepository
 {
     #region Queries
 
+    Task<ApiResponse<string>> GetCurrency(Guid id, CancellationToken cancellationToken);
+
     Task<ApiResponse<AccountDto>> GetAccount(Guid id, CancellationToken cancellationToken);
 
     Task<ApiResponse<AccountDto>> GetAccountByCode(string code, CancellationToken cancellationToken);

@@ -10,6 +10,7 @@ using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParamet
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
 
 namespace BiUM.Test2.API.Controllers;
 
@@ -30,6 +31,12 @@ public class TestAccountController : ApiControllerBase
 
     [HttpDelete]
     public async Task<ApiEmptyResponse> DeleteAccount([FromBody] DeleteAccountCommand query)
+    {
+        return await Mediator.Send(query);
+    }
+
+    [HttpGet]
+    public async Task<ApiResponse<string>> GetCurrency([FromQuery] GetCurrencyQuery query)
     {
         return await Mediator.Send(query);
     }

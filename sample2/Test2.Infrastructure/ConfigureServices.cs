@@ -1,4 +1,5 @@
 using BiUM.Specialized.Database;
+using BiUM.Test.Contract;
 using BiUM.Test2.Application.Repositories;
 using BiUM.Test2.Infrastructure.Persistence;
 using BiUM.Test2.Infrastructure.Repositories;
@@ -17,6 +18,8 @@ public static class ConfigureServices
 
         _ = services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
         _ = services.AddScoped<IBoltDbContext>(provider => provider.GetRequiredService<BoltDbContext>());
+
+        _ = services.AddGrpcClient<TestApi.TestApiClient>(configuration, "test");
 
         _ = services.AddScoped<IAccountRepository, AccountRepository>();
 

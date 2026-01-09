@@ -26,14 +26,34 @@ public enum EntityFeatures
         DeleteCommand |
         UpdateBoltCommand,
 
-    GetQuery = 1 << 8,
-    GetListQuery = 1 << 9,
-    GetForNamesQuery = 1 << 10,
-    GetForParameterQuery = 1 << 11,
+    SaveCommandRepository = 1 << 8,
+    DeleteCommandRepository = 1 << 9,
+    UpdateBoltCommandRepository = 1 << 10,
+
+    EntityCommandRepositories =
+        SaveCommandRepository |
+        DeleteCommandRepository |
+        UpdateBoltCommandRepository,
+
+    GetQuery = 1 << 11,
+    GetListQuery = 1 << 12,
+    GetForNamesQuery = 1 << 13,
+    GetForParameterQuery = 1 << 14,
 
     EntityQueries =
         GetQuery |
         GetListQuery |
         GetForNamesQuery |
-        GetForParameterQuery
+        GetForParameterQuery,
+
+    GetQueryRepository = 1 << 15,
+    GetListQueryRepository = 1 << 16,
+    GetForNamesQueryRepository = 1 << 17,
+    GetForParameterQueryRepository = 1 << 18,
+
+    EntityQueryRepositories =
+        GetQueryRepository |
+        GetListQueryRepository |
+        GetForNamesQueryRepository |
+        GetForParameterQueryRepository
 }

@@ -10,7 +10,7 @@ namespace BiUM.Core.Extensions;
 
 public static class ConfigurationExtensions
 {
-        public static void OverrideBiAppLocalServices(this IConfigurationBuilder configurationBuilder)
+    public static void OverrideBiAppLocalServices(this IConfigurationBuilder configurationBuilder)
     {
         var localServicesPath = Path.Combine(AppContext.BaseDirectory, "services.local");
 

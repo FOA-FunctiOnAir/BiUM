@@ -1,10 +1,8 @@
-using BiUM.Contract;
 using BiUM.Specialized.Services;
 using BiUM.Test.Application.Repositories;
 using BiUM.Test.Contract;
 using Grpc.Core;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BiUM.Test.Infrastructure.GrpcServices;
@@ -20,46 +18,6 @@ public class TestGrpcService : TestApi.TestApiBase
     {
         _currencyRepository = currencyRepository;
         _translationService = translationService;
-    }
-
-    public override async Task<GetCurrencyNamesResponse> GetCurrencyNames(GetCurrencyNamesRequest request, ServerCallContext context)
-    {
-        var response = new GetCurrencyNamesResponse() { Meta = new() { Success = true } };
-
-        if (request.CurrencyIds.Count == 0)
-        {
-            await _translationService.AddMessage(response.Meta, "NoCurrency", context.CancellationToken);
-
-            return response;
-        }
-
-        var currencyIds = request.CurrencyIds.ToGuidList();
-
-        var currenciesResponse = await _currencyRepository.GetFwCurrenciesForNames(currencyIds, context.CancellationToken);
-
-        if (!currenciesResponse.Success)
-        {
-            response.Meta.AddMessage(currenciesResponse.Messages);
-
-            return response;
-        }
-        else if (currenciesResponse.Value is null)
-        {
-            await _translationService.AddMessage(response.Meta, "NoCurrency", context.CancellationToken);
-
-            return response;
-        }
-
-        foreach (var currency in currenciesResponse.Value)
-        {
-            response.Items.Add(new GrpcIdNameMessage()
-            {
-                Id = currency.Id.ToString(),
-                Name = currency.Name
-            });
-        }
-
-        return response;
     }
 
     public override async Task<GetCurrencyResponse> GetCurrency(GetCurrencyRequest request, ServerCallContext context)

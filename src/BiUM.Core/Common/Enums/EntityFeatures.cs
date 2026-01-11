@@ -1,59 +1,48 @@
-using System;
-
 namespace BiUM.Core.Common.Enums;
 
-[Flags]
 public enum EntityFeatures
 {
     None = 0,
     All = 1,
 
-    EntityAddedEvent = 1 << 2,
-    EntityUpdatedEvent = 1 << 3,
-    EntityDeletedEvent = 1 << 4,
+    EntityAddedEvent = 2,
+    EntityUpdatedEvent = 3,
+    EntityDeletedEvent = 4,
 
-    EntityEvents =
-        EntityAddedEvent |
-        EntityUpdatedEvent |
-        EntityDeletedEvent,
+    EntityEvents = 9,
 
-    SaveCommand = 1 << 5,
-    DeleteCommand = 1 << 6,
-    UpdateBoltCommand = 1 << 7,
+    Save = 50, // Controller, Command, Repository
+    Delete = 51, // Controller, Command, Repository
+    UpdateBolt = 52, // Controller, Command, Repository
 
-    EntityCommands =
-        SaveCommand |
-        DeleteCommand |
-        UpdateBoltCommand,
+    SaveCommand = 60,  // Command
+    DeleteCommand = 61,  // Command
+    UpdateBoltCommand = 62,  // Command
 
-    SaveCommandRepository = 1 << 8,
-    DeleteCommandRepository = 1 << 9,
-    UpdateBoltCommandRepository = 1 << 10,
+    EntityCommands = 69,  // All Commands
 
-    EntityCommandRepositories =
-        SaveCommandRepository |
-        DeleteCommandRepository |
-        UpdateBoltCommandRepository,
+    SaveRepository = 70, // Repository
+    DeleteRepository = 71, // Repository
+    UpdateBoltRepository = 72, // Repository
 
-    GetQuery = 1 << 11,
-    GetListQuery = 1 << 12,
-    GetForNamesQuery = 1 << 13,
-    GetForParameterQuery = 1 << 14,
+    EntityRepositories = 79, // All Repository
 
-    EntityQueries =
-        GetQuery |
-        GetListQuery |
-        GetForNamesQuery |
-        GetForParameterQuery,
+    Get = 80, // Controller, Query, Repository
+    GetList = 81, // Controller, Query, Repository
+    GetForNames = 82, // Controller, Query, Repository
+    GetForParameter = 83, // Controller, Query, Repository
 
-    GetQueryRepository = 1 << 15,
-    GetListQueryRepository = 1 << 16,
-    GetForNamesQueryRepository = 1 << 17,
-    GetForParameterQueryRepository = 1 << 18,
+    GetQuery = 90, // Query
+    GetListQuery = 91, // Query
+    GetForNamesQuery = 92, // Query
+    GetForParameterQuery = 93, // Query
 
-    EntityQueryRepositories =
-        GetQueryRepository |
-        GetListQueryRepository |
-        GetForNamesQueryRepository |
-        GetForParameterQueryRepository
+    EntityQueries = 99, // All Query
+
+    GetRepository = 100, // Repository
+    GetListRepository = 101, // Repository
+    GetForNamesRepository = 102, // Repository
+    GetForParameterRepository = 103, // Repository
+
+    EntityQueryRepositories = 109 // All Repository
 }

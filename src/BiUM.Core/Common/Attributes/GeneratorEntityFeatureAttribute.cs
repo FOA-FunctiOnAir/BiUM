@@ -1,20 +1,21 @@
 using BiUM.Core.Common.Enums;
 using System;
+using System.Collections.Generic;
 
 namespace BiUM.Core.Common.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 public class GeneratorEntityFeatureAttribute : Attribute
 {
-    public EntityFeatures EntityFeatures { get; }
+    public IReadOnlyCollection<EntityFeatures> Features { get; }
 
     public GeneratorEntityFeatureAttribute()
     {
-        EntityFeatures = EntityFeatures.All;
+        Features = [EntityFeatures.All];
     }
 
-    public GeneratorEntityFeatureAttribute(EntityFeatures entityFeatures = EntityFeatures.All)
+    public GeneratorEntityFeatureAttribute(params EntityFeatures[] features)
     {
-        EntityFeatures = entityFeatures;
+        Features = features?.Length > 0 ? features : [EntityFeatures.All];
     }
 }

@@ -15,11 +15,11 @@ public enum EntityFeatures
     Delete = 51, // Controller, Command, Repository
     UpdateBolt = 52, // Controller, Command, Repository
 
-    SaveCommand = 60,  // Command
-    DeleteCommand = 61,  // Command
-    UpdateBoltCommand = 62,  // Command
+    SaveCommand = 60,  // Command, Repository
+    DeleteCommand = 61,  // Command, Repository
+    UpdateBoltCommand = 62,  // Command, Repository
 
-    EntityCommands = 69,  // All Commands
+    EntityCommands = 69,  // All Commands, All Repository
 
     SaveRepository = 70, // Repository
     DeleteRepository = 71, // Repository
@@ -32,12 +32,12 @@ public enum EntityFeatures
     GetForNames = 82, // Controller, Query, Repository
     GetForParameter = 83, // Controller, Query, Repository
 
-    GetQuery = 90, // Query
-    GetListQuery = 91, // Query
-    GetForNamesQuery = 92, // Query
-    GetForParameterQuery = 93, // Query
+    GetQuery = 90, // Query, Repository
+    GetListQuery = 91, // Query, Repository
+    GetForNamesQuery = 92, // Query, Repository
+    GetForParameterQuery = 93, // Query, Repository
 
-    EntityQueries = 99, // All Query
+    EntityQueries = 99, // All Query, All Repository
 
     GetRepository = 100, // Repository
     GetListRepository = 101, // Repository

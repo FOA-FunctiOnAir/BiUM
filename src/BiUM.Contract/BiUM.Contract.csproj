@@ -2,13 +2,14 @@
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+    <PackageReference Include="MessagePack.Annotations" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="common.proto" Pack="true" PackagePath="contentFiles/any/any/protos/" />
+    <Content Include="common.proto" Pack="true" PackagePath="protos/" />
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="common.proto" GrpcServices="Both" />
+    <Protobuf Include="common.proto" GrpcServices="None" />
   </ItemGroup>
 </Project>

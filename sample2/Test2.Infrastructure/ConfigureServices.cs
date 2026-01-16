@@ -1,6 +1,7 @@
+using BiApp.Infrastructure.Services.Rpc.Clients;
 using BiUM.Specialized.Database;
-using BiUM.Test.Contract;
 using BiUM.Test2.Application.Repositories;
+using BiUM.Test2.Contract.Services;
 using BiUM.Test2.Infrastructure.Persistence;
 using BiUM.Test2.Infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
@@ -13,15 +14,15 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddDomainInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        _ = services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
-        _ = services.AddScoped<ITestDbContext>(provider => provider.GetRequiredService<TestDbContext>());
+        services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
+        services.AddScoped<ITestDbContext>(sp => sp.GetRequiredService<TestDbContext>());
 
-        _ = services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
-        _ = services.AddScoped<IBoltDbContext>(provider => provider.GetRequiredService<BoltDbContext>());
+        services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
+        services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
 
-        _ = services.AddGrpcClient<TestApi.TestApiClient>(configuration, "test");
+        services.AddScoped<IAccountRepository, AccountRepository>();
 
-        _ = services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddRpcClient<ITestRpcService, TestRpcServiceClient>("test");
 
         return services;
     }

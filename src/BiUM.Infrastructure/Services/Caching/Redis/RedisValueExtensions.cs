@@ -1,4 +1,4 @@
-using BiUM.Core.Models.Caching.Redis;
+using BiUM.Contract.Models.Caching.Redis;
 using StackExchange.Redis;
 using System;
 using System.Text.Json;

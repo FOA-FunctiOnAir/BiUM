@@ -1,4 +1,4 @@
-using BiUM.Core.Common.Enums;
+using BiUM.Contract.Enums;
 using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.API;
@@ -91,7 +91,7 @@ public partial class CrudService
 
         var newVersion = (lastDomainCrudVersion?.Version ?? 0) + 1;
 
-        var newDomainCrudVersion = new DomainCrudVersion()
+        var newDomainCrudVersion = new DomainCrudVersion
         {
             CorrelationId = GuidGenerator.New(),
             TenantId = domainCrud.TenantId,
@@ -100,7 +100,7 @@ public partial class CrudService
             Version = newVersion
         };
 
-        newDomainCrudVersion.DomainCrudVersionColumns = domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn()
+        newDomainCrudVersion.DomainCrudVersionColumns = domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn
         {
             CorrelationId = GuidGenerator.New(),
             CrudVersionId = newDomainCrudVersion.Id,
@@ -125,7 +125,7 @@ public partial class CrudService
 
             ddl = string.IsNullOrWhiteSpace(ddlBody)
                 ? ensureSchemaSql
-                : (ensureSchemaSql + ddlBody);
+                : ensureSchemaSql + ddlBody;
         }
         else if (_configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {
@@ -137,8 +137,8 @@ public partial class CrudService
                 : GenerateDiffPgSql(domainCrud, lastDomainCrudVersion.DomainCrudVersionColumns!, newDomainCrudVersion.DomainCrudVersionColumns!);
 
             ddl = string.IsNullOrWhiteSpace(ddlBody)
-                ? (ensurePgcryptoSql + ensureSchemaSql)
-                : (ensurePgcryptoSql + ensureSchemaSql + ddlBody);
+                ? ensurePgcryptoSql + ensureSchemaSql
+                : ensurePgcryptoSql + ensureSchemaSql + ddlBody;
         }
         else
         {
@@ -199,7 +199,7 @@ public partial class CrudService
 
         if (domainCrud is null)
         {
-            domainCrud = new DomainCrud()
+            domainCrud = new DomainCrud
             {
                 TenantId = _correlationContext.TenantId!.Value,
                 MicroserviceId = command.MicroserviceId,
@@ -366,7 +366,7 @@ public partial class CrudService
     {
         var response = new ApiEmptyResponse();
 
-        var columnsParameters = columns?.Select(c => new SaveCrudServicesColumnDto()
+        var columnsParameters = columns?.Select(c => new SaveCrudServicesColumnDto
         {
             Property = c.PropertyName,
             FieldId = c.FieldId

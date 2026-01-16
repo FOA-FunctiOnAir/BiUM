@@ -1,11 +1,11 @@
-using BiUM.Contract;
+using BiUM.Contract.Enums;
 using BiUM.Core.Common.API;
-using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Translation;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ResponseMeta = BiUM.Contract.Models.Api.ResponseMeta;
 
 namespace BiUM.Specialized.Services;
 
@@ -42,32 +42,32 @@ public interface ITranslationService
         MessageSeverity severity,
         CancellationToken cancellationToken);
 
-    Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         CancellationToken cancellationToken);
 
-    Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         MessageSeverity severity,
         CancellationToken cancellationToken);
 
-    Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         Exception exception,
         CancellationToken cancellationToken);
 
-    Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         Exception exception,
         MessageSeverity severity,
         CancellationToken cancellationToken);
 
-    Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         string exception,
         MessageSeverity severity,

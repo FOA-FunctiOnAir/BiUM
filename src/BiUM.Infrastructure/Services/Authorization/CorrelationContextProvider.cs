@@ -1,6 +1,6 @@
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Consts;
-using BiUM.Core.Models;
 using BiUM.Core.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

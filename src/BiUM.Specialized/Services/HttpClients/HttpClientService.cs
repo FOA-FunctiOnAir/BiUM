@@ -1,6 +1,6 @@
+using BiUM.Contract.Enums;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
 using BiUM.Core.HttpClients;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;

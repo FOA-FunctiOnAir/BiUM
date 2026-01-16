@@ -25,7 +25,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    _ = app.UseMigrationsEndPoint();
+    app.UseMigrationsEndPoint();
 }
 
 await app.Services.SyncAll();

@@ -1,7 +1,7 @@
+using BiUM.Contract.Models.Caching.Redis;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
-using BiUM.Core.Models.Caching.Redis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -112,7 +112,7 @@ public class RedisClient : IRedisClient
 
         if (expiresIn?.Ticks < 0)
         {
-            await this.RemoveAsync(key);
+            await RemoveAsync(key);
 
             return false;
         }
@@ -322,7 +322,7 @@ public class RedisClient : IRedisClient
 
         if (expiresIn.Ticks < 0)
         {
-            return this.RemoveAsync(key);
+            return RemoveAsync(key);
         }
 
         return _database.KeyExpireAsync(key, expiresIn);

@@ -1,18 +1,20 @@
-using BiUM.Specialized.Services;
+﻿using BiUM.Specialized.Services;
 using BiUM.Test.Application.Repositories;
-using BiUM.Test.Contract;
-using Grpc.Core;
+using BiUM.Test.Contract.Models;
+using BiUM.Test.Contract.Services;
+using MagicOnion;
+using MagicOnion.Server;
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 
-namespace BiUM.Test.Infrastructure.GrpcServices;
+namespace BiUM.Test.Infrastructure.Services.Rpc;
 
-public class TestGrpcService : TestApi.TestApiBase
+public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcService
 {
     private readonly ICurrencyRepository _currencyRepository;
     private readonly ITranslationService _translationService;
 
-    public TestGrpcService(
+    public TestRpcService(
         ICurrencyRepository currencyRepository,
         ITranslationService translationService)
     {
@@ -20,23 +22,28 @@ public class TestGrpcService : TestApi.TestApiBase
         _translationService = translationService;
     }
 
-    public override async Task<GetCurrencyResponse> GetCurrency(GetCurrencyRequest request, ServerCallContext context)
+    public async UnaryResult<GetCurrencyResponse> GetCurrency(GetCurrencyRequest request)
     {
-        var response = new GetCurrencyResponse()
+        var cancellationToken = CancellationToken.None;
+
+        var response = new GetCurrencyResponse
         {
-            Meta = new() { Success = true }
+            Meta = new()
+            {
+                Success = true
+            }
         };
 
         if (string.IsNullOrWhiteSpace(request.CurrencyId))
         {
-            await _translationService.AddMessage(response.Meta, "NoCurrencyCode", context.CancellationToken);
+            await _translationService.AddMessage(response.Meta, "NoCurrencyCode", cancellationToken);
 
             return response;
         }
 
         var currencyId = request.CurrencyId.ToGuid();
 
-        var currencyResponse = await _currencyRepository.GetCurrency(currencyId, context.CancellationToken);
+        var currencyResponse = await _currencyRepository.GetCurrency(currencyId, cancellationToken);
 
         if (!currencyResponse.Success)
         {
@@ -47,17 +54,17 @@ public class TestGrpcService : TestApi.TestApiBase
 
         if (currencyResponse.Value is null)
         {
-            await _translationService.AddMessage(response.Meta, "CurrencyNotFound", context.CancellationToken);
+            await _translationService.AddMessage(response.Meta, "CurrencyNotFound", cancellationToken);
 
             return response;
         }
 
-        response.Currency = new GetCurrencyItem()
+        response.Currency = new()
         {
             CurrencyId = currencyResponse.Value.Id.ToString(),
             CurrencyCode = currencyResponse.Value.Code,
-            CurrencyName = currencyResponse.Value.Name,
             CurrencyType = currencyResponse.Value.Type.ToString(),
+            CurrencyName = currencyResponse.Value.Name
         };
 
         return response;

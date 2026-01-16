@@ -173,7 +173,7 @@ public partial class CrudService
         var sql = $"SELECT {select} FROM {table} {where}{order}{limit}";
         var items = await QueryRowsAsync(sql, parms.ToArray(), ct);
 
-        var payload = new List<IReadOnlyList<IDictionary<string, object?>>>() { items };
+        var payload = new List<IReadOnlyList<IDictionary<string, object?>>> { items };
 
         return new PaginatedApiResponse<IDictionary<string, object?>>(items, (int)total, pageNumber, pageSize);
     }

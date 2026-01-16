@@ -1,6 +1,6 @@
 using BiUM.Bolt.Database.Entities;
+using BiUM.Contract.Models;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +45,7 @@ public static class Extensions
 
         _ = existEntity.Count != 0 ? dbContext.Update(entity) : dbContext.Add(entity);
 
-        var boltTransaction = new BoltTransaction()
+        var boltTransaction = new BoltTransaction
         {
             TableName = name,
             Ids = entity.Id.ToString(),
@@ -106,7 +106,7 @@ public static class Extensions
             }
         }
 
-        var boltTransaction = new BoltTransaction()
+        var boltTransaction = new BoltTransaction
         {
             TableName = name,
             Ids = string.Join(";", entities.Select(e => e.Id.ToString()).Distinct()),
@@ -157,7 +157,7 @@ public static class Extensions
                 _ = dbContext.Update(baseEntity);
             }
 
-            var boltTransaction = new BoltTransaction()
+            var boltTransaction = new BoltTransaction
             {
                 TableName = name,
                 Ids = entity.Id.ToString(),
@@ -210,7 +210,7 @@ public static class Extensions
                 _ = dbContext.Update(baseEntity);
             }
 
-            var boltTransaction = new BoltTransaction()
+            var boltTransaction = new BoltTransaction
             {
                 TableName = name,
                 Ids = id.ToString(),
@@ -267,7 +267,7 @@ public static class Extensions
                 }
             }
 
-            var boltTransaction = new BoltTransaction()
+            var boltTransaction = new BoltTransaction
             {
                 TableName = name,
                 Ids = string.Join(";", entities.Select(e => e.Id.ToString()).Distinct()),
@@ -321,7 +321,7 @@ public static class Extensions
                 }
             }
 
-            var boltTransaction = new BoltTransaction()
+            var boltTransaction = new BoltTransaction
             {
                 TableName = name,
                 Ids = string.Join(";", existEntities.Select(e => e.Id.ToString()).Distinct()),

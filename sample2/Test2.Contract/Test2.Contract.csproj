@@ -7,14 +7,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\BiUM.Contract\BiUM.Contract.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Grpc.Core" />
-    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="test.proto" GrpcServices="Both" AdditionalImportDirs="$(MSBuildProjectDirectory)/../../src/BiUM.Contract" />
-    <Protobuf Include="test2.proto" GrpcServices="Both" AdditionalImportDirs="$(MSBuildProjectDirectory)/../../src/BiUM.Contract" />
-  </ItemGroup>
 </Project>

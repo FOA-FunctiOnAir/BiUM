@@ -1,15 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" />
-    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
-    <PackageReference Include="MessagePack.Annotations" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="common.proto" Pack="true" PackagePath="protos/" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="common.proto" GrpcServices="None" />
+    <PackageReference Include="MagicOnion.Abstractions" />
+    <PackageReference Include="MemoryPack" />
   </ItemGroup>
 </Project>

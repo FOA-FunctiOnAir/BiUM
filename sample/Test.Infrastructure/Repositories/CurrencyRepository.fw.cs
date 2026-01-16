@@ -23,11 +23,9 @@ public partial class CurrencyRepository
         var currencies = await _context.Currencies
             .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
             .Where(c =>
-                (
-                    string.IsNullOrEmpty(q) ||
-                    (string.IsNullOrEmpty(c.Name) || c.Name.Contains(q)) ||
-                    (string.IsNullOrEmpty(c.Code) || c.Code.Contains(q))
-                )
+                string.IsNullOrEmpty(q) ||
+                string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
+                string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
             )
             .ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(_mapper, pageStart, pageSize, cancellationToken);
 

@@ -1,8 +1,8 @@
 using AutoMapper;
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
-using BiUM.Core.Models;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

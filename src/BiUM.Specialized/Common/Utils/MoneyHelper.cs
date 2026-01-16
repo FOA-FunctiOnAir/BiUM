@@ -44,7 +44,7 @@ public static class MoneyHelper
 
         var words = "";
         var millions = number / 1000000;
-        var thousands = (number % 1000000) / 1000;
+        var thousands = number % 1000000 / 1000;
         var hundreds = number % 1000;
 
         if (millions > 0)
@@ -75,7 +75,7 @@ public static class MoneyHelper
     private static string ConvertThreeDigitsToWords(int number)
     {
         var hundredsPlace = number / 100;
-        var tensPlace = (number % 100) / 10;
+        var tensPlace = number % 100 / 10;
         var onesPlace = number % 10;
 
         var words = "";

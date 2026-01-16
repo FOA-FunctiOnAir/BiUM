@@ -209,7 +209,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 _ = _context.Update(boltStatus);
             }
 
-            var newBoltStatus = new BoltStatus()
+            var newBoltStatus = new BoltStatus
             {
                 Id = GuidGenerator.New(),
                 Active = true,
@@ -238,7 +238,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     _ = _context.Update(boltStatus);
                 }
 
-                var newBoltStatus = new BoltStatus()
+                var newBoltStatus = new BoltStatus
                 {
                     Id = GuidGenerator.New(),
                     Active = true,

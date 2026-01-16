@@ -1,11 +1,11 @@
 using AutoMapper;
+using BiUM.Contract.Models;
 using BiUM.Core.Audit;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
-using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Specialized.Database;

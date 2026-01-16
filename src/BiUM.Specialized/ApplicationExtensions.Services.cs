@@ -2,19 +2,26 @@ using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Specialized.Interceptors;
+using BiUM.Specialized.MagicOnion;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.HttpClients;
 using FluentValidation;
-using Grpc.Core;
+using Grpc.Net.Client;
+using MagicOnion;
+using MagicOnion.Client;
+using MagicOnion.Serialization;
 using MediatR;
+using MemoryPack;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using OpenTelemetry.Trace;
 using System;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -44,9 +51,17 @@ public static partial class ApplicationExtensions
         // Customise default API behaviour
         builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
 
-        // Configure Grpc
-        builder.Services.AddGrpc();
-        builder.Services.AddGrpcReflection();
+        // Configure MagicOnion Rpc
+        var magicOnionSerializerProvider = MemoryPackWithBrotliMagicOnionSerializerProvider.Create(MemoryPackSerializerOptions.Default, CompressionLevel.Optimal);
+
+        MagicOnionSerializerProvider.Default = magicOnionSerializerProvider;
+
+        builder.Services.AddSingleton<IMagicOnionSerializerProvider>(magicOnionSerializerProvider);
+
+        builder.Services.AddMagicOnion(options =>
+        {
+            options.MessageSerializer = magicOnionSerializerProvider;
+        });
 
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing
@@ -88,18 +103,49 @@ public static partial class ApplicationExtensions
         return services;
     }
 
-    public static IServiceCollection AddGrpcClient<TClient>(this IServiceCollection services, IConfiguration configuration, string serviceKey)
-        where TClient : ClientBase<TClient>
+    public static IServiceCollection AddRpcClient<TClient, TClientImpl>(this IServiceCollection services, string serviceKey)
+        where TClient : class, IService<TClient>
+        where TClientImpl : class, IMagicOnionRpcClient<TClient>
     {
-        var grpcOptions = configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>()
-            ?? throw new InvalidOperationException($"{BiGrpcOptions.Name} not found in configuration");
+        services.TryAddKeyedSingleton(
+            serviceKey,
+            (sp, objectKey) =>
+            {
+                ArgumentNullException.ThrowIfNull(objectKey);
 
-        var url = grpcOptions.GetServiceUrl(serviceKey);
+                if (objectKey is not string key)
+                {
+                    throw  new InvalidOperationException($"Expected string key but provided {objectKey.GetType().Name}");
+                }
 
-        services.TryAddScoped<ForwardHeadersGrpcInterceptor>();
+                var grpcOptionsAccessor = sp.GetRequiredService<IOptions<BiGrpcOptions>>();
 
-        services.AddGrpcClient<TClient>(o => o.Address = new Uri(url))
-            .AddInterceptor<ForwardHeadersGrpcInterceptor>();
+                var grpcOptions = grpcOptionsAccessor.Value;
+
+                var url = grpcOptions.GetServiceUrl(key);
+
+                return GrpcChannel.ForAddress(url);
+            });
+
+        services.TryAddScoped<ForwardHeadersMagicOnionClientFilter>();
+
+        TClientImpl.TryRegisterProviderFactory();
+        TClientImpl.RegisterMemoryPackFormatters();
+
+        services.AddScoped<TClient>(sp =>
+        {
+            var channel = sp.GetRequiredKeyedService<GrpcChannel>(serviceKey);
+            var forwardHeadersFilter = sp.GetRequiredService<ForwardHeadersMagicOnionClientFilter>();
+            var serializerProvider = sp.GetRequiredService<IMagicOnionSerializerProvider>();
+
+            var client = MagicOnionClient.Create<TClient>(
+                channel,
+                clientFactoryProvider: TClientImpl.ClientFactoryProvider,
+                serializerProvider: serializerProvider,
+                clientFilters: [forwardHeadersFilter]);
+
+            return client;
+        });
 
         return services;
     }

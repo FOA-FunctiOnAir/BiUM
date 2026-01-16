@@ -1,6 +1,6 @@
 using System;
 
-namespace BiUM.Core.Models.MessageBroker.RabbitMQ;
+namespace BiUM.Contract.Models.MessageBroker.RabbitMQ;
 
 public sealed class Message
 {

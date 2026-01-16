@@ -1,4 +1,4 @@
-using BiUM.Core.Models.Caching.Redis;
+using BiUM.Contract.Models.Caching.Redis;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

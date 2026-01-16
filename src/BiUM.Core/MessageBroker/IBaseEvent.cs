@@ -1,4 +1,4 @@
-using BiUM.Core.Models;
+using BiUM.Contract.Models;
 using System;
 
 namespace BiUM.Core.MessageBroker;

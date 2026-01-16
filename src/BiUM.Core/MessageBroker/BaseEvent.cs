@@ -1,4 +1,4 @@
-using BiUM.Core.Models;
+using BiUM.Contract.Models;
 using MediatR;
 using System;
 

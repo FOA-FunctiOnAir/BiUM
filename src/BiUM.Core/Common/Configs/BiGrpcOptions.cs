@@ -7,8 +7,6 @@ public class BiGrpcOptions
 {
     public const string Name = "BiGrpcOptions";
 
-    public bool Enable { get; set; }
-
     public Dictionary<string, string>? Domains { get; set; }
 
     public string GetServiceUrl(string serviceKey)

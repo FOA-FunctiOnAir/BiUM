@@ -5,6 +5,9 @@
 
   <ItemGroup>
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" />
-    <PackageReference Include="MessagePack.Annotations" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
   </ItemGroup>
 </Project>

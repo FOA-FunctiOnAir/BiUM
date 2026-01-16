@@ -1,4 +1,4 @@
-namespace BiUM.Core.Common.Enums;
+﻿namespace BiUM.Contract.Enums;
 
 public enum MessageSeverity
 {

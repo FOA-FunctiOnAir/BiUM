@@ -8,26 +8,20 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
+    private const int DefaultPort = 8080;
+
     public static WebApplicationBuilder ConfigureSpecializedHost(this WebApplicationBuilder appBuilder)
     {
         var appOptions = appBuilder.Configuration.GetSection(BiAppOptions.Name).Get<BiAppOptions>();
 
-        var grpcOptions = appBuilder.Configuration.GetSection(BiGrpcOptions.Name).Get<BiGrpcOptions>();
-
-        var appPort = appOptions?.Port > 0 ? appOptions.Port : 8080;
+        var appPort = appOptions?.Port > 0 ? appOptions.Port : DefaultPort;
 
         appBuilder.WebHost.ConfigureKestrel(options =>
         {
             options.AddServerHeader = false;
 
             options.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1);
-
-            if (grpcOptions?.Enable == true)
-            {
-                var grpcPort = appPort + 1000;
-
-                options.ListenAnyIP(grpcPort, lo => lo.Protocols = HttpProtocols.Http2);
-            }
+            options.ListenAnyIP(appPort + 1000, lo => lo.Protocols = HttpProtocols.Http2);
         });
 
         return appBuilder;

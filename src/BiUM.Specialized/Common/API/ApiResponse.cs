@@ -1,5 +1,6 @@
+using BiUM.Contract.Enums;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.API;
-using BiUM.Core.Common.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,16 +12,16 @@ public class ApiEmptyResponse : IApiResponse
     public virtual bool Success =>
         _messages.All(s => s.Severity != MessageSeverity.Error);
 
-    private readonly List<IResponseMessage> _messages = [];
+    private readonly List<ResponseMessage> _messages = [];
 
-    public IReadOnlyList<IResponseMessage> Messages => _messages;
+    public IReadOnlyList<ResponseMessage> Messages => _messages;
 
-    public void AddMessage(IResponseMessage message)
+    public void AddMessage(ResponseMessage message)
     {
         _messages.Add(message);
     }
 
-    public void AddMessage(IReadOnlyList<IResponseMessage> messages)
+    public void AddMessage(IReadOnlyList<ResponseMessage> messages)
     {
         _messages.AddRange(messages);
     }

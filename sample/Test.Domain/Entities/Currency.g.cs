@@ -1,4 +1,3 @@
-#nullable enable
 using AutoMapper;
 using BiUM.Core.MessageBroker;
 using BiUM.Test.Domain.Events;

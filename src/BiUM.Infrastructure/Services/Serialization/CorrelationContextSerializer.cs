@@ -1,31 +1,41 @@
-using BiUM.Core.Models;
+using BiUM.Contract.Models;
 using BiUM.Core.Serialization;
-using MessagePack;
-using MessagePack.Resolvers;
+using MemoryPack;
+using MemoryPack.Compression;
 using System;
+using System.IO.Compression;
 
 namespace BiUM.Specialized.Services.Serialization;
 
 public class CorrelationContextSerializer : ICorrelationContextSerializer
 {
-    private static readonly MessagePackSerializerOptions MessagePackOptions =
-        StandardResolver.Options
-            .WithOmitAssemblyVersion(true)
-            .WithAllowAssemblyVersionMismatch(true)
-            .WithCompression(MessagePackCompression.Lz4BlockArray);
+    private static readonly MemoryPackSerializerOptions MemoryPackSerializerOptions =
+        MemoryPackSerializerOptions.Default;
 
 
     public string Serialize(CorrelationContext value)
     {
-        var bytes = MessagePackSerializer.Serialize(value, MessagePackOptions);
+        using var compressor = new BrotliCompressor(CompressionLevel.Fastest);
 
-        return Convert.ToBase64String(bytes);
+        MemoryPackSerializer.Serialize(compressor, value, MemoryPackSerializerOptions);
+
+        var compressedBytes = compressor.ToArray();
+
+        var base64String = Convert.ToBase64String(compressedBytes);
+
+        return base64String;
     }
 
     public CorrelationContext Deserialize(string value)
     {
-        var bytes = Convert.FromBase64String(value);
+        var compressedBytes = Convert.FromBase64String(value);
 
-        return MessagePackSerializer.Deserialize<CorrelationContext>(bytes, MessagePackOptions);
+        using var decompressor = new BrotliDecompressor();
+
+        var decompressedBuffer = decompressor.Decompress(compressedBytes);
+
+        var correlationContext = MemoryPackSerializer.Deserialize<CorrelationContext>(decompressedBuffer, MemoryPackSerializerOptions);
+
+        return correlationContext ?? CorrelationContext.Empty;
     }
 }

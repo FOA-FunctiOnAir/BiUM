@@ -1,28 +1,28 @@
-using BiUM.Contract;
+using BiUM.Contract.Enums;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.API;
-using BiUM.Core.Common.Enums;
 using BiUM.Specialized.Common.API;
 
 namespace System;
 
 public static partial class Extensions
 {
-    public static void AddMessage(this IApiResponse response, GrpcResponseMeta meta)
+    public static void AddMessage(this IApiResponse response, ResponseMeta meta)
     {
         SetMessages(response, meta);
     }
 
-    public static void AddMessage(this ApiEmptyResponse response, GrpcResponseMeta meta)
+    public static void AddMessage(this ApiEmptyResponse response, ResponseMeta meta)
     {
         SetMessages(response, meta);
     }
 
-    public static void AddMessage<TType>(this ApiResponse<TType> response, GrpcResponseMeta meta)
+    public static void AddMessage<TType>(this ApiResponse<TType> response, ResponseMeta meta)
     {
         SetMessages(response, meta);
     }
 
-    private static void SetMessages(IApiResponse response, GrpcResponseMeta meta)
+    private static void SetMessages(IApiResponse response, ResponseMeta meta)
     {
         var messages = meta?.Messages;
 

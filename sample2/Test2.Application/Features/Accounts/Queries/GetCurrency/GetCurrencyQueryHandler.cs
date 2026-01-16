@@ -8,16 +8,16 @@ namespace BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
 
 public class GetCurrencyQueryHandler : IQueryHandler<GetCurrencyQuery, string>
 {
-    private readonly IAccountRepository _currencyRepository;
+    private readonly IAccountRepository _accountRepository;
 
-    public GetCurrencyQueryHandler(IAccountRepository currencyRepository)
+    public GetCurrencyQueryHandler(IAccountRepository accountRepository)
     {
-        _currencyRepository = currencyRepository;
+        _accountRepository = accountRepository;
     }
 
     public async Task<ApiResponse<string>> Handle(GetCurrencyQuery query, CancellationToken cancellationToken)
     {
-        var response = await _currencyRepository.GetCurrency(query.Id!.Value, cancellationToken);
+        var response = await _accountRepository.GetCurrency(query.Id!.Value, cancellationToken);
 
         return response;
     }

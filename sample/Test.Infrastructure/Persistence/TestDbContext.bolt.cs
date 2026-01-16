@@ -1,8 +1,8 @@
 using BiUM.Bolt.Database;
 using BiUM.Bolt.Database.Entities;
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;

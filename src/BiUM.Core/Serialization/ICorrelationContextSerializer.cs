@@ -1,4 +1,4 @@
-using BiUM.Core.Models;
+using BiUM.Contract.Models;
 
 namespace BiUM.Core.Serialization;
 

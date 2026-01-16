@@ -7,5 +7,4 @@ public static class HeaderKeys
     public static string CorrelationId = "X-Correlation-Id";
     public static string LanguageId = "X-Language-Id";
     public static string TenantId = "X-Tenant-Id";
-    public static string UserId = "X-User-Id";
 }

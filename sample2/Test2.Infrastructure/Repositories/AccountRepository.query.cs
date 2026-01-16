@@ -1,6 +1,6 @@
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
-using BiUM.Test.Contract;
+using BiUM.Test.Contract.Models;
 using BiUM.Test2.Application.Dtos;
 using BiUM.Test2.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +20,7 @@ public partial class AccountRepository
         var getCurrencyNamesRequest = new GetCurrencyRequest();
         getCurrencyNamesRequest.CurrencyId = id.ToString();
 
-        var currencyNamesResponse = await _testApiClient.GetCurrencyAsync(getCurrencyNamesRequest, cancellationToken: cancellationToken);
+        var currencyNamesResponse = await _testRpcService.GetCurrency(getCurrencyNamesRequest);
 
         if (!currencyNamesResponse.Meta.Success)
         {

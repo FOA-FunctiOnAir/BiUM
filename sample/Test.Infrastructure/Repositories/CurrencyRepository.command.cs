@@ -19,7 +19,7 @@ public partial class CurrencyRepository
 
         if (currency is null)
         {
-            currency = new Currency()
+            currency = new Currency
             {
                 Id = command.Id!.Value,
                 Name = command.NameTr.ToTranslationString(),

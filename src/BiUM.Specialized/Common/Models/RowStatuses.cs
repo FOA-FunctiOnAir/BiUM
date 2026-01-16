@@ -10,7 +10,7 @@ public static class RowStatuses
     public const int Deleted = 3;
 
     public static readonly IReadOnlySet<int> All
-        = new HashSet<int>()
+        = new HashSet<int>
         {
             Exist,
             New,

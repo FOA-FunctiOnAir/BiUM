@@ -1,6 +1,6 @@
 using System;
 
-namespace BiUM.Core.Models.Caching.Redis;
+namespace BiUM.Contract.Models.Caching.Redis;
 
 public class CacheItem<T>
 {
@@ -31,8 +31,8 @@ public class CacheItem<T>
     private bool _isNull;
     public bool IsNull
     {
-        get { return (Value is null); }
-        set { _isNull = (Value is null); }
+        get { return Value is null; }
+        set { _isNull = Value is null; }
     }
 
 }

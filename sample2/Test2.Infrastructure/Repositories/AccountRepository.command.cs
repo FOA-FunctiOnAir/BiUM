@@ -19,7 +19,7 @@ public partial class AccountRepository
 
         if (account is null)
         {
-            account = new Account()
+            account = new Account
             {
                 Id = command.Id!.Value,
                 Name = command.NameTr.ToTranslationString(),

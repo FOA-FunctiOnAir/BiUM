@@ -1,11 +1,11 @@
+using BiUM.Contract.Models;
+using BiUM.Contract.Models.MessageBroker.RabbitMQ;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Enums;
 using BiUM.Core.Extensions;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
-using BiUM.Core.Models;
-using BiUM.Core.Models.MessageBroker.RabbitMQ;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

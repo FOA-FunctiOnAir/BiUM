@@ -24,7 +24,7 @@ public class TestHttpClientServiceController : ApiControllerBase
 
         if (languages is not null && languages.Success)
         {
-            return Ok(new { Key = "Success", Value = languages.Value });
+            return Ok(new { Key = "Success", languages.Value });
         }
 
         return NotFound($"Service Call is not success.");
@@ -38,7 +38,7 @@ public class TestHttpClientServiceController : ApiControllerBase
 
         if (assetGroups is not null && assetGroups.Success)
         {
-            return Ok(new { Key = "Success", Value = assetGroups.Value });
+            return Ok(new { Key = "Success", assetGroups.Value });
         }
 
         return NotFound($"Service Call is not success.");

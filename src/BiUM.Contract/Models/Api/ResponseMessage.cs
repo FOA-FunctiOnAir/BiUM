@@ -1,9 +1,10 @@
-using BiUM.Core.Common.API;
-using BiUM.Core.Common.Enums;
+﻿using BiUM.Contract.Enums;
+using MemoryPack;
 
-namespace BiUM.Specialized.Common.API;
+namespace BiUM.Contract.Models.Api;
 
-public class ResponseMessage : IResponseMessage
+[MemoryPackable]
+public partial class ResponseMessage
 {
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

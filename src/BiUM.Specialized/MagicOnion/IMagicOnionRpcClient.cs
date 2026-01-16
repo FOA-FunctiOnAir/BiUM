@@ -1,0 +1,13 @@
+﻿using MagicOnion;
+using MagicOnion.Client;
+
+namespace BiUM.Specialized.MagicOnion;
+
+public interface IMagicOnionRpcClient<T>
+    where T : IService<T>
+{
+    static abstract IMagicOnionClientFactoryProvider ClientFactoryProvider { get; }
+    static abstract IStreamingHubClientFactoryProvider StreamingHubClientFactoryProvider { get; }
+    static abstract bool TryRegisterProviderFactory();
+    static abstract void RegisterMemoryPackFormatters();
+}

@@ -14,7 +14,7 @@ public static class ExportHelper
         var dataBytes = Encoding.UTF8.GetBytes(dataEncrypted);
         var dataBase64 = Convert.ToBase64String(dataBytes, Base64FormattingOptions.InsertLineBreaks);
 
-        var response = new ExportDto()
+        var response = new ExportDto
         {
             Name = name,
             MimeType = mimeType,

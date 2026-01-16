@@ -1,10 +1,10 @@
 using AutoMapper;
-using BiUM.Contract;
+using BiUM.Contract.Enums;
+using BiUM.Contract.Models;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
-using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Models;
@@ -17,6 +17,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ResponseMeta = BiUM.Contract.Models.Api.ResponseMeta;
 
 namespace BiUM.Specialized.Services;
 
@@ -109,16 +110,16 @@ public sealed class TranslationService : ITranslationService
         return response;
     }
 
-    public async Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    public async Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         CancellationToken cancellationToken)
     {
         return await AddMessage(meta, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
-    public async Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    public async Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         MessageSeverity severity,
         CancellationToken cancellationToken)
@@ -126,8 +127,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(meta, code, string.Empty, severity, cancellationToken);
     }
 
-    public async Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    public async Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         Exception exception,
         CancellationToken cancellationToken)
@@ -135,8 +136,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(meta, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
     }
 
-    public async Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    public async Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         Exception exception,
         MessageSeverity severity,
@@ -145,8 +146,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(meta, code, exception.GetFullMessage(), severity, cancellationToken);
     }
 
-    public async Task<GrpcResponseMeta> AddMessage(
-        GrpcResponseMeta meta,
+    public async Task<ResponseMeta> AddMessage(
+        ResponseMeta meta,
         string code,
         string exception,
         MessageSeverity severity,
@@ -156,11 +157,11 @@ public sealed class TranslationService : ITranslationService
 
         if (translation is null)
         {
-            meta.Messages.Add(new GrpcResponseMessage()
+            meta.Messages.Add(new ResponseMessage
             {
                 Code = $"{_biAppOptions.Domain}.{code}",
                 Exception = exception,
-                Severity = (int)severity
+                Severity = severity
             });
 
             return meta;
@@ -168,12 +169,12 @@ public sealed class TranslationService : ITranslationService
 
         var message = translation.DomainTranslationDetails!.First().Text;
 
-        meta.Messages.Add(new GrpcResponseMessage()
+        meta.Messages.Add(new ResponseMessage
         {
             Code = $"{_biAppOptions.Domain}.{code}",
             Message = message,
             Exception = exception,
-            Severity = (int)severity
+            Severity = severity
         });
 
         return meta;
@@ -196,7 +197,7 @@ public sealed class TranslationService : ITranslationService
 
         if (domainTranslation is null)
         {
-            domainTranslation = new DomainTranslation()
+            domainTranslation = new DomainTranslation
             {
                 ApplicationId = command.ApplicationId,
                 Code = command.Code,

@@ -1,8 +1,8 @@
 using AutoMapper;
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Database;
-using BiUM.Core.Models;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Services;

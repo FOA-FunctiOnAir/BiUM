@@ -1,4 +1,4 @@
-using BiUM.Core.Common.Enums;
+using BiUM.Contract.Enums;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test2.Application.Dtos;

@@ -646,7 +646,7 @@ public class HttpClientService : IHttpClientsService
         string? finalUrl = null;
         string? httpMethodStr = null;
         int? statusCode = null;
-        bool isSuccess = false;
+        var isSuccess = false;
 
         try
         {
@@ -749,7 +749,7 @@ public class HttpClientService : IHttpClientsService
         string? finalUrl = null;
         string? httpMethodStr = null;
         int? statusCode = null;
-        bool isSuccess = false;
+        var isSuccess = false;
 
         try
         {

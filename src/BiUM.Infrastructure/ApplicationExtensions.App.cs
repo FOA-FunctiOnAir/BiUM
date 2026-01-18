@@ -120,6 +120,7 @@ public static partial class ApplicationExtensions
                 args.SetObserved();
             };
 
+        app.UseMiddleware<CorrelationContextExtractorMiddleware>();
         app.UseMiddleware<CorrelationContextActivityMiddleware>();
         app.UseMiddleware<ServiceCallMetricsMiddleware>();
 

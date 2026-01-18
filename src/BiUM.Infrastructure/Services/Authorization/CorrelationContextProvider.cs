@@ -8,22 +8,23 @@ using System;
 
 namespace BiUM.Infrastructure.Services.Authorization;
 
-/// <summary>
-/// This class provides functionality to retrieve and deserialize the CorrelationContext
-/// from the HTTP request headers. It has to be registered as a scoped service to ensure
-/// that each HTTP request gets its own instance.
-/// </summary>
-public class CorrelationContextProvider : ICorrelationContextProvider
+internal sealed class CorrelationContextProvider : ICorrelationContextProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICorrelationContextSerializer _correlationContextSerializer;
     private readonly ILogger<CorrelationContextProvider> _logger;
 
     private CorrelationContext? _correlationContext;
 
-    public CorrelationContextProvider(IHttpContextAccessor httpContextAccessor, ICorrelationContextSerializer correlationContextSerializer, ILogger<CorrelationContextProvider> logger)
+    public CorrelationContextProvider(
+        IHttpContextAccessor httpContextAccessor,
+        ICorrelationContextAccessor correlationContextAccessor,
+        ICorrelationContextSerializer correlationContextSerializer,
+        ILogger<CorrelationContextProvider> logger)
     {
         _httpContextAccessor = httpContextAccessor;
+        _correlationContextAccessor = correlationContextAccessor;
         _correlationContextSerializer = correlationContextSerializer;
         _logger = logger;
     }
@@ -32,6 +33,13 @@ public class CorrelationContextProvider : ICorrelationContextProvider
     {
         if (_correlationContext is not null)
         {
+            return _correlationContext;
+        }
+
+        if (_correlationContextAccessor.CorrelationContext is not null)
+        {
+            _correlationContext = _correlationContextAccessor.CorrelationContext;
+
             return _correlationContext;
         }
 
@@ -51,13 +59,15 @@ public class CorrelationContextProvider : ICorrelationContextProvider
 
         try
         {
-            _correlationContext = _correlationContextSerializer.Deserialize(headerValue);
+            var bytes = Convert.FromBase64String(headerValue);
+
+            _correlationContext = _correlationContextSerializer.Deserialize(bytes);
 
             return _correlationContext;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize CorrelationContext from header.");
+            _logger.LogError(ex, "Failed to deserialize CorrelationContext from header");
 
             return null;
         }

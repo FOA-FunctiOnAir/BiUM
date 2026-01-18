@@ -32,4 +32,33 @@ public static class StringExtensions
 
         return sb.ToString();
     }
+
+    public static string ToDotNotation(this string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var sb = new StringBuilder();
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (char.IsUpper(text[i]))
+            {
+                if (i > 0)
+                {
+                    sb.Append('.');
+                }
+
+                sb.Append(char.ToLowerInvariant(text[i]));
+            }
+            else
+            {
+                sb.Append(text[i]);
+            }
+        }
+
+        return sb.ToString();
+    }
 }

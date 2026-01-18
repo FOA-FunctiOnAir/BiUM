@@ -2,7 +2,6 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,14 +9,19 @@ using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
-public class RabbitMQHealthCheck : IHealthCheck
+internal class RabbitMQHealthCheck : IHealthCheck
 {
     private readonly RabbitMQOptions _options;
+    private readonly RabbitMQConnectionProvider _connectionProvider;
     private readonly IRabbitMQClient? _client;
 
-    public RabbitMQHealthCheck(IOptions<RabbitMQOptions> options, IRabbitMQClient? client = null)
+    public RabbitMQHealthCheck(
+        RabbitMQConnectionProvider connectionProvider,
+        IOptions<RabbitMQOptions> optionsAccessor,
+        IRabbitMQClient? client = null)
     {
-        _options = options.Value;
+        _options = optionsAccessor.Value;
+        _connectionProvider = connectionProvider;
         _client = client;
     }
 
@@ -32,25 +36,17 @@ public class RabbitMQHealthCheck : IHealthCheck
 
         if (_client is null)
         {
-            return HealthCheckResult.Unhealthy("RabbitMQ client is not available");
+            return HealthCheckResult.Unhealthy("RabbitMQ client is not registered");
         }
 
         try
         {
-            var factory = new ConnectionFactory
-            {
-                Uri = new Uri($"amqp://{_options.UserName}:{_options.Password}@{_options.Hostname}:{_options.Port}/{_options.VirtualHost}"),
-                RequestedConnectionTimeout = TimeSpan.FromSeconds(5)
-            };
+            var connection = await _connectionProvider.GetConsumerConnectionAsync();
 
-            await using var connection = await factory.CreateConnectionAsync(cancellationToken);
-
-            if (connection.IsOpen)
-            {
-                return HealthCheckResult.Healthy("RabbitMQ connection is healthy");
-            }
-
-            return HealthCheckResult.Degraded("RabbitMQ connection is not open");
+            return
+                connection.IsOpen
+                    ? HealthCheckResult.Healthy("RabbitMQ connection is working")
+                    : HealthCheckResult.Degraded("RabbitMQ connection is not open");
         }
         catch (Exception ex)
         {

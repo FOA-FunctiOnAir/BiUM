@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection.Middlewares;
 
-public class CorrelationContextActivityMiddleware
+internal sealed class CorrelationContextActivityMiddleware
 {
     private readonly RequestDelegate _next;
 

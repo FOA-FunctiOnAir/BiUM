@@ -1,4 +1,3 @@
-using BiUM.Contract.Models;
 using System;
 
 namespace BiUM.Core.MessageBroker;
@@ -15,5 +14,4 @@ public interface IBaseEvent
     public DateOnly? Updated { get; set; }
     public TimeOnly? UpdatedTime { get; set; }
     public Guid? UpdatedBy { get; set; }
-    public CorrelationContext CorrelationContext { get; set; }
 }

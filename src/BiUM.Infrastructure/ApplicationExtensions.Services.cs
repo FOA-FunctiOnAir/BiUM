@@ -15,16 +15,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using RabbitMQ.Client;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -49,6 +52,8 @@ public static partial class ApplicationExtensions
         builder.Services.AddHealthChecks();
 
         var serviceName = $"BiApp.{appOptions?.Domain ?? "Unknown"}";
+
+        builder.Services.AddSingleton(_ => new ActivitySource(serviceName));
 
         builder.Logging.ClearProviders();
         builder.Logging.AddOpenTelemetry(logging =>
@@ -95,6 +100,7 @@ public static partial class ApplicationExtensions
                             activity.SetTag("db.name", command.Connection?.Database);
                         };
                     })
+                    .AddRabbitMQInstrumentation()
                     .AddRedisInstrumentation(options =>
                         options.Enrich = (activity, context) =>
                         {
@@ -156,6 +162,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddTransient<IDateTimeService, DateTimeService>();
 
         builder.Services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
+        builder.Services.AddSingleton<ICorrelationContextAccessor, CorrelationContextAccessor>();
         builder.Services.AddSingleton<ICorrelationContextSerializer, CorrelationContextSerializer>();
 
         return builder;
@@ -173,8 +180,30 @@ public static partial class ApplicationExtensions
     private static IServiceCollection AddRabbitMqServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
+
+        services.AddSingleton<IConnectionFactory>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
+
+            var factory = new ConnectionFactory
+            {
+                Uri = new Uri($"amqp://{options.UserName}:{options.Password}@{options.Hostname}:{options.Port}/{options.VirtualHost}"),
+                AutomaticRecoveryEnabled = true,
+                NetworkRecoveryInterval = TimeSpan.FromSeconds(options.NetworkRecoveryIntervalSeconds),
+                TopologyRecoveryEnabled = true
+            };
+
+            return factory;
+        });
+
+        services.AddSingleton<RabbitMQConnectionProvider>();
+        services.AddSingleton<RabbitMQPublisherChannelPool>();
+
+        services.AddSingleton<IRabbitMQSerializer, RabbitMQSerializer>();
         services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
+
         services.AddHostedService<RabbitMQListenerService>();
+
         services.AddRabbitMQEventHandlers();
 
         // Add RabbitMQ Health Check
@@ -187,6 +216,7 @@ public static partial class ApplicationExtensions
     private static IServiceCollection AddRedisServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<RedisClientOptions>(configuration.GetSection(RedisClientOptions.Name));
+
         services.AddSingleton<IRedisClient, RedisClient>();
 
         return services;

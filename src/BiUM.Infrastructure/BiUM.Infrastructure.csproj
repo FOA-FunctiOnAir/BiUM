@@ -16,6 +16,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" />
     <PackageReference Include="OpenTelemetry.Instrumentation.StackExchangeRedis" />
     <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="RabbitMQ.Client.OpenTelemetry" />
     <PackageReference Include="SimpleHtmlToPdf" />
     <PackageReference Include="StackExchange.Redis" />
     <PackageReference Include="Swashbuckle.AspNetCore" />

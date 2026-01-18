@@ -1,9 +1,12 @@
 using BiUM.Contract.Enums;
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.Serialization;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
@@ -19,7 +22,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,35 +33,36 @@ public class HttpClientService : IHttpClientsService
 
     private const string JsonContentType = "application/json";
 
-    private const string CorrelationContextHeader = "X-Correlation-Context";
-
     private static readonly TimeSpan Timeout = new(0, 5, 0);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
-    private readonly BiAppOptions? _biAppOptions;
-    private readonly HttpClientsOptions _httpClientOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICorrelationContextAccessor _correlationContextAccessor;
+    private readonly ICorrelationContextSerializer _correlationContextSerializer;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly IRabbitMQClient? _rabbitMQClient;
-
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        ReferenceHandler = ReferenceHandler.IgnoreCycles
-    };
+    private readonly BiAppOptions? _appOptions;
+    private readonly HttpClientsOptions _httpClientOptions;
 
     public HttpClientService(
-        IOptions<BiAppOptions>? biAppOptions,
-        IOptions<HttpClientsOptions> httpClientOptions,
         IHttpClientFactory httpClientFactory,
         IHttpContextAccessor httpContextAccessor,
-        IRabbitMQClient? rabbitMQClient)
+        ICorrelationContextAccessor correlationContextAccessor,
+        ICorrelationContextSerializer correlationContextSerializer,
+        JsonSerializerOptions jsonSerializerOptions,
+        IRabbitMQClient? rabbitMQClient,
+        IOptions<BiAppOptions>? appOptionsAccessor,
+        IOptions<HttpClientsOptions> httpClientOptionsAccessor)
     {
-        _biAppOptions = biAppOptions?.Value;
-        _httpClientOptions = httpClientOptions.Value;
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
+        _correlationContextAccessor = correlationContextAccessor;
+        _correlationContextSerializer = correlationContextSerializer;
+        _jsonSerializerOptions = jsonSerializerOptions;
         _rabbitMQClient = rabbitMQClient;
+        _appOptions = appOptionsAccessor?.Value;
+        _httpClientOptions = httpClientOptionsAccessor.Value;
     }
 
     public async Task<IApiResponse> CallService(
@@ -622,19 +625,28 @@ public class HttpClientService : IHttpClientsService
     {
         var httpContext = _httpContextAccessor.HttpContext;
 
-        if (httpContext is null)
+        if (httpContext is not null)
         {
-            return;
+            var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
+
+            if (!string.IsNullOrEmpty(correlationContextHeader))
+            {
+                request.Headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
+
+                return;
+            }
         }
 
-        var correlationContextHeader = httpContext.Request.Headers[CorrelationContextHeader].ToString();
+        var correlationContext = _correlationContextAccessor.CorrelationContext;
 
-        if (string.IsNullOrEmpty(correlationContextHeader))
+        if (correlationContext is not null)
         {
-            return;
-        }
+            var bytes = _correlationContextSerializer.Serialize(correlationContext);
 
-        request.Headers.Add(CorrelationContextHeader, correlationContextHeader);
+            var base64 = Convert.ToBase64String(bytes);
+
+            request.Headers.Add(HeaderKeys.CorrelationContext, base64);
+        }
     }
 
     private async Task<HttpResponseMessage> ExecuteInternalCallAsync(
@@ -1110,6 +1122,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -1117,7 +1130,7 @@ public class HttpClientService : IHttpClientsService
     {
         if (string.IsNullOrEmpty(url))
         {
-            return FormatServiceName(_biAppOptions?.Domain ?? "unknown");
+            return FormatServiceName(_appOptions?.Domain ?? "unknown");
         }
 
         try
@@ -1131,7 +1144,7 @@ public class HttpClientService : IHttpClientsService
         }
         catch
         {
-            return FormatServiceName(_biAppOptions?.Domain ?? "unknown");
+            return FormatServiceName(_appOptions?.Domain ?? "unknown");
         }
     }
 

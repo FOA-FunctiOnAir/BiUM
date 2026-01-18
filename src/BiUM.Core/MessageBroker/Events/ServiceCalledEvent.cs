@@ -2,7 +2,7 @@ using System;
 
 namespace BiUM.Core.MessageBroker.Events;
 
-[Event("observability")]
+[Event(Exchange = "observability")]
 public class ServiceCalledEvent : BaseEvent
 {
     public Guid? MicroserviceId { get; set; }

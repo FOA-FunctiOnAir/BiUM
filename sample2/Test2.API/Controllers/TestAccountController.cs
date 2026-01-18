@@ -3,14 +3,14 @@ using BiUM.Test2.Application.Dtos;
 using BiUM.Test2.Application.Features.Accounts.Commands.DeleteAccount;
 using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
 using BiUM.Test2.Application.Features.Accounts.Commands.UpdateBoltAccount;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrencies;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetAccount;
+using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrencies;
+using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
 
 namespace BiUM.Test2.API.Controllers;
 

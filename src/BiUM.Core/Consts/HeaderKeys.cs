@@ -2,9 +2,9 @@ namespace BiUM.Core.Consts;
 
 public static class HeaderKeys
 {
-    public static string ApplicationId = "X-Application-Id";
-    public static string CorrelationContext = "X-Correlation-Context";
-    public static string CorrelationId = "X-Correlation-Id";
-    public static string LanguageId = "X-Language-Id";
-    public static string TenantId = "X-Tenant-Id";
+    public static string ApplicationId = "x-application-id";
+    public static string CorrelationContext = "x-correlation-context";
+    public static string CorrelationId = "x-correlation-id";
+    public static string LanguageId = "x-language-id";
+    public static string TenantId = "x-tenant-id";
 }

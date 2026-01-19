@@ -7,5 +7,5 @@ namespace BiUM.Contract.Models.Api;
 public partial class ResponseMeta
 {
     public bool Success { get; set; }
-    public IList<ResponseMessage> Messages { get; set; }
+    public IList<ResponseMessage> Messages { get; set; } = [];
 }

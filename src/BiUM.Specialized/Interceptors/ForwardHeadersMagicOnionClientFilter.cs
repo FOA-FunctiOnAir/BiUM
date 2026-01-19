@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Interceptors;
 
-public sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
+internal sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
 {
     private static readonly string[] AllowedHeaderKeys =
     [
@@ -40,25 +40,27 @@ public sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
 
         var httpHeaders = _httpContextAccessor.HttpContext?.Request.Headers;
 
-        if (httpHeaders is not null)
+        if (httpHeaders is null)
         {
-            foreach (var header in httpHeaders)
+            return next.Invoke(context);
+        }
+
+        foreach (var header in httpHeaders)
+        {
+            var key = header.Key.ToLowerInvariant();
+
+            var blocked = BlockedHeaderKeys.Contains(key);
+
+            if (blocked)
             {
-                var key = header.Key.ToLowerInvariant();
+                continue;
+            }
 
-                var blocked = BlockedHeaderKeys.Contains(key);
+            var allowed = AllowedHeaderKeys.Contains(key);
 
-                if (blocked)
-                {
-                    continue;
-                }
-
-                var allowed = AllowedHeaderKeys.Length == 0 || AllowedHeaderKeys.Contains(key);
-
-                if (allowed)
-                {
-                    headers.Add(key, header.Value.ToString());
-                }
+            if (allowed)
+            {
+                headers.Add(key, header.Value.ToString());
             }
         }
 

@@ -1,9 +1,11 @@
+using MemoryPack;
 using System;
 
 namespace BiUM.Core.MessageBroker.Events;
 
 [Event(Exchange = "observability")]
-public class ServiceCalledEvent : BaseEvent
+[MemoryPackable]
+public partial class ServiceCalledEvent : BaseEvent
 {
     public Guid? MicroserviceId { get; set; }
     public Guid? ServiceId { get; set; }

@@ -1,4 +1,3 @@
-using BiUM.Contract.Models;
 using MediatR;
 using System;
 
@@ -16,5 +15,4 @@ public class BaseEvent : IBaseEvent, INotification
     public DateOnly? Updated { get; set; }
     public TimeOnly? UpdatedTime { get; set; }
     public Guid? UpdatedBy { get; set; }
-    public CorrelationContext CorrelationContext { get; set; }
 }

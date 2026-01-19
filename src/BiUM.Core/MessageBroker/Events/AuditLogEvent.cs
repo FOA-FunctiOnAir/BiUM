@@ -1,9 +1,11 @@
+using MemoryPack;
 using System;
 
 namespace BiUM.Core.MessageBroker.Events;
 
 [Event(Exchange = "audit")]
-public class AuditLogEvent : BaseEvent
+[MemoryPackable]
+public partial class AuditLogEvent : BaseEvent
 {
     public string ServiceName { get; set; } = string.Empty;
     public string EntityName { get; set; } = string.Empty;

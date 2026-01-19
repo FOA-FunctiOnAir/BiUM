@@ -1,10 +1,12 @@
 using BiUM.Core.MessageBroker;
+using MemoryPack;
 
 namespace BiUM.Test.Application.Features.Currencies.Events.TestAdded;
 
 
 [Event]
-public class TestAddedEvent : BaseEvent
+[MemoryPackable]
+public partial class TestAddedEvent : BaseEvent
 {
     public string Key { get; set; }
 }

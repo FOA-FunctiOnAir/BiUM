@@ -256,7 +256,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 AfterJson = afterJson,
                 ChangedFieldsJson = changedFieldsJson,
                 ChangeCount = changeCount,
-                CorrelationContext = _correlationContext,
                 Created = DateOnly.FromDateTime(_dateTimeService.Now.ToUniversalTime()),
                 CreatedTime = TimeOnly.FromDateTime(_dateTimeService.Now.ToUniversalTime()),
                 CreatedBy = userId

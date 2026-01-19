@@ -1,11 +1,13 @@
 using BiUM.Core.MessageBroker;
 using BiUM.Specialized.Mapping;
 using BiUM.Test2.Domain.Entities;
+using MemoryPack;
 
 namespace BiUM.Test2.Domain.Events;
 
 [Event]
-public class AccountCreatedEvent : BaseEvent, IMapFrom<Account>
+[MemoryPackable]
+public partial class AccountCreatedEvent : BaseEvent, IMapFrom<Account>
 {
     public string Name { get; set; }
 
@@ -13,7 +15,8 @@ public class AccountCreatedEvent : BaseEvent, IMapFrom<Account>
 }
 
 [Event]
-public class AccountUpdatedEvent : BaseEvent, IMapFrom<Account>
+[MemoryPackable]
+public partial class AccountUpdatedEvent : BaseEvent, IMapFrom<Account>
 {
     public string Name { get; set; }
 
@@ -21,7 +24,8 @@ public class AccountUpdatedEvent : BaseEvent, IMapFrom<Account>
 }
 
 [Event]
-public class AccountDeletedEvent : BaseEvent, IMapFrom<Account>
+[MemoryPackable]
+public partial class AccountDeletedEvent : BaseEvent, IMapFrom<Account>
 {
     public string Name { get; set; }
 

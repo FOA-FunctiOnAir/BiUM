@@ -127,6 +127,7 @@ public static partial class ApplicationExtensions
                 return GrpcChannel.ForAddress(url);
             });
 
+        services.TryAddScoped<CorrelationContextMagicOnionClientFilter>();
         services.TryAddScoped<ForwardHeadersMagicOnionClientFilter>();
 
         TClientImpl.TryRegisterProviderFactory();
@@ -135,6 +136,7 @@ public static partial class ApplicationExtensions
         services.AddScoped<TClient>(sp =>
         {
             var channel = sp.GetRequiredKeyedService<GrpcChannel>(serviceKey);
+            var correlationContextFilter = sp.GetRequiredService<CorrelationContextMagicOnionClientFilter>();
             var forwardHeadersFilter = sp.GetRequiredService<ForwardHeadersMagicOnionClientFilter>();
             var serializerProvider = sp.GetRequiredService<IMagicOnionSerializerProvider>();
 
@@ -142,7 +144,7 @@ public static partial class ApplicationExtensions
                 channel,
                 clientFactoryProvider: TClientImpl.ClientFactoryProvider,
                 serializerProvider: serializerProvider,
-                clientFilters: [forwardHeadersFilter]);
+                clientFilters: [forwardHeadersFilter, correlationContextFilter]);
 
             return client;
         });

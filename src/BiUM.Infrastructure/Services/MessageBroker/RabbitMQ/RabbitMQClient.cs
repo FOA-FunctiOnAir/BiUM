@@ -24,6 +24,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 {
     private const string RetryCountHeader = "x-retry-count";
     private const string OriginalQueueHeader = "x-original-queue";
+    private const string FailureReasonHeader = "x-failure-reason";
+    private const string FailureTimestampHeader = "x-failure-timestamp";
+
     private const string DeadLetterExchange = "common.dlx";
 
     private const string DefaultContentType = "application/x-memorypack";
@@ -98,9 +101,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             properties.Headers![HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
 
-            var exchange = eventAttribute.Exchange;
+            var exchange = PrefixIfNecessary(eventAttribute.Exchange);
             var messageKey = type.Name.ToSnakeCase();
-            var routingKey = $"{exchange}.{messageKey}";
+            var routingKey = $"{eventAttribute.Exchange}.{messageKey}";
 
             using var channel = await _publisherChannelPool.GetChannelAsync();
 
@@ -145,7 +148,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             properties.Headers![HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
 
             var messageKey = type.Name.ToSnakeCase();
-            var exchange = $"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}";
+            var exchange = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
 
             using var channel = await _publisherChannelPool.GetChannelAsync();
 
@@ -188,9 +191,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange) && eventAttribute.Exchange != _appOptions.Domain.ToLowerInvariant()) // Events: Single publisher to multiple consumers (broadcast)
         {
             var messageKey = eventType.Name.ToSnakeCase();
-            var exchange = $"{eventAttribute.Exchange}.{messageKey}";
+            var exchange = PrefixIfNecessary($"{eventAttribute.Exchange}.{messageKey}");
 
-            queueName = $"{_appOptions.Domain.ToLowerInvariant()}.{exchange}";
+            queueName = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{eventAttribute.Exchange}.{messageKey}");
 
             await channel.ExchangeDeclareAsync(
                 exchange: exchange,
@@ -228,11 +231,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
         else // Commands: Multiple publishers to single consumer
         {
-            var exchange = _appOptions.Domain.ToLowerInvariant();
+            var exchange = PrefixIfNecessary(_appOptions.Domain.ToLowerInvariant());
             var messageKey = eventType.Name.ToSnakeCase();
-            var routingKey = $"{exchange}.{messageKey}";
+            var routingKey = $"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}";
 
-            queueName = $"{exchange}.{messageKey}";
+            queueName = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
 
             await channel.ExchangeDeclareAsync(
                 exchange: exchange,
@@ -350,8 +353,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
 
         await channel.BasicConsumeAsync(
-            queue: queueName
-            , autoAck: false,
+            queue: queueName,
+            autoAck: false,
             consumer: consumer,
             cancellationToken: cancellationToken);
 
@@ -380,8 +383,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
                     properties.Headers ??= new Dictionary<string, object?>();
                     properties.Headers[OriginalQueueHeader] = queueName;
-                    properties.Headers["x-failure-reason"] = exception.Message;
-                    properties.Headers["x-failure-timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    properties.Headers[FailureReasonHeader] = exception.Message;
+                    properties.Headers[FailureTimestampHeader] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                     await channel.BasicPublishAsync(
                         exchange: DeadLetterExchange,
@@ -490,6 +493,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         return channel;
     }
+
+    private string PrefixIfNecessary(string name) =>
+        string.IsNullOrWhiteSpace(_rabbitMQOptions.Prefix)
+            ? name
+            : $"{_rabbitMQOptions.Prefix}.{name}";
 
     private static int GetRetryCount(IReadOnlyBasicProperties properties)
     {

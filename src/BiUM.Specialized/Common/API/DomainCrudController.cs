@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Services.Crud;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ApiEmptyResponse> PublishDomainCrudAsync([FromBody] PublishDomainCrudCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> PublishDomainCrudAsync([FromBody] PublishDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.PublishDomainCrudAsync(command.Id!.Value, cancellationToken);
 
@@ -27,7 +28,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ApiEmptyResponse> SaveDomainCrudAsync([FromBody] SaveDomainCrudCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveDomainCrudAsync([FromBody] SaveDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.SaveDomainCrudAsync(command, cancellationToken);
 
@@ -35,7 +36,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpDelete]
-    public async Task<ApiEmptyResponse> DeleteDomainCrudAsync([FromBody] DeleteDomainCrudCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteDomainCrudAsync([FromBody] DeleteDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.DeleteDomainCrudAsync(command.Id!.Value, cancellationToken);
 

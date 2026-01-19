@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Services.Crud;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public class CrudController : ApiControllerBase
     }
 
     [HttpPost("{code}")]
-    public async Task<ApiEmptyResponse> SaveAsync(string code, [FromBody] JsonElement body, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveAsync(string code, [FromBody] JsonElement body, CancellationToken cancellationToken)
     {
         var response = await _crudService.SaveAsync(code, body.ToDictionary(), cancellationToken);
 
@@ -29,7 +30,7 @@ public class CrudController : ApiControllerBase
     }
 
     [HttpDelete("{code}")]
-    public async Task<ApiEmptyResponse> DeleteAsync(string code, [FromBody] DeleteCrudCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteAsync(string code, [FromBody] DeleteCrudCommand command, CancellationToken cancellationToken)
     {
         return await _crudService.DeleteAsync(code, command.Id!.Value, false, cancellationToken);
     }

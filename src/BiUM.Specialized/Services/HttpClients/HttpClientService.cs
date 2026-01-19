@@ -1,13 +1,12 @@
 using BiUM.Contract.Enums;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
-using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Consts;
 using BiUM.Core.HttpClients;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
-using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Consts;
 using Microsoft.AspNetCore.Http;
@@ -65,7 +64,7 @@ public class HttpClientService : IHttpClientsService
         _httpClientOptions = httpClientOptionsAccessor.Value;
     }
 
-    public async Task<IApiResponse> CallService(
+    public async Task<ApiResponse> CallService(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         CancellationToken cancellationToken = default)
@@ -80,7 +79,7 @@ public class HttpClientService : IHttpClientsService
             cancellationToken: cancellationToken);
     }
 
-    public async Task<IApiResponse<TType>> CallService<TType>(
+    public async Task<ApiResponse<TType>> CallService<TType>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         string? q = null,
@@ -88,7 +87,7 @@ public class HttpClientService : IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        return (IApiResponse<TType>)await CallServiceBase<TType>(
+        return (ApiResponse<TType>)await CallServiceBase<TType>(
             serviceId: serviceId,
             parameters: parameters,
             q: q,
@@ -98,7 +97,7 @@ public class HttpClientService : IHttpClientsService
             cancellationToken: cancellationToken);
     }
 
-    public async Task<IApiResponse<TType>> Get<TType>(
+    public async Task<ApiResponse<TType>> Get<TType>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -197,13 +196,13 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<IApiResponse> Post(
+    public async Task<ApiResponse> Post(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
         CancellationToken cancellationToken = default)
     {
-        var result = new ApiEmptyResponse();
+        var result = new ApiResponse();
         var stopwatch = Stopwatch.StartNew();
         var originalUrl = url;
         string? finalUrl = null;
@@ -255,7 +254,7 @@ public class HttpClientService : IHttpClientsService
             }
 
             var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var fetchedResponse = await JsonSerializer.DeserializeAsync<ApiEmptyResponse>(responseStream, _jsonSerializerOptions, cancellationToken);
+            var fetchedResponse = await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _jsonSerializerOptions, cancellationToken);
             if (fetchedResponse is not null)
             {
                 result = fetchedResponse;
@@ -286,7 +285,7 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<IApiResponse<TType>> Post<TType>(
+    public async Task<ApiResponse<TType>> Post<TType>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -384,7 +383,7 @@ public class HttpClientService : IHttpClientsService
     }
 
 
-    private async Task<IApiResponse> CallServiceBase<TType>(
+    private async Task<ApiResponse> CallServiceBase<TType>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         string? q = null,
@@ -393,7 +392,7 @@ public class HttpClientService : IHttpClientsService
         bool returnValue = true,
         CancellationToken cancellationToken = default)
     {
-        var result = returnValue ? new ApiResponse<TType>() : new ApiEmptyResponse();
+        var result = returnValue ? new ApiResponse<TType>() : new ApiResponse();
 
         try
         {
@@ -435,7 +434,7 @@ public class HttpClientService : IHttpClientsService
             {
                 if (returnValue)
                 {
-                    ((IApiResponse<TType>)result).Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
+                    ((ApiResponse<TType>)result).Value = await JsonSerializer.DeserializeAsync<TType>(responseStream, _jsonSerializerOptions, cancellationToken);
                 }
 
                 return result;
@@ -443,7 +442,7 @@ public class HttpClientService : IHttpClientsService
 
             var fetchedResult = returnValue
                 ? await JsonSerializer.DeserializeAsync<ApiResponse<TType>>(responseStream, _jsonSerializerOptions, cancellationToken)
-                : await JsonSerializer.DeserializeAsync<ApiEmptyResponse>(responseStream, _jsonSerializerOptions, cancellationToken); ;
+                : await JsonSerializer.DeserializeAsync<ApiResponse>(responseStream, _jsonSerializerOptions, cancellationToken); ;
 
             if (fetchedResult is not null)
             {
@@ -451,7 +450,7 @@ public class HttpClientService : IHttpClientsService
             }
             else if (returnValue)
             {
-                ((IApiResponse<TType>)result).Value = default;
+                ((ApiResponse<TType>)result).Value = default;
             }
 
             return result;

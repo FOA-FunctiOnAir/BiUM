@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace System;
 
-public static class JsonElementExtensions
+public static partial class Extensions
 {
     public static Dictionary<string, object?> ToDictionary(this JsonElement element)
     {

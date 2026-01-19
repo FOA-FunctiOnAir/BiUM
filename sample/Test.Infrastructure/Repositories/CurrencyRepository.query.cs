@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
 using BiUM.Test.Application.Dtos;
 using BiUM.Test.Domain.Entities;

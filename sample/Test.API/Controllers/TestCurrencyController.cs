@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.API;
 using BiUM.Test.Application.Dtos;
 using BiUM.Test.Application.Features.Currencies.Commands.DeleteCurrency;
@@ -17,19 +18,19 @@ namespace BiUM.Test.API.Controllers;
 public class TestCurrencyController : ApiControllerBase
 {
     [HttpPost]
-    public async Task<ApiEmptyResponse> UpdateBoltCurrency([FromBody] UpdateBoltCurrencyCommand command)
+    public async Task<ApiResponse> UpdateBoltCurrency([FromBody] UpdateBoltCurrencyCommand command)
     {
         return await Mediator.Send(command);
     }
 
     [HttpPost]
-    public async Task<ApiEmptyResponse> SaveCurrency([FromBody] SaveCurrencyCommand query)
+    public async Task<ApiResponse> SaveCurrency([FromBody] SaveCurrencyCommand query)
     {
         return await Mediator.Send(query);
     }
 
     [HttpDelete]
-    public async Task<ApiEmptyResponse> DeleteCurrency([FromBody] DeleteCurrencyCommand query)
+    public async Task<ApiResponse> DeleteCurrency([FromBody] DeleteCurrencyCommand query)
     {
         return await Mediator.Send(query);
     }

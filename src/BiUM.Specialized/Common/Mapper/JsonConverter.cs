@@ -116,10 +116,10 @@ public sealed class JsonShortConverter : JsonConverter<short>
 {
     public override short Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return (short)0;
+        if (r.TokenType == JsonTokenType.Null) return 0;
         if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (short)v;
 
-        return (short)0;
+        return 0;
     }
 
     public override void Write(Utf8JsonWriter w, short v, JsonSerializerOptions o) => w.WriteNumberValue(v);
@@ -129,10 +129,10 @@ public sealed class JsonByteConverter : JsonConverter<byte>
 {
     public override byte Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return (byte)0;
+        if (r.TokenType == JsonTokenType.Null) return 0;
         if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (byte)v;
 
-        return (byte)0;
+        return 0;
     }
 
     public override void Write(Utf8JsonWriter w, byte v, JsonSerializerOptions o) => w.WriteNumberValue(v);
@@ -142,10 +142,10 @@ public sealed class JsonSByteConverter : JsonConverter<sbyte>
 {
     public override sbyte Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return (sbyte)0;
+        if (r.TokenType == JsonTokenType.Null) return 0;
         if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (sbyte)v;
 
-        return (sbyte)0;
+        return 0;
     }
 
     public override void Write(Utf8JsonWriter w, sbyte v, JsonSerializerOptions o) => w.WriteNumberValue(v);
@@ -181,10 +181,10 @@ public sealed class JsonUShortConverter : JsonConverter<ushort>
 {
     public override ushort Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return (ushort)0;
+        if (r.TokenType == JsonTokenType.Null) return 0;
         if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (ushort)Math.Max(v, 0);
 
-        return (ushort)0;
+        return 0;
     }
 
     public override void Write(Utf8JsonWriter w, ushort v, JsonSerializerOptions o) => w.WriteNumberValue(v);

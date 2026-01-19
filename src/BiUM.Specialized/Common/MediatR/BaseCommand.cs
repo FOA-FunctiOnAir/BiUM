@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using System;
 
 namespace BiUM.Specialized.Common.MediatR;
@@ -9,12 +9,12 @@ public record BaseCommand<TType> : BaseRequestDto<TType>
     public bool Test { get; set; }
 }
 
-public record BaseSchedulerCommand : BaseRequestDto<ApiEmptyResponse>
+public record BaseSchedulerCommand : BaseRequestDto<ApiResponse>
 {
     public Guid? TenantId { get; set; }
 }
 
-public record BaseCommandDto : BaseCommand<ApiEmptyResponse>
+public record BaseCommandDto : BaseCommand<ApiResponse>
 {
 }
 

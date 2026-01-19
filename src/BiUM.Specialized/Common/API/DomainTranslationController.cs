@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.Translation;
 using BiUM.Specialized.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ public class DomainTranslationController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ApiEmptyResponse> SaveDomainTranslationAsync([FromBody] SaveDomainTranslationCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveDomainTranslationAsync([FromBody] SaveDomainTranslationCommand command, CancellationToken cancellationToken)
     {
         var response = await _translationService.SaveDomainTranslationAsync(command, cancellationToken);
 
@@ -27,7 +28,7 @@ public class DomainTranslationController : ApiControllerBase
     }
 
     [HttpDelete]
-    public async Task<ApiEmptyResponse> DeleteDomainTranslationAsync([FromBody] DeleteDomainTranslationCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteDomainTranslationAsync([FromBody] DeleteDomainTranslationCommand command, CancellationToken cancellationToken)
     {
         var response = await _translationService.DeleteDomainTranslationAsync(command.Id!.Value, cancellationToken);
 

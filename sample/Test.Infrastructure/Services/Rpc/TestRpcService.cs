@@ -26,13 +26,7 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
     {
         var cancellationToken = CancellationToken.None;
 
-        var response = new GetCurrencyResponse
-        {
-            Meta = new()
-            {
-                Success = true
-            }
-        };
+        var response = new GetCurrencyResponse();
 
         if (string.IsNullOrWhiteSpace(request.CurrencyId))
         {

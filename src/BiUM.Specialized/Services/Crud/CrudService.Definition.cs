@@ -1,7 +1,7 @@
 using BiUM.Contract.Enums;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Consts;
@@ -18,11 +18,11 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
-    public virtual async Task<ApiEmptyResponse> PublishDomainCrudAsync(
+    public virtual async Task<ApiResponse> PublishDomainCrudAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var domainCrud = await _baseContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
@@ -182,11 +182,11 @@ public partial class CrudService
         return response;
     }
 
-    public virtual async Task<ApiEmptyResponse> SaveDomainCrudAsync(
+    public virtual async Task<ApiResponse> SaveDomainCrudAsync(
         SaveDomainCrudCommand command,
         CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         if (command.MicroserviceId == Guid.Empty)
         {
@@ -276,11 +276,11 @@ public partial class CrudService
         return response;
     }
 
-    public virtual async Task<ApiEmptyResponse> DeleteDomainCrudAsync(
+    public virtual async Task<ApiResponse> DeleteDomainCrudAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var domainCrud = await _baseContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
@@ -362,9 +362,9 @@ public partial class CrudService
         return domainCruds;
     }
 
-    private async Task<ApiEmptyResponse> SaveCrudServicesAsync(Guid microserviceId, string code, IList<DomainCrudVersionColumn>? columns, CancellationToken cancellationToken)
+    private async Task<ApiResponse> SaveCrudServicesAsync(Guid microserviceId, string code, IList<DomainCrudVersionColumn>? columns, CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var columnsParameters = columns?.Select(c => new SaveCrudServicesColumnDto
         {
@@ -379,7 +379,7 @@ public partial class CrudService
                 { "Columns", columnsParameters }
             };
 
-        var responseApi = await _httpClientsService.CallService<ApiEmptyResponse>(
+        var responseApi = await _httpClientsService.CallService<ApiResponse>(
             serviceId: Ids.Service.SaveCrudServices.Id,
             parameters: parameters,
             cancellationToken: cancellationToken);

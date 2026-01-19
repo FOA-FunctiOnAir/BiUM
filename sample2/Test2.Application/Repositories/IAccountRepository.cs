@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Test2.Application.Dtos;
 using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
@@ -26,9 +26,9 @@ public interface IAccountRepository
 
     #region Command
 
-    Task<ApiEmptyResponse> SaveAccount(SaveAccountCommand command, CancellationToken cancellationToken);
+    Task<ApiResponse> SaveAccount(SaveAccountCommand command, CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> DeleteAccount(Guid id, CancellationToken cancellationToken);
+    Task<ApiResponse> DeleteAccount(Guid id, CancellationToken cancellationToken);
 
     #endregion
 
@@ -42,7 +42,7 @@ public interface IAccountRepository
 
     #region Bolt
 
-    Task<ApiEmptyResponse> UpdateBoltAccount(Guid id, CancellationToken cancellationToken);
+    Task<ApiResponse> UpdateBoltAccount(Guid id, CancellationToken cancellationToken);
 
     #endregion
 }

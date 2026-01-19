@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
 using BiUM.Test2.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ namespace BiUM.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository
 {
-    public async Task<ApiEmptyResponse> SaveAccount(SaveAccountCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveAccount(SaveAccountCommand command, CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var account = await _context.Accounts.FirstOrDefaultAsync(t => t.Id == command.Id, cancellationToken);
 
@@ -43,9 +43,9 @@ public partial class AccountRepository
         return response;
     }
 
-    public async Task<ApiEmptyResponse> DeleteAccount(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteAccount(Guid id, CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var entity = await _context.Accounts.FindAsync([id], cancellationToken);
 

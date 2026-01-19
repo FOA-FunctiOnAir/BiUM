@@ -1,9 +1,19 @@
 ﻿using System.Text;
 
-namespace BiUM.Core.Extensions;
+namespace System;
 
-public static class StringExtensions
+public static partial class Extensions
 {
+    public static Guid ToGuid(this string source)
+    {
+        return Guid.TryParse(source, out var guid) ? guid : Guid.Empty;
+    }
+
+    public static Guid? ToNullableGuid(this string source)
+    {
+        return Guid.TryParse(source, out var guid) ? guid : null;
+    }
+
     public static string ToSnakeCase(this string text)
     {
         if (string.IsNullOrEmpty(text))

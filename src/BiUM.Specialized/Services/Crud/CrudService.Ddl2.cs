@@ -139,5 +139,5 @@ public partial class CrudService
         }
     }
 
-    private static void AddParams(DbCommand cmd, object?[] parameters) => AddParams(cmd, (IList<object?>)parameters.ToList());
+    private static void AddParams(DbCommand cmd, object?[] parameters) => AddParams(cmd, parameters.ToList());
 }

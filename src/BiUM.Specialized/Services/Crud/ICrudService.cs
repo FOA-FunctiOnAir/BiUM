@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.Crud;
 using System;
 using System.Collections.Generic;
@@ -9,12 +9,12 @@ namespace BiUM.Specialized.Services.Crud;
 
 public interface ICrudService
 {
-    Task<ApiEmptyResponse> SaveAsync(
+    Task<ApiResponse> SaveAsync(
         string code,
         Dictionary<string, object?> data,
         CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken);
+    Task<ApiResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken);
 
     Task<IDictionary<string, object?>> GetAsync(string code, Guid id, CancellationToken cancellationToken);
 
@@ -23,15 +23,15 @@ public interface ICrudService
         Dictionary<string, string> query,
         CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> PublishDomainCrudAsync(
+    Task<ApiResponse> PublishDomainCrudAsync(
         Guid id,
         CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> SaveDomainCrudAsync(
+    Task<ApiResponse> SaveDomainCrudAsync(
         SaveDomainCrudCommand command,
         CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> DeleteDomainCrudAsync(
+    Task<ApiResponse> DeleteDomainCrudAsync(
         Guid id,
         CancellationToken cancellationToken);
 

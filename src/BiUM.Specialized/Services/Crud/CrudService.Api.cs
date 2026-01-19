@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
-    public async Task<ApiEmptyResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
     {
         var version = await GetVersionByCodeAsync(code, cancellationToken);
 
@@ -24,10 +24,10 @@ public partial class CrudService
             await CreateInternalAsync(version, data, cancellationToken);
         }
 
-        return new ApiEmptyResponse();
+        return new ApiResponse();
     }
 
-    public async Task<ApiEmptyResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken)
     {
         var version = await GetVersionByCodeAsync(code, cancellationToken);
         var (api2db, _) = BuildMaps(version);
@@ -43,7 +43,7 @@ public partial class CrudService
 
             await ExecuteSqlAsync(sqlHard, new object?[] { id }, cancellationToken);
 
-            return new ApiEmptyResponse();
+            return new ApiResponse();
         }
         else
         {
@@ -52,7 +52,7 @@ public partial class CrudService
 
             await ExecuteSqlAsync(sqlSoft, new object?[] { id }, cancellationToken);
 
-            return new ApiEmptyResponse();
+            return new ApiResponse();
         }
     }
 

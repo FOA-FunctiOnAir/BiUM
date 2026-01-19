@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test2.Application.Repositories;
 using System.Threading;

@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
 using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;

@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test2.Application.Repositories;
 using System.Threading;
@@ -15,7 +15,7 @@ public class SaveAccountCommandHandler : ICommandHandler<SaveAccountCommand>
         _currencyRepository = currencyRepository;
     }
 
-    public async Task<ApiEmptyResponse> Handle(SaveAccountCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> Handle(SaveAccountCommand command, CancellationToken cancellationToken)
     {
         var response = await _currencyRepository.SaveAccount(command, cancellationToken);
 

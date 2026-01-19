@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ namespace BiUM.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository
 {
-    public async Task<ApiEmptyResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var currency = await _context.Currencies.FirstOrDefaultAsync(t => t.Id == command.Id, cancellationToken);
 
@@ -43,9 +43,9 @@ public partial class CurrencyRepository
         return response;
     }
 
-    public async Task<ApiEmptyResponse> DeleteCurrency(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteCurrency(Guid id, CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var entity = await _context.Currencies.FindAsync([id], cancellationToken);
 

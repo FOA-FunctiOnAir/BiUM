@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Test.Application.Dtos;
 using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
@@ -24,9 +24,9 @@ public interface ICurrencyRepository
 
     #region Command
 
-    Task<ApiEmptyResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken);
+    Task<ApiResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken);
 
-    Task<ApiEmptyResponse> DeleteCurrency(Guid id, CancellationToken cancellationToken);
+    Task<ApiResponse> DeleteCurrency(Guid id, CancellationToken cancellationToken);
 
     #endregion
 
@@ -40,7 +40,7 @@ public interface ICurrencyRepository
 
     #region Bolt
 
-    Task<ApiEmptyResponse> UpdateBoltCurrency(Guid id, CancellationToken cancellationToken);
+    Task<ApiResponse> UpdateBoltCurrency(Guid id, CancellationToken cancellationToken);
 
     #endregion
 }

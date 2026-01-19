@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.API;
 using BiUM.Test2.Application.Dtos;
 using BiUM.Test2.Application.Features.Accounts.Commands.DeleteAccount;
@@ -18,19 +19,19 @@ namespace BiUM.Test2.API.Controllers;
 public class TestAccountController : ApiControllerBase
 {
     [HttpPost]
-    public async Task<ApiEmptyResponse> UpdateBoltAccount([FromBody] UpdateBoltAccountCommand command)
+    public async Task<ApiResponse> UpdateBoltAccount([FromBody] UpdateBoltAccountCommand command)
     {
         return await Mediator.Send(command);
     }
 
     [HttpPost]
-    public async Task<ApiEmptyResponse> SaveAccount([FromBody] SaveAccountCommand query)
+    public async Task<ApiResponse> SaveAccount([FromBody] SaveAccountCommand query)
     {
         return await Mediator.Send(query);
     }
 
     [HttpDelete]
-    public async Task<ApiEmptyResponse> DeleteAccount([FromBody] DeleteAccountCommand query)
+    public async Task<ApiResponse> DeleteAccount([FromBody] DeleteAccountCommand query)
     {
         return await Mediator.Send(query);
     }

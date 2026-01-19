@@ -1,4 +1,4 @@
-using BiUM.Core.Common.API;
+using BiUM.Contract.Models.Api;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -8,12 +8,12 @@ namespace BiUM.Core.HttpClients;
 
 public interface IHttpClientsService
 {
-    Task<IApiResponse> CallService(
+    Task<ApiResponse> CallService(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         CancellationToken cancellationToken = default);
 
-    Task<IApiResponse<TType>> CallService<TType>(
+    Task<ApiResponse<TType>> CallService<TType>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         string? q = null,
@@ -21,7 +21,7 @@ public interface IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default);
 
-    Task<IApiResponse<TType>> Get<TType>(
+    Task<ApiResponse<TType>> Get<TType>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
@@ -30,13 +30,13 @@ public interface IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default);
 
-    Task<IApiResponse> Post(
+    Task<ApiResponse> Post(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,
         CancellationToken cancellationToken = default);
 
-    Task<IApiResponse<TType>> Post<TType>(
+    Task<ApiResponse<TType>> Post<TType>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool? external = false,

@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test.Application.Repositories;
 using System.Threading;
@@ -15,7 +15,7 @@ public class UpdateBoltCurrencyCommandHandler : ICommandHandler<UpdateBoltCurren
         _currencyRepository = currencyRepository;
     }
 
-    public async Task<ApiEmptyResponse> Handle(UpdateBoltCurrencyCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> Handle(UpdateBoltCurrencyCommand command, CancellationToken cancellationToken)
     {
         var response = await _currencyRepository.UpdateBoltCurrency(command.Id!.Value, cancellationToken);
 

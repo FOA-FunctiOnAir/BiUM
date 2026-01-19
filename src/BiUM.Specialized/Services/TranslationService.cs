@@ -3,10 +3,8 @@ using BiUM.Contract.Enums;
 using BiUM.Contract.Models;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
-using BiUM.Core.Common.API;
 using BiUM.Core.Common.Configs;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Common.Translation;
 using BiUM.Specialized.Database;
@@ -40,16 +38,16 @@ public sealed class TranslationService : ITranslationService
         _biAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
-    public async Task<IApiResponse> AddMessage(
-        IApiResponse response,
+    public async Task<ApiResponse> AddMessage(
+        ApiResponse response,
         string code,
         CancellationToken cancellationToken)
     {
         return await AddMessage(response, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
-    public async Task<IApiResponse> AddMessage(
-        IApiResponse response,
+    public async Task<ApiResponse> AddMessage(
+        ApiResponse response,
         string code,
         MessageSeverity severity,
         CancellationToken cancellationToken)
@@ -57,8 +55,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(response, code, string.Empty, severity, cancellationToken);
     }
 
-    public async Task<IApiResponse> AddMessage(
-        IApiResponse response,
+    public async Task<ApiResponse> AddMessage(
+        ApiResponse response,
         string code,
         Exception exception,
         CancellationToken cancellationToken)
@@ -66,8 +64,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(response, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
     }
 
-    public async Task<IApiResponse> AddMessage(
-        IApiResponse response,
+    public async Task<ApiResponse> AddMessage(
+        ApiResponse response,
         string code,
         Exception exception,
         MessageSeverity severity,
@@ -76,8 +74,8 @@ public sealed class TranslationService : ITranslationService
         return await AddMessage(response, code, exception.GetFullMessage(), severity, cancellationToken);
     }
 
-    public async Task<IApiResponse> AddMessage(
-        IApiResponse response,
+    public async Task<ApiResponse> AddMessage(
+        ApiResponse response,
         string code,
         string exception,
         MessageSeverity severity,
@@ -157,34 +155,31 @@ public sealed class TranslationService : ITranslationService
 
         if (translation is null)
         {
-            meta.Messages.Add(new ResponseMessage
-            {
-                Code = $"{_biAppOptions.Domain}.{code}",
-                Exception = exception,
-                Severity = severity
-            });
+            meta.AddMessage(
+                code: $"{_biAppOptions.Domain}.{code}",
+                message: string.Empty,
+                exception: exception,
+                severity: severity);
 
             return meta;
         }
 
         var message = translation.DomainTranslationDetails!.First().Text;
 
-        meta.Messages.Add(new ResponseMessage
-        {
-            Code = $"{_biAppOptions.Domain}.{code}",
-            Message = message,
-            Exception = exception,
-            Severity = severity
-        });
+        meta.AddMessage(
+            code: $"{_biAppOptions.Domain}.{code}",
+            message: message,
+            exception: exception,
+            severity: severity);
 
         return meta;
     }
 
-    public async Task<ApiEmptyResponse> SaveDomainTranslationAsync(
+    public async Task<ApiResponse> SaveDomainTranslationAsync(
         SaveDomainTranslationCommand command,
         CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         if (command.ApplicationId == Guid.Empty)
         {
@@ -259,11 +254,11 @@ public sealed class TranslationService : ITranslationService
         return response;
     }
 
-    public async Task<ApiEmptyResponse> DeleteDomainTranslationAsync(
+    public async Task<ApiResponse> DeleteDomainTranslationAsync(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var response = new ApiEmptyResponse();
+        var response = new ApiResponse();
 
         var domainTranslation = await _baseContext.DomainTranslations
             .Include(s => s.DomainTranslationDetails)

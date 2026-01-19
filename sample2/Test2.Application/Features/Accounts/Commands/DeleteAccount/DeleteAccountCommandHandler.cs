@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using BiUM.Test2.Application.Repositories;
 using System.Threading;
@@ -15,7 +15,7 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand>
         _currencyRepository = currencyRepository;
     }
 
-    public async Task<ApiEmptyResponse> Handle(DeleteAccountCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse> Handle(DeleteAccountCommand command, CancellationToken cancellationToken)
     {
         var response = await _currencyRepository.DeleteAccount(command.Id.Value, cancellationToken);
 

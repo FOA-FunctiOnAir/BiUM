@@ -1,5 +1,5 @@
 using BiUM.Contract.Enums;
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using System;
 using System.IO;
 using System.Reflection;

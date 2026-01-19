@@ -1,5 +1,5 @@
 using AutoMapper;
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

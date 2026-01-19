@@ -1,13 +1,10 @@
-using BiUM.Contract.Enums;
-using BiUM.Contract.Models.Api;
-using BiUM.Core.Common.API;
-using System;
+﻿using BiUM.Contract.Enums;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BiUM.Specialized.Common.API;
+namespace BiUM.Contract.Models.Api;
 
-public class ApiEmptyResponse : IApiResponse
+public class ApiResponse
 {
     public virtual bool Success =>
         _messages.All(s => s.Severity != MessageSeverity.Error);
@@ -58,41 +55,7 @@ public class ApiEmptyResponse : IApiResponse
     }
 }
 
-public class ApiResponse<TType> : ApiEmptyResponse, IApiResponse<TType>
+public class ApiResponse<TType> : ApiResponse
 {
     public TType? Value { get; set; }
-}
-
-public class PaginatedApiResponse<TType> : ApiResponse<List<TType>>
-{
-    public int PageNumber { get; }
-
-    public int TotalPages { get; }
-
-    public int TotalCount { get; }
-
-    public bool HasPreviousPage => PageNumber > 1;
-
-    public bool HasNextPage => PageNumber < TotalPages;
-
-    public PaginatedApiResponse()
-    {
-        PageNumber = 1;
-        TotalPages = 1;
-        TotalCount = 0;
-        Value = [];
-    }
-
-    public static PaginatedApiResponse<TType> Empty()
-    {
-        return new PaginatedApiResponse<TType>();
-    }
-
-    public PaginatedApiResponse(List<TType> items, int count, int pageNumber, int pageSize)
-    {
-        PageNumber = pageNumber;
-        TotalPages = (int)Math.Ceiling((double)count / (double)pageSize);
-        TotalCount = count;
-        Value = items;
-    }
 }

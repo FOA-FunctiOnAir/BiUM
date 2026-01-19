@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -9,9 +9,9 @@ namespace BiUM.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository
 {
-    public async Task<ApiEmptyResponse> UpdateBoltAccount(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> UpdateBoltAccount(Guid id, CancellationToken cancellationToken)
     {
-        var returnObject = new ApiEmptyResponse();
+        var returnObject = new ApiResponse();
 
         var account = await _context.Accounts.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 

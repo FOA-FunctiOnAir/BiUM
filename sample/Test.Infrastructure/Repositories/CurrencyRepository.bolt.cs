@@ -1,4 +1,4 @@
-using BiUM.Specialized.Common.API;
+using BiUM.Contract.Models.Api;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -9,9 +9,9 @@ namespace BiUM.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository
 {
-    public async Task<ApiEmptyResponse> UpdateBoltCurrency(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> UpdateBoltCurrency(Guid id, CancellationToken cancellationToken)
     {
-        var returnObject = new ApiEmptyResponse();
+        var returnObject = new ApiResponse();
 
         var currency = await _context.Currencies.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 

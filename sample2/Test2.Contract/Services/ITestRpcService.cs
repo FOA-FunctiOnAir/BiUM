@@ -1,4 +1,4 @@
-﻿using BiUM.Test.Contract.Models;
+﻿using BiUM.Test2.Contract.Models;
 using MagicOnion;
 
 namespace BiUM.Test2.Contract.Services;

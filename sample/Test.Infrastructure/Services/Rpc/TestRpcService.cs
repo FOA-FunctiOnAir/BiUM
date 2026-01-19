@@ -30,7 +30,7 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
 
         if (string.IsNullOrWhiteSpace(request.CurrencyId))
         {
-            await _translationService.AddMessage(response.Meta, "NoCurrencyCode", cancellationToken);
+            await _translationService.AddMessage(response, "NoCurrencyCode", cancellationToken);
 
             return response;
         }
@@ -41,19 +41,19 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
 
         if (!currencyResponse.Success)
         {
-            response.Meta.AddMessage(currencyResponse.Messages);
+            response.AddMessage(currencyResponse.Messages);
 
             return response;
         }
 
         if (currencyResponse.Value is null)
         {
-            await _translationService.AddMessage(response.Meta, "CurrencyNotFound", cancellationToken);
+            await _translationService.AddMessage(response, "CurrencyNotFound", cancellationToken);
 
             return response;
         }
 
-        response.Currency = new()
+        response.Value = new()
         {
             CurrencyId = currencyResponse.Value.Id.ToString(),
             CurrencyCode = currencyResponse.Value.Code,

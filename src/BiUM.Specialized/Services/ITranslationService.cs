@@ -4,7 +4,6 @@ using BiUM.Specialized.Common.Translation;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ResponseMeta = BiUM.Contract.Models.Api.ResponseMeta;
 
 namespace BiUM.Specialized.Services;
 
@@ -36,37 +35,6 @@ public interface ITranslationService
 
     Task<ApiResponse> AddMessage(
         ApiResponse response,
-        string code,
-        string exception,
-        MessageSeverity severity,
-        CancellationToken cancellationToken);
-
-    Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        CancellationToken cancellationToken);
-
-    Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        MessageSeverity severity,
-        CancellationToken cancellationToken);
-
-    Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        Exception exception,
-        CancellationToken cancellationToken);
-
-    Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        Exception exception,
-        MessageSeverity severity,
-        CancellationToken cancellationToken);
-
-    Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
         string code,
         string exception,
         MessageSeverity severity,

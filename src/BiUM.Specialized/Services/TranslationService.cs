@@ -15,7 +15,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ResponseMeta = BiUM.Contract.Models.Api.ResponseMeta;
 
 namespace BiUM.Specialized.Services;
 
@@ -106,73 +105,6 @@ public sealed class TranslationService : ITranslationService
         });
 
         return response;
-    }
-
-    public async Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        CancellationToken cancellationToken)
-    {
-        return await AddMessage(meta, code, string.Empty, MessageSeverity.Error, cancellationToken);
-    }
-
-    public async Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        MessageSeverity severity,
-        CancellationToken cancellationToken)
-    {
-        return await AddMessage(meta, code, string.Empty, severity, cancellationToken);
-    }
-
-    public async Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        Exception exception,
-        CancellationToken cancellationToken)
-    {
-        return await AddMessage(meta, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
-    }
-
-    public async Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        Exception exception,
-        MessageSeverity severity,
-        CancellationToken cancellationToken)
-    {
-        return await AddMessage(meta, code, exception.GetFullMessage(), severity, cancellationToken);
-    }
-
-    public async Task<ResponseMeta> AddMessage(
-        ResponseMeta meta,
-        string code,
-        string exception,
-        MessageSeverity severity,
-        CancellationToken cancellationToken)
-    {
-        var translation = await GetTranslation(code, cancellationToken);
-
-        if (translation is null)
-        {
-            meta.AddMessage(
-                code: $"{_biAppOptions.Domain}.{code}",
-                message: string.Empty,
-                exception: exception,
-                severity: severity);
-
-            return meta;
-        }
-
-        var message = translation.DomainTranslationDetails!.First().Text;
-
-        meta.AddMessage(
-            code: $"{_biAppOptions.Domain}.{code}",
-            message: message,
-            exception: exception,
-            severity: severity);
-
-        return meta;
     }
 
     public async Task<ApiResponse> SaveDomainTranslationAsync(

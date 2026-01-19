@@ -2,7 +2,6 @@ using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Consts;
-using BiUM.Core.Extensions;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using Microsoft.Extensions.DependencyInjection;

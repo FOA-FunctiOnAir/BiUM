@@ -1,5 +1,4 @@
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Extensions;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;

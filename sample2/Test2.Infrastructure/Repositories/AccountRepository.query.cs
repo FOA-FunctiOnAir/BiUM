@@ -22,14 +22,14 @@ public partial class AccountRepository
 
         var currencyNamesResponse = await _testRpcService.GetCurrency(getCurrencyNamesRequest);
 
-        if (!currencyNamesResponse.Meta.Success)
+        if (!currencyNamesResponse.Success)
         {
-            response.AddMessage(currencyNamesResponse.Meta);
+            response.AddMessage(currencyNamesResponse.Messages);
 
             return response;
         }
 
-        response.Value = currencyNamesResponse.Currency.CurrencyName;
+        response.Value = currencyNamesResponse.Value.CurrencyName;
 
         return response;
     }

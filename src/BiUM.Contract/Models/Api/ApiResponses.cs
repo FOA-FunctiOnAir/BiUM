@@ -1,31 +1,51 @@
 ﻿using BiUM.Contract.Enums;
+using MemoryPack;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace BiUM.Contract.Models.Api;
 
-public class ApiResponse
+[MemoryPackable]
+public partial class ApiResponse
 {
+    [MemoryPackInclude]
+    protected List<ResponseMessage> ResponseMessages { get; } = [];
+
+    [MemoryPackIgnore]
+    public IReadOnlyList<ResponseMessage> Messages => ResponseMessages;
+
+    [MemoryPackIgnore]
     public virtual bool Success =>
-        _messages.All(s => s.Severity != MessageSeverity.Error);
+        ResponseMessages.All(s => s.Severity != MessageSeverity.Error);
 
-    private readonly List<ResponseMessage> _messages = [];
+    public ApiResponse()
+    {
+    }
 
-    public IReadOnlyList<ResponseMessage> Messages => _messages;
+    [MemoryPackConstructor]
+    protected ApiResponse(List<ResponseMessage> responseMessages)
+    {
+        ResponseMessages = responseMessages;
+    }
 
     public void AddMessage(ResponseMessage message)
     {
-        _messages.Add(message);
+        ResponseMessages.Add(message);
+    }
+
+    public void AddMessage(IList<ResponseMessage> messages)
+    {
+        ResponseMessages.AddRange(messages);
     }
 
     public void AddMessage(IReadOnlyList<ResponseMessage> messages)
     {
-        _messages.AddRange(messages);
+        ResponseMessages.AddRange(messages);
     }
 
     public void AddMessage(string message, MessageSeverity? severity)
     {
-        _messages.Add(new ResponseMessage
+        ResponseMessages.Add(new()
         {
             Code = string.Empty,
             Message = message,
@@ -35,7 +55,7 @@ public class ApiResponse
 
     public void AddMessage(string code, string message, MessageSeverity? severity)
     {
-        _messages.Add(new ResponseMessage
+        ResponseMessages.Add(new()
         {
             Code = code,
             Message = message,
@@ -45,7 +65,7 @@ public class ApiResponse
 
     public void AddMessage(string code, string message, string exception, MessageSeverity severity)
     {
-        _messages.Add(new ResponseMessage
+        ResponseMessages.Add(new()
         {
             Code = code,
             Message = message,
@@ -55,7 +75,25 @@ public class ApiResponse
     }
 }
 
-public class ApiResponse<TType> : ApiResponse
+[MemoryPackable]
+public partial class ApiResponse<TType> : ApiResponse
 {
+    [MemoryPackInclude]
     public TType? Value { get; set; }
+
+    public ApiResponse()
+    {
+    }
+
+    public ApiResponse(TType? value)
+    {
+        Value = value;
+    }
+
+    [MemoryPackConstructor]
+    private ApiResponse(TType? value, List<ResponseMessage> responseMessages)
+        : base(responseMessages)
+    {
+        Value = value;
+    }
 }

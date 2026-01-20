@@ -1,5 +1,5 @@
-using BiUM.Specialized.Common.Dtos;
 using BiUM.Specialized.Common.MediatR;
+using BiUM.Specialized.Common.Models;
 using System;
 using System.Collections.Generic;
 

@@ -1,10 +1,10 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Common.Models;
-using BiUM.Specialized.Consts;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

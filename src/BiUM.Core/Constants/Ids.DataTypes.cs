@@ -1,7 +1,7 @@
 using BiUM.Core.Common.Utils;
 using System;
 
-namespace BiUM.Specialized.Consts;
+namespace BiUM.Core.Constants;
 
 public partial class Ids
 {

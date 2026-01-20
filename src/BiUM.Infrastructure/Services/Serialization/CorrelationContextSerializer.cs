@@ -7,7 +7,7 @@ using System.IO.Compression;
 
 namespace BiUM.Specialized.Services.Serialization;
 
-internal sealed class CorrelationContextSerializer : ICorrelationContextSerializer
+public sealed class CorrelationContextSerializer : ICorrelationContextSerializer
 {
     private readonly MemoryPackSerializerOptions _memoryPackSerializerOptions;
 

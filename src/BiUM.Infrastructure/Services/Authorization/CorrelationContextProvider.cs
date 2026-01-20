@@ -1,6 +1,6 @@
 using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
-using BiUM.Core.Consts;
+using BiUM.Core.Constants;
 using BiUM.Core.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -8,7 +8,7 @@ using System;
 
 namespace BiUM.Infrastructure.Services.Authorization;
 
-internal sealed class CorrelationContextProvider : ICorrelationContextProvider
+public sealed class CorrelationContextProvider : ICorrelationContextProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;

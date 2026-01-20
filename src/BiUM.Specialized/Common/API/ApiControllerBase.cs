@@ -7,7 +7,7 @@ namespace BiUM.Specialized.Common.API;
 
 [ApiController]
 [AllowAnonymous]
-public class ApiControllerBase() : ControllerBase
+public class ApiControllerBase : ControllerBase
 {
     private ISender _mediator = null!;
 

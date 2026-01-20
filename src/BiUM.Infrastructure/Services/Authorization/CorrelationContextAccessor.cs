@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace BiUM.Infrastructure.Services.Authorization;
 
-internal sealed class CorrelationContextAccessor : ICorrelationContextAccessor
+public sealed class CorrelationContextAccessor : ICorrelationContextAccessor
 {
     private static readonly AsyncLocal<CorrelationContextHolder> CorrelationContextCurrent = new();
 

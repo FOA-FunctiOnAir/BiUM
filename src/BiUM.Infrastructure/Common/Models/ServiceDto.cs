@@ -1,9 +1,8 @@
-using BiUM.Specialized.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace BiUM.Specialized.Common.Dtos;
+namespace BiUM.Infrastructure.Common.Models;
 
 public class ServiceDto : BaseTenantDto
 {

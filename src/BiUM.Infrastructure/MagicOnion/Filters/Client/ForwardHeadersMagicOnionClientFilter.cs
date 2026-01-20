@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Threading.Tasks;
 
-namespace BiUM.Specialized.Interceptors;
+namespace BiUM.Infrastructure.MagicOnion.Filters.Client;
 
 internal sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
 {

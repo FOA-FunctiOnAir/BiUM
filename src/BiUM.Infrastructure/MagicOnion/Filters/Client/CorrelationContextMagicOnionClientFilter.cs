@@ -1,5 +1,5 @@
 ﻿using BiUM.Core.Authorization;
-using BiUM.Core.Consts;
+using BiUM.Core.Constants;
 using BiUM.Core.Serialization;
 using MagicOnion.Client;
 using Microsoft.AspNetCore.Http;
@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BiUM.Specialized.Interceptors;
+namespace BiUM.Infrastructure.MagicOnion.Filters.Client;
 
 internal sealed class CorrelationContextMagicOnionClientFilter : IClientFilter
 {

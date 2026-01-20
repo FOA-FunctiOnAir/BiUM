@@ -1,6 +1,6 @@
 using System;
 
-namespace BiUM.Specialized.Common.Models;
+namespace BiUM.Infrastructure.Common.Models;
 
 public class BaseDto
 {

@@ -2,13 +2,12 @@ using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Consts;
+using BiUM.Core.Constants;
 using BiUM.Core.HttpClients;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
-using BiUM.Specialized.Common.Dtos;
-using BiUM.Specialized.Consts;
+using BiUM.Infrastructure.Common.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System;
@@ -24,7 +23,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Specialized.Services.HttpClients;
+namespace BiUM.Infrastructure.Services.HttpClients;
 
 public class HttpClientService : IHttpClientsService
 {

@@ -1,7 +1,7 @@
 using BiUM.Core.Common.Utils;
 using System;
 
-namespace BiUM.Specialized.Consts;
+namespace BiUM.Core.Constants;
 
 public partial class Ids
 {
@@ -9,17 +9,17 @@ public partial class Ids
     {
         public static class Web
         {
-            internal static Guid Id = GuidGenerator.NewGuid("Channel-Web");
+            public static Guid Id = GuidGenerator.NewGuid("Channel-Web");
         }
 
         public static class Ios
         {
-            internal static Guid Id = GuidGenerator.NewGuid("Channel-Ios");
+            public static Guid Id = GuidGenerator.NewGuid("Channel-Ios");
         }
 
         public static class Android
         {
-            internal static Guid Id = GuidGenerator.NewGuid("Channel-Android");
+            public static Guid Id = GuidGenerator.NewGuid("Channel-Android");
         }
     }
 }

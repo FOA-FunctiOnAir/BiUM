@@ -1,5 +1,5 @@
+using BiUM.Infrastructure.MagicOnion.Client;
 using BiUM.Specialized.Database;
-using BiUM.Specialized.MagicOnion;
 using BiUM.Test2.Application.Repositories;
 using BiUM.Test2.Contract.Services;
 using BiUM.Test2.Infrastructure.Persistence;

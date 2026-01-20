@@ -1,4 +1,4 @@
-namespace BiUM.Core.Consts;
+namespace BiUM.Core.Constants;
 
 public static class HeaderKeys
 {

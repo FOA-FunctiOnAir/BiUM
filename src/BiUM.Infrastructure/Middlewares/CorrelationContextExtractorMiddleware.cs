@@ -1,5 +1,5 @@
 using BiUM.Core.Authorization;
-using BiUM.Core.Consts;
+using BiUM.Core.Constants;
 using BiUM.Core.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

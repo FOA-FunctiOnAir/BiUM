@@ -1,7 +1,7 @@
 ﻿using MagicOnion;
 using MagicOnion.Client;
 
-namespace BiUM.Specialized.MagicOnion;
+namespace BiUM.Infrastructure.MagicOnion.Client;
 
 public interface IMagicOnionRpcClient<T>
     where T : IService<T>

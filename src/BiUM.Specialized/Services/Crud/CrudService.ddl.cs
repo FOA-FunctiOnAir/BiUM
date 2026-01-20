@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Utils;
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -99,20 +100,20 @@ public partial class CrudService
     {
         var UseTimeZoneInTimestamp = false;
 
-        if (c.DataTypeId == Consts.Ids.DataType.String)
+        if (c.DataTypeId == Ids.DataType.String)
         {
             if (c.MaxLength.HasValue && c.MaxLength.Value > 0) return $"varchar({c.MaxLength.Value})";
 
             return "text";
         }
-        if (c.DataTypeId == Consts.Ids.DataType.Guid) return "uuid";
-        if (c.DataTypeId == Consts.Ids.DataType.Integer) return "integer";
-        if (c.DataTypeId == Consts.Ids.DataType.Decimal) return "numeric(18,2)";
-        if (c.DataTypeId == Consts.Ids.DataType.Boolean) return "boolean";
-        if (c.DataTypeId == Consts.Ids.DataType.DateTime) return UseTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
-        if (c.DataTypeId == Consts.Ids.DataType.DateOnly) return "date";
-        if (c.DataTypeId == Consts.Ids.DataType.TimeOnly) return "time without time zone";
-        if (c.DataTypeId == Consts.Ids.DataType.Object) return "jsonb";
+        if (c.DataTypeId == Ids.DataType.Guid) return "uuid";
+        if (c.DataTypeId == Ids.DataType.Integer) return "integer";
+        if (c.DataTypeId == Ids.DataType.Decimal) return "numeric(18,2)";
+        if (c.DataTypeId == Ids.DataType.Boolean) return "boolean";
+        if (c.DataTypeId == Ids.DataType.DateTime) return UseTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
+        if (c.DataTypeId == Ids.DataType.DateOnly) return "date";
+        if (c.DataTypeId == Ids.DataType.TimeOnly) return "time without time zone";
+        if (c.DataTypeId == Ids.DataType.Object) return "jsonb";
 
         return "text";
     }
@@ -212,20 +213,20 @@ public partial class CrudService
 
     private static string ToMsSqlType(DomainCrudVersionColumn c)
     {
-        if (c.DataTypeId == Consts.Ids.DataType.String)
+        if (c.DataTypeId == Ids.DataType.String)
         {
             var len = c.MaxLength.HasValue && c.MaxLength > 0 ? c.MaxLength.Value.ToString() : "MAX";
 
             return $"nvarchar({len})";
         }
-        if (c.DataTypeId == Consts.Ids.DataType.Guid) return "uniqueidentifier";
-        if (c.DataTypeId == Consts.Ids.DataType.Integer) return "int";
-        if (c.DataTypeId == Consts.Ids.DataType.Decimal) return "decimal(18,2)";
-        if (c.DataTypeId == Consts.Ids.DataType.Boolean) return "bit";
-        if (c.DataTypeId == Consts.Ids.DataType.DateTime) return "datetime2(7)";
-        if (c.DataTypeId == Consts.Ids.DataType.DateOnly) return "date";
-        if (c.DataTypeId == Consts.Ids.DataType.TimeOnly) return "time(7)";
-        if (c.DataTypeId == Consts.Ids.DataType.Object) return "nvarchar(MAX)";
+        if (c.DataTypeId == Ids.DataType.Guid) return "uniqueidentifier";
+        if (c.DataTypeId == Ids.DataType.Integer) return "int";
+        if (c.DataTypeId == Ids.DataType.Decimal) return "decimal(18,2)";
+        if (c.DataTypeId == Ids.DataType.Boolean) return "bit";
+        if (c.DataTypeId == Ids.DataType.DateTime) return "datetime2(7)";
+        if (c.DataTypeId == Ids.DataType.DateOnly) return "date";
+        if (c.DataTypeId == Ids.DataType.TimeOnly) return "time(7)";
+        if (c.DataTypeId == Ids.DataType.Object) return "nvarchar(MAX)";
 
         return "nvarchar(MAX)";
     }
@@ -330,35 +331,35 @@ END;
     {
         if (value is null) return null;
 
-        if (dataTypeId == Consts.Ids.DataType.Guid)
+        if (dataTypeId == Ids.DataType.Guid)
         {
             if (value is Guid g) return g;
             if (Guid.TryParse(value.ToString(), out var gg)) return gg;
 
             throw new ArgumentException("Invalid Guid");
         }
-        if (dataTypeId == Consts.Ids.DataType.Integer)
+        if (dataTypeId == Ids.DataType.Integer)
         {
             if (value is int i) return i;
             if (int.TryParse(value.ToString(), out var ii)) return ii;
 
             throw new ArgumentException("Invalid Integer");
         }
-        if (dataTypeId == Consts.Ids.DataType.Decimal)
+        if (dataTypeId == Ids.DataType.Decimal)
         {
             if (value is decimal d) return d;
             if (decimal.TryParse(value.ToString(), out var dd)) return dd;
 
             throw new ArgumentException("Invalid Decimal");
         }
-        if (dataTypeId == Consts.Ids.DataType.Boolean)
+        if (dataTypeId == Ids.DataType.Boolean)
         {
             if (value is bool b) return b;
             if (bool.TryParse(value.ToString(), out var bb)) return bb;
 
             throw new ArgumentException("Invalid Boolean");
         }
-        if (dataTypeId == Consts.Ids.DataType.DateOnly)
+        if (dataTypeId == Ids.DataType.DateOnly)
         {
             if (value is DateOnly d) return d;
             if (DateOnly.TryParse(value.ToString(), out var dd)) return dd;
@@ -366,7 +367,7 @@ END;
 
             throw new ArgumentException("Invalid DateOnly");
         }
-        if (dataTypeId == Consts.Ids.DataType.TimeOnly)
+        if (dataTypeId == Ids.DataType.TimeOnly)
         {
             if (value is TimeOnly t) return t;
             if (TimeOnly.TryParse(value.ToString(), out var tt)) return tt;
@@ -374,7 +375,7 @@ END;
 
             throw new ArgumentException("Invalid TimeOnly");
         }
-        if (dataTypeId == Consts.Ids.DataType.DateTime)
+        if (dataTypeId == Ids.DataType.DateTime)
         {
             if (value is DateTime dt) return dt;
             if (DateTime.TryParse(value.ToString(), out var dtt)) return dtt;

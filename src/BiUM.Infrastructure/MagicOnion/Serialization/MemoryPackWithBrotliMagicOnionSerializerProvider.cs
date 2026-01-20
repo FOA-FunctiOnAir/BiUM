@@ -7,7 +7,7 @@ using System.Buffers;
 using System.IO.Compression;
 using System.Reflection;
 
-namespace BiUM.Specialized.MagicOnion;
+namespace BiUM.Infrastructure.MagicOnion.Serialization;
 
 public class MemoryPackWithBrotliMagicOnionSerializerProvider : IMagicOnionSerializerProvider
 {

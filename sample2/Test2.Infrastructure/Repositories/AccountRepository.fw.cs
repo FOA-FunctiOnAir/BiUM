@@ -1,8 +1,8 @@
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParameter;
+using BiApp.Test2.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
-using BiUM.Test2.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Infrastructure.Repositories;
+namespace BiApp.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository
 {

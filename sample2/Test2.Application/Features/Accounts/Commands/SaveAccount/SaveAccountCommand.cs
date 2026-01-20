@@ -1,8 +1,8 @@
+using BiApp.Test2.Application.Dtos;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test2.Application.Dtos;
 using System.Collections.Generic;
 
-namespace BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
+namespace BiApp.Test2.Application.Features.Accounts.Commands.SaveAccount;
 
 public record SaveAccountCommand : BaseCommandDto
 {

@@ -1,9 +1,9 @@
+using BiApp.Test.Application.Repositories;
+using BiApp.Test.Infrastructure.Persistence;
 using BiUM.Specialized.Database;
-using BiUM.Test.Application.Repositories;
-using BiUM.Test.Infrastructure.Persistence;
 using System;
 
-namespace BiUM.Test.Infrastructure.Repositories;
+namespace BiApp.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository : BaseRepository, ICurrencyRepository
 {

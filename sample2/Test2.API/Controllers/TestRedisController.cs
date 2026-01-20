@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.API.Controllers;
+namespace BiApp.Test2.API.Controllers;
 
 
 [BiUMRoute("test")]

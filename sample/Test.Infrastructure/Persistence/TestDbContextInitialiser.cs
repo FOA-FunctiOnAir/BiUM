@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Infrastructure.Persistence;
+namespace BiApp.Test.Infrastructure.Persistence;
 
 public partial class DomainBoltDbContextInitialiser : BoltDbContextInitialiser<BoltDbContext, TestDbContext>
 {

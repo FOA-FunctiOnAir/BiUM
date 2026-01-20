@@ -1,11 +1,10 @@
 using AutoMapper;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Mapping;
-using BiUM.Test.Domain.Entities;
 using System;
 using System.Linq;
 
-namespace BiUM.Test.Application.Dtos;
+namespace BiApp.Test.Application.Dtos;
 
 public class CurrenciesDto : BaseDto, IMapFrom<Currency>
 {

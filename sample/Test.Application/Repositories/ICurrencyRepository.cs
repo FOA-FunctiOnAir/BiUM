@@ -1,14 +1,14 @@
+using BiApp.Test.Application.Dtos;
+using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
+using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
+using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using BiUM.Contract.Models.Api;
-using BiUM.Test.Application.Dtos;
-using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
-using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
-using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Application.Repositories;
+namespace BiApp.Test.Application.Repositories;
 
 public interface ICurrencyRepository
 {

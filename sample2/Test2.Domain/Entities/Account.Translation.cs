@@ -2,7 +2,7 @@ using BiUM.Infrastructure.Common.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace BiUM.Test2.Domain.Entities;
+namespace BiApp.Test2.Domain.Entities;
 
 [Table("ACCOUNT_TRANSLATION", Schema = "dbo")]
 public class AccountTranslation : TranslationBaseEntity

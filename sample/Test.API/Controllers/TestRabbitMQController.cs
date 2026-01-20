@@ -1,10 +1,10 @@
+using BiApp.Test.Application.Features.Currencies.Events.TestAdded;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Common.API;
-using BiUM.Test.Application.Features.Currencies.Events.TestAdded;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.API.Controllers;
+namespace BiApp.Test.API.Controllers;
 
 [BiUMRoute("test")]
 public class TestRabbitMQController : ApiControllerBase

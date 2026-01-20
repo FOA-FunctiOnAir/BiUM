@@ -1,8 +1,8 @@
+using BiApp.Test.Domain.Entities;
 using BiUM.Specialized.Database;
-using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace BiUM.Test.Infrastructure.Persistence;
+namespace BiApp.Test.Infrastructure.Persistence;
 
 public interface ITestDbContext : IDbContext, IBaseBoltDomainDbContext
 {

@@ -1,12 +1,12 @@
 using AutoMapper;
+using BiApp.Test2.Domain.Events;
 using BiUM.Core.MessageBroker;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Test2.Domain.Events;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace BiUM.Test2.Domain.Entities;
+namespace BiApp.Test2.Domain.Entities;
 
 [Table("ACCOUNT", Schema = "dbo")]
 public class Account : BaseEntity

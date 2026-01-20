@@ -1,10 +1,10 @@
+using BiApp.Test.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test.Application.Repositories;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
+namespace BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
 
 public class SaveCurrencyCommandHandler : ICommandHandler<SaveCurrencyCommand>
 {

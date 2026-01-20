@@ -1,9 +1,9 @@
+using BiApp.Test.Domain.Entities;
 using BiUM.Core.MessageBroker;
 using BiUM.Specialized.Mapping;
-using BiUM.Test.Domain.Entities;
 using MemoryPack;
 
-namespace BiUM.Test.Domain.Events;
+namespace BiApp.Test.Domain.Events;
 
 [Event]
 [MemoryPackable]

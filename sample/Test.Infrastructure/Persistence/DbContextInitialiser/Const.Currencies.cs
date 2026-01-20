@@ -1,6 +1,6 @@
 using System;
 
-namespace BiUM.Test.Infrastructure.Persistence.DbContextInitialiser;
+namespace BiApp.Test.Infrastructure.Persistence.DbContextInitialiser;
 
 public partial class TestDbContextInitialiser
 {

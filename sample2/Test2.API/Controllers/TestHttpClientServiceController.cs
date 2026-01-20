@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.API.Controllers;
+namespace BiApp.Test2.API.Controllers;
 
 [BiUMRoute("test")]
 public class TestHttpClientServiceController : ApiControllerBase

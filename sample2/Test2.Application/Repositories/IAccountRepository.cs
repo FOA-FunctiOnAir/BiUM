@@ -1,14 +1,14 @@
+using BiApp.Test2.Application.Dtos;
+using BiApp.Test2.Application.Features.Accounts.Commands.SaveAccount;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParameter;
 using BiUM.Contract.Models.Api;
-using BiUM.Test2.Application.Dtos;
-using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Application.Repositories;
+namespace BiApp.Test2.Application.Repositories;
 
 public interface IAccountRepository
 {

@@ -1,7 +1,7 @@
-﻿using BiUM.Test2.Contract.Models;
+﻿using BiApp.Test.Contract.Models.Rpc;
 using MagicOnion;
 
-namespace BiUM.Test2.Contract.Services;
+namespace BiApp.Test.Contract.Services.Rpc;
 
 public interface ITestRpcService : IService<ITestRpcService>
 {

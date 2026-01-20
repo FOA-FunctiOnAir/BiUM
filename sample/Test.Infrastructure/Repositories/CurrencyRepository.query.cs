@@ -1,14 +1,13 @@
+using BiApp.Test.Application.Dtos;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
-using BiUM.Test.Application.Dtos;
-using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Infrastructure.Repositories;
+namespace BiApp.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository
 {

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Infrastructure.Repositories;
+namespace BiApp.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository
 {

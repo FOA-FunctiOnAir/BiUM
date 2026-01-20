@@ -1,10 +1,10 @@
+using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test2.Application.Repositories;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Application.Features.Accounts.Commands.DeleteAccount;
+namespace BiApp.Test2.Application.Features.Accounts.Commands.DeleteAccount;
 
 public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand>
 {

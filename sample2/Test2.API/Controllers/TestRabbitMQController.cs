@@ -1,7 +1,7 @@
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Common.API;
 
-namespace BiUM.Test2.API.Controllers;
+namespace BiApp.Test2.API.Controllers;
 
 [BiUMRoute("test")]
 public class TestRabbitMQController : ApiControllerBase

@@ -1,11 +1,11 @@
+using BiApp.Test.Domain.Events;
 using BiUM.Core.MessageBroker;
-using BiUM.Test.Domain.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Application.Features.Currencies.Events;
+namespace BiApp.Test.Application.Features.Currencies.Events;
 
 public partial class CurrencyCreatedEventHandler : IEventHandler<CurrencyCreatedEvent>
 {

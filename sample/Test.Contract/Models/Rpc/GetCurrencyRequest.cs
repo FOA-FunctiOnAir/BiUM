@@ -1,6 +1,6 @@
 ﻿using MemoryPack;
 
-namespace BiUM.Test.Contract.Models;
+namespace BiApp.Test.Contract.Models.Rpc;
 
 [MemoryPackable]
 public sealed partial class GetCurrencyRequest

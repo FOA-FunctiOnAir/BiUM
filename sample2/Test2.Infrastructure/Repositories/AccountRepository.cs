@@ -1,10 +1,10 @@
+using BiApp.Test2.Application.Repositories;
+using BiApp.Test2.Contract.Services.Rpc;
+using BiApp.Test2.Infrastructure.Persistence;
 using BiUM.Specialized.Database;
-using BiUM.Test2.Application.Repositories;
-using BiUM.Test2.Contract.Services;
-using BiUM.Test2.Infrastructure.Persistence;
 using System;
 
-namespace BiUM.Test2.Infrastructure.Repositories;
+namespace BiApp.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository : BaseRepository, IAccountRepository
 {

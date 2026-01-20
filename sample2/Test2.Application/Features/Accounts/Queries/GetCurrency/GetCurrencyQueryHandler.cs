@@ -1,10 +1,10 @@
+using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test2.Application.Repositories;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
+namespace BiApp.Test2.Application.Features.Accounts.Queries.GetCurrency;
 
 public class GetCurrencyQueryHandler : IQueryHandler<GetCurrencyQuery, string>
 {

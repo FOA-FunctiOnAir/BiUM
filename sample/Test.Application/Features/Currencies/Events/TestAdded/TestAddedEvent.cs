@@ -1,7 +1,7 @@
 using BiUM.Core.MessageBroker;
 using MemoryPack;
 
-namespace BiUM.Test.Application.Features.Currencies.Events.TestAdded;
+namespace BiApp.Test.Application.Features.Currencies.Events.TestAdded;
 
 
 [Event]

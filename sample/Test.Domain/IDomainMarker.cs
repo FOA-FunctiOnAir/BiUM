@@ -1,3 +1,3 @@
-namespace BiUM.Test.Domain;
+namespace BiApp.Test.Domain;
 
 public interface IDomainMarker;

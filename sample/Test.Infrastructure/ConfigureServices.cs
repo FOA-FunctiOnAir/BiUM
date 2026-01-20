@@ -1,12 +1,13 @@
+using BiApp.Test.Application.Repositories;
+using BiApp.Test.Infrastructure.Persistence;
+using BiApp.Test.Infrastructure.Repositories;
 using BiUM.Specialized.Database;
-using BiUM.Test.Application.Repositories;
-using BiUM.Test.Infrastructure.Persistence;
-using BiUM.Test.Infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace BiApp.Test.Infrastructure;
 
 public static class ConfigureServices
 {

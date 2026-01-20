@@ -1,15 +1,16 @@
+using BiApp.Test2.Application.Repositories;
+using BiApp.Test2.Contract.Services.Rpc;
+using BiApp.Test2.Infrastructure.Persistence;
+using BiApp.Test2.Infrastructure.Repositories;
 using BiUM.Infrastructure.MagicOnion.Client;
 using BiUM.Specialized.Database;
-using BiUM.Test2.Application.Repositories;
-using BiUM.Test2.Contract.Services;
-using BiUM.Test2.Infrastructure.Persistence;
-using BiUM.Test2.Infrastructure.Repositories;
 using MagicOnion.Client;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace BiApp.Test2.Infrastructure;
 
 public static class ConfigureServices
 {

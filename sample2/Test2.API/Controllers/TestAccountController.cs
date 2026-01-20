@@ -1,19 +1,19 @@
+using BiApp.Test2.Application.Dtos;
+using BiApp.Test2.Application.Features.Accounts.Commands.DeleteAccount;
+using BiApp.Test2.Application.Features.Accounts.Commands.SaveAccount;
+using BiApp.Test2.Application.Features.Accounts.Commands.UpdateBoltAccount;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetAccount;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetAccounts;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetCurrency;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
+using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParameter;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.API;
-using BiUM.Test2.Application.Dtos;
-using BiUM.Test2.Application.Features.Accounts.Commands.DeleteAccount;
-using BiUM.Test2.Application.Features.Accounts.Commands.SaveAccount;
-using BiUM.Test2.Application.Features.Accounts.Commands.UpdateBoltAccount;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetAccount;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrencies;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetCurrency;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
-using BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.API.Controllers;
+namespace BiApp.Test2.API.Controllers;
 
 [BiUMRoute("test2")]
 public class TestAccountController : ApiControllerBase

@@ -1,9 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>$(SolutionName).Application</AssemblyName>
-    <RootNamespace>$(SolutionName).Application</RootNamespace>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Test2.Domain\Test2.Domain.csproj" />
   </ItemGroup>

@@ -1,13 +1,12 @@
-﻿using BiUM.Specialized.Services;
-using BiUM.Test.Application.Repositories;
-using BiUM.Test.Contract.Models;
-using BiUM.Test.Contract.Services;
+﻿using BiApp.Test.Application.Repositories;
+using BiApp.Test.Contract.Models.Rpc;
+using BiApp.Test.Contract.Services.Rpc;
+using BiUM.Specialized.Services;
 using MagicOnion;
 using MagicOnion.Server;
 using System;
-using System.Threading;
 
-namespace BiUM.Test.Infrastructure.Services.Rpc;
+namespace BiApp.Test.Infrastructure.Services.Rpc;
 
 public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcService
 {
@@ -24,7 +23,7 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
 
     public async UnaryResult<GetCurrencyResponse> GetCurrency(GetCurrencyRequest request)
     {
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = Context.CallContext.CancellationToken;
 
         var response = new GetCurrencyResponse();
 

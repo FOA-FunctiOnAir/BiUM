@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Application.Features.Currencies.Events.TestAdded;
+namespace BiApp.Test.Application.Features.Currencies.Events.TestAdded;
 
 public partial class TestAddedEventHandler : IEventHandler<TestAddedEvent>
 {

@@ -1,7 +1,7 @@
+using BiApp.Test2.Application.Dtos;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test2.Application.Dtos;
 
-namespace BiUM.Test2.Application.Features.Accounts.Queries.GetCurrencies;
+namespace BiApp.Test2.Application.Features.Accounts.Queries.GetAccounts;
 
 public record GetAccountsQuery : BasePaginatedQueryDto<AccountsDto>
 {

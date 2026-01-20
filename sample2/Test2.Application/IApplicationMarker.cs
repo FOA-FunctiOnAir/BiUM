@@ -1,3 +1,3 @@
-namespace BiUM.Test2.Application;
+namespace BiApp.Test2.Application;
 
 public interface IApplicationMarker;

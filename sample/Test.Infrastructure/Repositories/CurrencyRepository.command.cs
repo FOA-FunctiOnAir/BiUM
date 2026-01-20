@@ -1,13 +1,12 @@
+using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiUM.Contract.Models.Api;
-using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
-using BiUM.Test.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Infrastructure.Repositories;
+namespace BiApp.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository
 {

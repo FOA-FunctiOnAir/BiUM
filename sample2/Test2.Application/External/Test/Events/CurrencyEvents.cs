@@ -1,7 +1,7 @@
 using BiUM.Core.MessageBroker;
 using MemoryPack;
 
-namespace BiUM.Test2.Application.External.Test.Events;
+namespace BiApp.Test2.Application.External.Test.Events;
 
 [Event(Exchange = "test")]
 [MemoryPackable]

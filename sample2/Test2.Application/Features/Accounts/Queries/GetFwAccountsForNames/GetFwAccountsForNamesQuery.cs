@@ -1,6 +1,6 @@
 using BiUM.Specialized.Common.MediatR;
 
-namespace BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
+namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
 
 public record GetFwAccountsForNamesQuery : BaseForValuesQueryDto<GetFwAccountsForNamesDto>
 {

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Infrastructure.Persistence;
+namespace BiApp.Test.Infrastructure.Persistence;
 
 public class BoltDbContext : TestDbContext, IBoltDbContext
 {

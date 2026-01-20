@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Application.External.Test.Events;
+namespace BiApp.Test2.Application.External.Test.Events;
 
 public class CurrencyEventsHandler : IEventHandler<CurrencyCreatedEvent>, IEventHandler<CurrencyUpdatedEvent>, IEventHandler<CurrencyDeletedEvent>
 {

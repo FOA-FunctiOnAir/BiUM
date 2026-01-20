@@ -1,8 +1,8 @@
+using BiApp.Test.Application.Dtos;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test.Application.Dtos;
 using System.Collections.Generic;
 
-namespace BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
+namespace BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
 
 public record SaveCurrencyCommand : BaseCommandDto
 {

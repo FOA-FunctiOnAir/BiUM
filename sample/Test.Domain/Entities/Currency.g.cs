@@ -1,8 +1,8 @@
 using AutoMapper;
+using BiApp.Test.Domain.Events;
 using BiUM.Core.MessageBroker;
-using BiUM.Test.Domain.Events;
 
-namespace BiUM.Test.Domain.Entities;
+namespace BiApp.Test.Domain.Entities;
 
 public partial class Currency
 {

@@ -1,9 +1,9 @@
 ﻿using MemoryPack;
 
-namespace BiUM.Test2.Contract.Models;
+namespace BiApp.Test2.Contract.Models.Rpc;
 
 [MemoryPackable]
-public sealed partial class GetCurrencyItem
+public sealed partial class CurrencyItem
 {
     public string CurrencyId { get; set; }
     public string CurrencyCode { get; set; }

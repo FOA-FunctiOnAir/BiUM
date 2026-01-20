@@ -1,18 +1,18 @@
+using BiApp.Test.Application.Dtos;
+using BiApp.Test.Application.Features.Currencies.Commands.DeleteCurrency;
+using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
+using BiApp.Test.Application.Features.Currencies.Commands.UpdateBoltCurrency;
+using BiApp.Test.Application.Features.Currencies.Queries.GetCurrencies;
+using BiApp.Test.Application.Features.Currencies.Queries.GetCurrency;
+using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
+using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.API;
-using BiUM.Test.Application.Dtos;
-using BiUM.Test.Application.Features.Currencies.Commands.DeleteCurrency;
-using BiUM.Test.Application.Features.Currencies.Commands.SaveCurrency;
-using BiUM.Test.Application.Features.Currencies.Commands.UpdateBoltCurrency;
-using BiUM.Test.Application.Features.Currencies.Queries.GetCurrencies;
-using BiUM.Test.Application.Features.Currencies.Queries.GetCurrency;
-using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
-using BiUM.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.API.Controllers;
+namespace BiApp.Test.API.Controllers;
 
 [BiUMRoute("test")]
 public class TestCurrencyController : ApiControllerBase

@@ -1,6 +1,7 @@
-using BiUM.Test.Infrastructure.Persistence;
+using BiApp.Test.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace BiApp.Test.API;
 
 public static class ConfigureServices
 {

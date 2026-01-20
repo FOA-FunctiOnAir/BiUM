@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test.Infrastructure.Repositories;
+namespace BiApp.Test.Infrastructure.Repositories;
 
 public partial class CurrencyRepository
 {

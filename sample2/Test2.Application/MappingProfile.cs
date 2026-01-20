@@ -1,6 +1,6 @@
+using BiApp.Test2.Domain;
 using BiUM.Specialized.Mapping;
-using BiUM.Test2.Domain;
 
-namespace BiUM.Test2.Application;
+namespace BiApp.Test2.Application;
 
 public class TestMappingProfile : MappingProfile<IApplicationMarker, IDomainMarker>;

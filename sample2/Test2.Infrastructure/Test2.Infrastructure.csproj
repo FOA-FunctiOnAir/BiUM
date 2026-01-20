@@ -1,9 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>$(SolutionName).Infrastructure</AssemblyName>
-    <RootNamespace>$(SolutionName).Infrastructure</RootNamespace>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\BiUM.Bolt\BiUM.Bolt.csproj" />
   </ItemGroup>

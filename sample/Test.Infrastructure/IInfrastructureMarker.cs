@@ -1,3 +1,3 @@
-namespace BiUM.Test.Infrastructure;
+namespace BiApp.Test.Infrastructure;
 
 public interface IInfrastructureMarker;

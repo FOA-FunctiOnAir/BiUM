@@ -1,11 +1,11 @@
+using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
-using BiUM.Test2.Application.Repositories;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForNames;
+namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
 
 public class GetFwAccountsForNamesQueryHandler : IForValuesQueryHandler<GetFwAccountsForNamesQuery, GetFwAccountsForNamesDto>
 {

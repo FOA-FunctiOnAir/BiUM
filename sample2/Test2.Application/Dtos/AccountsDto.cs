@@ -1,11 +1,11 @@
 using AutoMapper;
+using BiApp.Test2.Domain.Entities;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Mapping;
-using BiUM.Test2.Domain.Entities;
 using System;
 using System.Linq;
 
-namespace BiUM.Test2.Application.Dtos;
+namespace BiApp.Test2.Application.Dtos;
 
 public class AccountsDto : BaseDto, IMapFrom<Account>
 {

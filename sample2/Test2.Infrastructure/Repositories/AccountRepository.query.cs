@@ -1,15 +1,16 @@
+using BiApp.Test2.Application.Dtos;
+using BiApp.Test2.Contract.Models;
+using BiApp.Test2.Contract.Models.Rpc;
+using BiApp.Test2.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
-using BiUM.Test2.Application.Dtos;
-using BiUM.Test2.Contract.Models;
-using BiUM.Test2.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BiUM.Test2.Infrastructure.Repositories;
+namespace BiApp.Test2.Infrastructure.Repositories;
 
 public partial class AccountRepository
 {
@@ -20,7 +21,7 @@ public partial class AccountRepository
         var getCurrencyNamesRequest = new GetCurrencyRequest();
         getCurrencyNamesRequest.CurrencyId = id.ToString();
 
-        var currencyNamesResponse = await _testRpcService.GetCurrency(getCurrencyNamesRequest);
+        var currencyNamesResponse = await _testRpcService.WithCancellationToken(cancellationToken).GetCurrency(getCurrencyNamesRequest);
 
         if (!currencyNamesResponse.Success)
         {
@@ -29,7 +30,7 @@ public partial class AccountRepository
             return response;
         }
 
-        response.Value = currencyNamesResponse.Value.CurrencyName;
+        response.Value = currencyNamesResponse.Value?.CurrencyName;
 
         return response;
     }

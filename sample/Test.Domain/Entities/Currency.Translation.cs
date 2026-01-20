@@ -2,7 +2,7 @@ using BiUM.Infrastructure.Common.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace BiUM.Test.Domain.Entities;
+namespace BiApp.Test.Domain.Entities;
 
 [Table("CURRENCY_TRANSLATION", Schema = "dbo")]
 public class CurrencyTranslation : TranslationBaseEntity

@@ -1,9 +1,9 @@
 using AutoMapper;
+using BiApp.Test2.Domain.Entities;
 using BiUM.Specialized.Common.Mapper;
-using BiUM.Test2.Domain.Entities;
 using System.Linq;
 
-namespace BiUM.Test2.Application.Features.Accounts.Queries.GetFwCurrenciesForParameter;
+namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParameter;
 
 public class GetFwAccountsForParameterDto : BaseForValuesDto<Account>
 {

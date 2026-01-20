@@ -1,9 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>$(SolutionName).Contract</AssemblyName>
-    <RootNamespace>$(SolutionName).Contract</RootNamespace>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\BiUM.Contract\BiUM.Contract.csproj" />
   </ItemGroup>

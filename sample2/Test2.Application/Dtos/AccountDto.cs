@@ -1,6 +1,5 @@
 using AutoMapper;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
 using BiUM.Test2.Domain.Entities;
 using System;

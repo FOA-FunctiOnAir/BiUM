@@ -1,5 +1,4 @@
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
 using System;
 

@@ -1,5 +1,4 @@
 using BiApp.Test2.Application.Dtos;
-using BiApp.Test2.Contract.Models;
 using BiApp.Test2.Contract.Models.Rpc;
 using BiApp.Test2.Domain.Entities;
 using BiUM.Contract.Models.Api;

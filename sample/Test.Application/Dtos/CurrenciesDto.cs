@@ -1,4 +1,5 @@
 using AutoMapper;
+using BiApp.Test.Domain.Entities;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Mapping;
 using System;

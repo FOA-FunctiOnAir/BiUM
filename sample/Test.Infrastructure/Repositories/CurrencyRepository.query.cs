@@ -1,4 +1,5 @@
 using BiApp.Test.Application.Dtos;
+using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;

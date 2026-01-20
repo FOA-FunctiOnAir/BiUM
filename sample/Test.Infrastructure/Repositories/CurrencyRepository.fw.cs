@@ -1,5 +1,6 @@
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
+using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;

@@ -1,4 +1,5 @@
 using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
+using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using Microsoft.EntityFrameworkCore;
 using System;

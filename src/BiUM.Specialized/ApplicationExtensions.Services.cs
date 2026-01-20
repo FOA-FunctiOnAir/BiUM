@@ -6,7 +6,6 @@ using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Crud;
 using FluentValidation;
-using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -57,7 +56,7 @@ public static partial class ApplicationExtensions
 
         services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
         services.AddValidatorsFromAssembly(assembly);
-        services.AddMediatR(assembly);
+        services.AddMediatR(config => config.RegisterServicesFromAssembly(assembly));
 
         return services;
     }

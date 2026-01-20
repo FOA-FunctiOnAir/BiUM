@@ -9,8 +9,6 @@ public static partial class ApplicationExtensions
 {
     public static WebApplication UseSpecialized(this WebApplication app)
     {
-        app.MapMagicOnionService();
-
         app.UseStaticFiles();
 
         return app;

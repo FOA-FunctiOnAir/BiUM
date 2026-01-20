@@ -149,6 +149,8 @@ public static partial class ApplicationExtensions
             Version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown"
         }));
 
+        app.MapMagicOnionService();
+
         return app;
     }
 

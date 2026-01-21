@@ -3,7 +3,7 @@ name: Build and Push NuGet Packages
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - .github/workflows/publish.yaml
       - src/**/*
@@ -11,7 +11,7 @@ on:
       - Directory.Packages.props
   pull_request:
     branches:
-      - main
+      - master
     types:
       - opened
       - reopened

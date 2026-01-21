@@ -3,7 +3,7 @@ name: Build Sample2 Application
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - .github/workflows/build-sample2.yaml
       - sample2/**/*
@@ -12,7 +12,7 @@ on:
       - Directory.Packages.props
   pull_request:
     branches:
-      - main
+      - master
     types:
       - opened
       - reopened

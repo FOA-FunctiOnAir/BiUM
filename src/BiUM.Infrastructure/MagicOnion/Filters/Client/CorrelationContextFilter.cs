@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.MagicOnion.Filters.Client;
 
-internal sealed class CorrelationContextMagicOnionClientFilter : IClientFilter
+internal sealed class CorrelationContextFilter : IClientFilter
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICorrelationContextSerializer _correlationContextSerializer;
 
-    public CorrelationContextMagicOnionClientFilter(
+    public CorrelationContextFilter(
         IHttpContextAccessor httpContextAccessor,
         ICorrelationContextAccessor correlationContextAccessor,
         ICorrelationContextSerializer correlationContextSerializer)

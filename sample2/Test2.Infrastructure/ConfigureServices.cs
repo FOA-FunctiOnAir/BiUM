@@ -6,11 +6,10 @@ using BiUM.Infrastructure.MagicOnion.Client;
 using BiUM.Specialized.Database;
 using MagicOnion.Client;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace BiApp.Test2.Infrastructure;
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {
@@ -24,7 +23,7 @@ public static class ConfigureServices
 
         services.AddScoped<IAccountRepository, AccountRepository>();
 
-        services.AddRpcClient<ITestRpcService, RpcServicesClient>("test");
+        services.AddRpcClient<ITestRpcService, RpcServicesClientFactoryProviderWrapper>("test");
 
         return services;
     }
@@ -50,4 +49,4 @@ public static class ConfigureServices
 }
 
 [MagicOnionClientGeneration(typeof(ITestRpcService), Serializer = MagicOnionClientGenerationAttribute.GenerateSerializerType.MemoryPack)]
-public sealed partial class RpcServicesClient : IMagicOnionRpcClient<ITestRpcService>;
+public sealed partial class RpcServicesClientFactoryProviderWrapper : IClientFactoryProviderWrapper<ITestRpcService>;

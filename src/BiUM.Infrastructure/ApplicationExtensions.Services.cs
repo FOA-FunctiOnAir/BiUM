@@ -7,6 +7,7 @@ using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.MagicOnion.Client;
 using BiUM.Infrastructure.MagicOnion.Filters.Client;
+using BiUM.Infrastructure.MagicOnion.Filters.Server;
 using BiUM.Infrastructure.MagicOnion.Serialization;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.Caching.Redis;
@@ -17,6 +18,7 @@ using Grpc.Net.Client;
 using MagicOnion;
 using MagicOnion.Client;
 using MagicOnion.Serialization;
+using MagicOnion.Server;
 using MemoryPack;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
@@ -53,6 +55,10 @@ public static partial class ApplicationExtensions
         builder.Services.Configure<BiAppOptions>(appOptionsSection);
 
         var appOptions = appOptionsSection.Get<BiAppOptions>();
+
+        var isNotProductionLike =
+            builder.Environment.IsDevelopment() ||
+            appOptions is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
 
         builder.Services.Configure<HttpClientsOptions>(builder.Configuration.GetSection(HttpClientsOptions.Name));
         builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
@@ -140,8 +146,7 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddEndpointsApiExplorer();
 
-        if (builder.Environment.IsDevelopment() ||
-            appOptions is not { Environment: "Production" or "Sandbox" })
+        if (isNotProductionLike)
         {
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddSwaggerGen(options =>
@@ -181,15 +186,21 @@ public static partial class ApplicationExtensions
         builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
 
         // Configure MagicOnion Rpc
-        var magicOnionSerializerProvider = MemoryPackWithBrotliMagicOnionSerializerProvider.Create(MemoryPackSerializerOptions.Default, CompressionLevel.Optimal);
+        var magicOnionSerializerProvider = MemoryPackWithBrotliSerializerProvider.Create(MemoryPackSerializerOptions.Default, CompressionLevel.Optimal);
 
         MagicOnionSerializerProvider.Default = magicOnionSerializerProvider;
 
         builder.Services.AddSingleton<IMagicOnionSerializerProvider>(magicOnionSerializerProvider);
 
+        builder.Services.AddSingleton<GlobalApiResponseFilter>();
+
         builder.Services.AddMagicOnion(options =>
         {
             options.MessageSerializer = magicOnionSerializerProvider;
+            options.IsReturnExceptionStackTraceInErrorDetail = isNotProductionLike;
+            options.EnableCurrentContext = true;
+
+            options.GlobalFilters.Add<GlobalApiResponseFilter>();
         });
 
         // Configure Redis
@@ -216,9 +227,9 @@ public static partial class ApplicationExtensions
         return services;
     }
 
-    public static IServiceCollection AddRpcClient<TClient, TClientImpl>(this IServiceCollection services, string serviceKey)
+    public static IServiceCollection AddRpcClient<TClient, TProviderWrapper>(this IServiceCollection services, string serviceKey)
         where TClient : class, IService<TClient>
-        where TClientImpl : class, IMagicOnionRpcClient<TClient>
+        where TProviderWrapper : class, IClientFactoryProviderWrapper<TClient>
     {
         services.TryAddKeyedSingleton(
             serviceKey,
@@ -240,22 +251,22 @@ public static partial class ApplicationExtensions
                 return GrpcChannel.ForAddress(url);
             });
 
-        services.TryAddScoped<CorrelationContextMagicOnionClientFilter>();
-        services.TryAddScoped<ForwardHeadersMagicOnionClientFilter>();
+        services.TryAddScoped<CorrelationContextFilter>();
+        services.TryAddScoped<ForwardHeadersFilter>();
 
-        TClientImpl.TryRegisterProviderFactory();
-        TClientImpl.RegisterMemoryPackFormatters();
+        TProviderWrapper.TryRegisterProviderFactory();
+        TProviderWrapper.RegisterMemoryPackFormatters();
 
         services.AddScoped<TClient>(sp =>
         {
             var channel = sp.GetRequiredKeyedService<GrpcChannel>(serviceKey);
-            var correlationContextFilter = sp.GetRequiredService<CorrelationContextMagicOnionClientFilter>();
-            var forwardHeadersFilter = sp.GetRequiredService<ForwardHeadersMagicOnionClientFilter>();
+            var correlationContextFilter = sp.GetRequiredService<CorrelationContextFilter>();
+            var forwardHeadersFilter = sp.GetRequiredService<ForwardHeadersFilter>();
             var serializerProvider = sp.GetRequiredService<IMagicOnionSerializerProvider>();
 
             var client = MagicOnionClient.Create<TClient>(
                 channel,
-                clientFactoryProvider: TClientImpl.ClientFactoryProvider,
+                clientFactoryProvider: TProviderWrapper.ClientFactoryProvider,
                 serializerProvider: serializerProvider,
                 clientFilters: [forwardHeadersFilter, correlationContextFilter]);
 

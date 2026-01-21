@@ -6,22 +6,24 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection.Middlewares;
+namespace BiUM.Infrastructure.Middlewares;
 
 internal sealed class CorrelationContextExtractorMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ICorrelationContextSerializer _correlationContextSerializer;
+    private readonly ILogger<CorrelationContextExtractorMiddleware> _logger;
 
-    public CorrelationContextExtractorMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-
-    public Task InvokeAsync(
-        HttpContext context,
-        ICorrelationContextAccessor correlationContextAccessor,
+    public CorrelationContextExtractorMiddleware(RequestDelegate next,
         ICorrelationContextSerializer correlationContextSerializer,
         ILogger<CorrelationContextExtractorMiddleware> logger)
+    {
+        _next = next;
+        _correlationContextSerializer = correlationContextSerializer;
+        _logger = logger;
+    }
+
+    public Task InvokeAsync(HttpContext context, ICorrelationContextAccessor correlationContextAccessor)
     {
         var headerValue = context.Request.Headers[HeaderKeys.CorrelationContext].ToString();
 
@@ -34,7 +36,7 @@ internal sealed class CorrelationContextExtractorMiddleware
         {
             var bytes = Convert.FromBase64String(headerValue);
 
-            var correlationContext = correlationContextSerializer.Deserialize(bytes);
+            var correlationContext = _correlationContextSerializer.Deserialize(bytes);
 
             if (correlationContext is not null)
             {
@@ -43,7 +45,7 @@ internal sealed class CorrelationContextExtractorMiddleware
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize CorrelationContext from header");
+            _logger.LogError(ex, "Failed to deserialize CorrelationContext from header");
         }
 
         return _next.Invoke(context);

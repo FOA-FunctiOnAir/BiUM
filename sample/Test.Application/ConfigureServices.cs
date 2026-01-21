@@ -1,7 +1,7 @@
+using BiApp.Test.Application;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace BiApp.Test.Application;
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {

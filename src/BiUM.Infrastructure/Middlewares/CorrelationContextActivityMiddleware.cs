@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection.Middlewares;
+namespace BiUM.Infrastructure.Middlewares;
 
 internal sealed class CorrelationContextActivityMiddleware
 {

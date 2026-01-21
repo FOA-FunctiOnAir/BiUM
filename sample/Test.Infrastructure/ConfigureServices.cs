@@ -3,11 +3,10 @@ using BiApp.Test.Infrastructure.Persistence;
 using BiApp.Test.Infrastructure.Repositories;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace BiApp.Test.Infrastructure;
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {

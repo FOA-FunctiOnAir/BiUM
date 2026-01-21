@@ -1,7 +1,6 @@
 using BiApp.Test2.Infrastructure.Persistence;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace BiApp.Test2.API;
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureServices
 {

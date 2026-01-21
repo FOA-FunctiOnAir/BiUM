@@ -1,11 +1,11 @@
 using BiUM.Core.Common.Configs;
+using BiUM.Infrastructure.Middlewares;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection.Middlewares;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,8 +25,11 @@ public static partial class ApplicationExtensions
 
         var appOptions = appOptionsAccessor?.Value;
 
-        if (app.Environment.IsDevelopment() ||
-            appOptions is not { Environment: "Production" or "Sandbox" })
+        var isNotProductionLike =
+            app.Environment.IsDevelopment() ||
+            appOptions is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+
+        if (isNotProductionLike)
         {
             app.UseSwagger();
 
@@ -41,62 +44,67 @@ public static partial class ApplicationExtensions
 
         var logger = app.Services.GetRequiredService<ILogger<Application>>();
 
-        app.UseExceptionHandler(new ExceptionHandlerOptions
-        {
-            AllowStatusCode404Response = false,
-            CreateScopeForErrors = false,
-            ExceptionHandler = async context =>
+        // 1. Exception Handler for MagicOnion/gRPC requests
+        app.UseWhen(context => context.Request.ContentType == "application/grpc", grpcApp =>
+            grpcApp.UseMiddleware<GrpcGlobalExceptionHandlerMiddleware>());
+
+        // 2. Exception Handler REST/JSON requests
+        app.UseWhen(context => context.Request.ContentType != "application/grpc", restApp =>
+            restApp.UseExceptionHandler(new ExceptionHandlerOptions
             {
-                var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
-
-                if (exceptionHandlerFeature?.Error is null)
+                AllowStatusCode404Response = false,
+                CreateScopeForErrors = false,
+                ExceptionHandler = async context =>
                 {
-                    var problemDetails = new ProblemDetails
+                    var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+
+                    if (exceptionHandlerFeature?.Error is null)
                     {
-                        Type = "unknown",
-                        Title = UnhandledExceptionOccurred,
-                        Status = StatusCodes.Status500InternalServerError,
-                        Detail = UnhandledExceptionOccurredWithNoException
-                    };
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = "unknown",
+                            Title = UnhandledExceptionOccurred,
+                            Status = StatusCodes.Status500InternalServerError,
+                            Detail = UnhandledExceptionOccurredWithNoException
+                        };
 
-                    await Results.Problem(problemDetails).ExecuteAsync(context);
+                        await Results.Problem(problemDetails).ExecuteAsync(context);
 
-                    logger.LogError(UnhandledExceptionOccurredWithNoException);
+                        logger.LogError(UnhandledExceptionOccurredWithNoException);
 
-                    return;
-                }
+                        return;
+                    }
 
-                var exception = exceptionHandlerFeature.Error;
+                    var exception = exceptionHandlerFeature.Error;
 
-                if (app.Environment.IsDevelopment() ||
-                    appOptions is not { Environment: "Production" or "Sandbox" })
-                {
-                    var problemDetails = new ProblemDetails
+                    if (isNotProductionLike)
                     {
-                        Type = exception.ToProblemType(),
-                        Title = exception.Message,
-                        Status = StatusCodes.Status500InternalServerError,
-                        Detail = exception.ToString()
-                    };
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = exception.ToProblemType(),
+                            Title = exception.Message,
+                            Status = StatusCodes.Status500InternalServerError,
+                            Detail = exception.ToString()
+                        };
 
-                    await Results.Problem(problemDetails).ExecuteAsync(context);
-                }
-                else
-                {
-                    var problemDetails = new ProblemDetails
+                        await Results.Problem(problemDetails).ExecuteAsync(context);
+                    }
+                    else
                     {
-                        Type = exception.ToProblemType(),
-                        Title = UnhandledExceptionOccurred,
-                        Status = StatusCodes.Status500InternalServerError,
-                        Detail = exception.Message
-                    };
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = exception.ToProblemType(),
+                            Title = UnhandledExceptionOccurred,
+                            Status = StatusCodes.Status500InternalServerError,
+                            Detail = exception.Message
+                        };
 
-                    await Results.Problem(problemDetails).ExecuteAsync(context);
+                        await Results.Problem(problemDetails).ExecuteAsync(context);
+                    }
+
+                    logger.LogError(exception, UnhandledExceptionOccurred);
                 }
-
-                logger.LogError(exception, UnhandledExceptionOccurred);
-            }
-        });
+            }));
 
         AppDomain.CurrentDomain.UnhandledException +=
             (_, args) =>

@@ -8,7 +8,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection.Middlewares;
+namespace BiUM.Infrastructure.Middlewares;
 
 public class ServiceCallMetricsMiddleware
 {

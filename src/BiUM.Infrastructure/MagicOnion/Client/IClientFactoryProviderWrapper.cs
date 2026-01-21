@@ -3,7 +3,7 @@ using MagicOnion.Client;
 
 namespace BiUM.Infrastructure.MagicOnion.Client;
 
-public interface IMagicOnionRpcClient<T>
+public interface IClientFactoryProviderWrapper<T>
     where T : IService<T>
 {
     static abstract IMagicOnionClientFactoryProvider ClientFactoryProvider { get; }

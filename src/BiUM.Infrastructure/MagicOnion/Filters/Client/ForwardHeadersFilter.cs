@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.MagicOnion.Filters.Client;
 
-internal sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
+internal sealed class ForwardHeadersFilter : IClientFilter
 {
     private static readonly string[] AllowedHeaderKeys =
     [
@@ -29,7 +29,7 @@ internal sealed class ForwardHeadersMagicOnionClientFilter : IClientFilter
 
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ForwardHeadersMagicOnionClientFilter(IHttpContextAccessor httpContextAccessor)
+    public ForwardHeadersFilter(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }

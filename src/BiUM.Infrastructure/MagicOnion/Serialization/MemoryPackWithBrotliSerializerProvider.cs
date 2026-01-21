@@ -9,25 +9,25 @@ using System.Reflection;
 
 namespace BiUM.Infrastructure.MagicOnion.Serialization;
 
-public class MemoryPackWithBrotliMagicOnionSerializerProvider : IMagicOnionSerializerProvider
+public class MemoryPackWithBrotliSerializerProvider : IMagicOnionSerializerProvider
 {
     private readonly MemoryPackSerializerOptions _serializerOptions;
     private readonly CompressionLevel _compressionLevel;
 
-    static MemoryPackWithBrotliMagicOnionSerializerProvider()
+    static MemoryPackWithBrotliSerializerProvider()
     {
         DynamicArgumentTupleFormatter.Register();
     }
 
-    private MemoryPackWithBrotliMagicOnionSerializerProvider(MemoryPackSerializerOptions serializerOptions, CompressionLevel compressionLevel)
+    private MemoryPackWithBrotliSerializerProvider(MemoryPackSerializerOptions serializerOptions, CompressionLevel compressionLevel)
     {
         _serializerOptions = serializerOptions;
         _compressionLevel = compressionLevel;
     }
 
-    public static MemoryPackWithBrotliMagicOnionSerializerProvider Create(MemoryPackSerializerOptions serializerOptions, CompressionLevel compressionLevel)
+    public static MemoryPackWithBrotliSerializerProvider Create(MemoryPackSerializerOptions serializerOptions, CompressionLevel compressionLevel)
     {
-        return new MemoryPackWithBrotliMagicOnionSerializerProvider(serializerOptions, compressionLevel);
+        return new MemoryPackWithBrotliSerializerProvider(serializerOptions, compressionLevel);
     }
 
     public IMagicOnionSerializer Create(MethodType methodType, MethodInfo? methodInfo)
@@ -35,10 +35,10 @@ public class MemoryPackWithBrotliMagicOnionSerializerProvider : IMagicOnionSeria
         return new MagicOnionSerializer(_serializerOptions, _compressionLevel);
     }
 
-    public MemoryPackWithBrotliMagicOnionSerializerProvider WithOptions(MemoryPackSerializerOptions serializerOptions)
+    public MemoryPackWithBrotliSerializerProvider WithOptions(MemoryPackSerializerOptions serializerOptions)
         => new(serializerOptions, _compressionLevel);
 
-    public MemoryPackWithBrotliMagicOnionSerializerProvider WithCompressionLevel(CompressionLevel compressionLevel)
+    public MemoryPackWithBrotliSerializerProvider WithCompressionLevel(CompressionLevel compressionLevel)
         => new(_serializerOptions, compressionLevel);
 
     private class MagicOnionSerializer : IMagicOnionSerializer

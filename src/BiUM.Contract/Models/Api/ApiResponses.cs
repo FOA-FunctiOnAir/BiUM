@@ -91,8 +91,7 @@ public partial class ApiResponse<TType> : ApiResponse
     }
 
     [MemoryPackConstructor]
-    private ApiResponse(TType? value, List<ResponseMessage> responseMessages)
-        : base(responseMessages)
+    protected ApiResponse(TType? value, List<ResponseMessage> responseMessages) : base(responseMessages)
     {
         Value = value;
     }

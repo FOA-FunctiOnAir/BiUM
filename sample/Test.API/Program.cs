@@ -1,6 +1,3 @@
-using BiApp.Test.API;
-using BiApp.Test.Application;
-using BiApp.Test.Infrastructure;
 using BiUM.Core.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;

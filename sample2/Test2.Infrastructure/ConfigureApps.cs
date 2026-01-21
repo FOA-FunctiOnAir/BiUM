@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 
-namespace BiApp.Test2.Infrastructure;
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ConfigureApps
 {

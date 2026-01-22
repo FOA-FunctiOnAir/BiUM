@@ -7,7 +7,7 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddDomainApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddInfrastructureAdditionalServices<IApplicationMarker>(configuration);
+        services.AddApplicationAdditionalServices<IApplicationMarker>(configuration);
 
         return services;
     }

@@ -40,8 +40,8 @@ jobs:
       SOLUTION: "BiUM.slnx"
       BUILD_CONFIG: "Release"
       MAJOR: 1
-      MINOR: 4
-      MINOR_START_RUN: 75
+      MINOR: 5
+      MINOR_START_RUN: 91
 
     steps:
       - name: Checkout Source

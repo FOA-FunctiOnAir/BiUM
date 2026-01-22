@@ -10,7 +10,7 @@ namespace BiUM.Core.Extensions;
 
 public static class ConfigurationExtensions
 {
-    public static void OverrideBiAppLocalServices(this IConfigurationBuilder configurationBuilder)
+    public static void OverrideAppLocalServices(this IConfigurationBuilder configurationBuilder)
     {
         var localServicesPath = Path.Combine(AppContext.BaseDirectory, "services.local");
 
@@ -20,7 +20,7 @@ public static class ConfigurationExtensions
 
             if (!Path.Exists(localServicesPath))
             {
-                Console.WriteLine($"[{nameof(OverrideBiAppLocalServices)}] services.local not found, skipping overrides.");
+                Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] services.local not found, skipping overrides.");
 
                 return;
             }
@@ -34,7 +34,7 @@ public static class ConfigurationExtensions
 
              if (!Path.Exists(localConfigPath))
              {
-                 Console.WriteLine($"[{nameof(OverrideBiAppLocalServices)}] appsettings.Local.json not found, skipping overrides.");
+                 Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] appsettings.Local.json not found, skipping overrides.");
 
                  return;
              }
@@ -50,7 +50,9 @@ public static class ConfigurationExtensions
             return;
         }
 
-        Console.WriteLine($"[{nameof(OverrideBiAppLocalServices)}] found {overrideKeys.Length} services to override: {string.Join(", ", overrideKeys)}");
+        var overrideAllServices = overrideKeys is ["*"];
+
+        Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] found {overrideKeys.Length} services to override: {string.Join(", ", overrideKeys)}");
 
         var localConfigContent = SystemFile.ReadAllText(localConfigPath);
         var localConfig = JsonSerializer.Deserialize<BiAppConfiguration>(localConfigContent);
@@ -60,23 +62,44 @@ public static class ConfigurationExtensions
 
         if (!biGrpcOptionsIsNotNull && !httpClientsOptionsIsNotNull)
         {
-            Console.WriteLine($"[{nameof(OverrideBiAppLocalServices)}] Failed to parse appsettings.Local.json routes.");
+            Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] Failed to parse appsettings.Local.json routes.");
 
             return;
         }
 
         var overrides = new List<KeyValuePair<string, string?>>();
 
-        foreach (var overrideKey in overrideKeys)
+        if (overrideAllServices)
         {
             if (biGrpcOptionsIsNotNull)
             {
-                SetOverride(overrideKey, "BiGrpcOptions", localConfig?.BiGrpcOptions?.Domains!);
+                foreach (var key in localConfig!.BiGrpcOptions!.Domains!.Keys)
+                {
+                    SetOverride(key, "BiGrpcOptions", localConfig?.BiGrpcOptions?.Domains!);
+                }
             }
 
             if (httpClientsOptionsIsNotNull)
             {
-                SetOverride(overrideKey, "HttpClientsOptions", localConfig?.HttpClientsOptions?.Domains!);
+                foreach (var key in localConfig!.HttpClientsOptions!.Domains!.Keys)
+                {
+                    SetOverride(key, "HttpClientsOptions", localConfig?.HttpClientsOptions?.Domains!);
+                }
+            }
+        }
+        else
+        {
+            foreach (var overrideKey in overrideKeys)
+            {
+                if (biGrpcOptionsIsNotNull)
+                {
+                    SetOverride(overrideKey, "BiGrpcOptions", localConfig?.BiGrpcOptions?.Domains!);
+                }
+
+                if (httpClientsOptionsIsNotNull)
+                {
+                    SetOverride(overrideKey, "HttpClientsOptions", localConfig?.HttpClientsOptions?.Domains!);
+                }
             }
         }
 
@@ -98,7 +121,7 @@ public static class ConfigurationExtensions
 
             overrides.Add(new KeyValuePair<string, string?>(key, value));
 
-            Console.WriteLine($"[{nameof(OverrideBiAppLocalServices)}] Overriding {key} -> {value}");
+            Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] Overriding {key} -> {value}");
         }
     }
 

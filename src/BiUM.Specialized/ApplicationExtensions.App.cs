@@ -1,5 +1,6 @@
 using BiUM.Specialized.Database;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Threading.Tasks;
 
@@ -9,6 +10,11 @@ public static partial class ApplicationExtensions
 {
     public static WebApplication UseSpecialized(this WebApplication app)
     {
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseMigrationsEndPoint();
+        }
+
         app.UseStaticFiles();
 
         return app;

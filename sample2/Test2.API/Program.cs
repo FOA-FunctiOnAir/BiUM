@@ -6,14 +6,13 @@ using Microsoft.Extensions.Hosting;
 var builder = WebApplication.CreateBuilder(args);
 
 #if DEBUG
-builder.Configuration.OverrideBiAppLocalServices();
+builder.Configuration.OverrideAppLocalServices();
 #endif
 
-builder.Services.ConfigureCoreServices(typeof(Program).Assembly);
+builder.ConfigureCoreServices();
 builder.ConfigureInfrastructureServices();
 builder.ConfigureSpecializedServices();
 
-builder.Services.AddDomainAPIServices();
 builder.Services.AddDomainApplicationServices(builder.Configuration);
 builder.Services.AddDomainInfrastructureServices(builder.Configuration);
 

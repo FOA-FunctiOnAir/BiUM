@@ -50,6 +50,10 @@ public static partial class Extensions
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<TDbContext>());
         services.AddScoped(typeof(IDbContextInitialiser), typeof(TDbContextInitialiser));
 
+        services.AddDatabaseDeveloperPageExceptionFilter();
+
+        services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+
         return services;
     }
 }

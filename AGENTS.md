@@ -29,7 +29,7 @@ graph TD
 
 ## 2. Technology Stack
 
-- **Framework**: .NET 8
+- **Framework**: .NET 10
 - **ORM**: Entity Framework Core 8 (SQL Server, PostgreSQL, InMemory)
 - **Messaging**: RabbitMQ (via MassTransit/Raw Client)
 - **Logging**: OpenTelemetry (Protocol & Console Exporters)

@@ -72,6 +72,8 @@ public static partial class ConfigureApp
         services.AddScoped(typeof(IBaseBoltDbContextInitialiser), typeof(TDbContextInitialiser));
         services.AddScoped<BoltEntitySaveChangesInterceptor>();
 
+        services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+
         return services;
     }
 }

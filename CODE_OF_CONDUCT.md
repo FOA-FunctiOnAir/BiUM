@@ -20,7 +20,7 @@ This document defines the **Technical Standards and Rules of Engagement** for co
 ## 3. Coding Standards
 
 ### 3.1. C# Guidelines
-- **Framework**: Target **.NET 8**.
+- **Framework**: Target **.NET 10**.
 - **Nullable Reference Types**: Enabled (`<Nullable>enable</Nullable>`).
 - **Async/Await**: Use `async` for all I/O bound operations. Always pass `CancellationToken`.
 - **Naming**:

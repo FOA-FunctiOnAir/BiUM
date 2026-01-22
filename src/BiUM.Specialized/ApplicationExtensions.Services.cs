@@ -50,7 +50,7 @@ public static partial class ApplicationExtensions
         return builder;
     }
 
-    public static IServiceCollection AddInfrastructureAdditionalServices<TMarker>(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApplicationAdditionalServices<TMarker>(this IServiceCollection services, IConfiguration configuration)
     {
         var assembly = typeof(TMarker).Assembly;
 

@@ -1,7 +1,7 @@
 using MemoryPack;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ApplicationExtensions
 {
-    public static IServiceCollection ConfigureCoreServices(this IServiceCollection services, Assembly assembly)
+    public static WebApplicationBuilder ConfigureCoreServices(this WebApplicationBuilder builder)
     {
         var jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -20,13 +20,13 @@ public static partial class ApplicationExtensions
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
 
-        services.AddSingleton(jsonSerializerOptions);
+        builder.Services.AddSingleton(jsonSerializerOptions);
 
         var memoryPackSerializerOptions = MemoryPackSerializerOptions.Default;
 
-        services.AddSingleton(memoryPackSerializerOptions);
+        builder.Services.AddSingleton(memoryPackSerializerOptions);
 
-        services.AddScoped<CancellationTokenSource>(sp =>
+        builder.Services.AddScoped<CancellationTokenSource>(sp =>
         {
             var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
 
@@ -40,6 +40,6 @@ public static partial class ApplicationExtensions
             return CancellationTokenSource.CreateLinkedTokenSource(hostApplicationLifetime.ApplicationStopping);
         });
 
-        return services;
+        return builder;
     }
 }

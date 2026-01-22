@@ -14,6 +14,5 @@ public sealed partial class GetCurrencyResponse : ApiResponse<CurrencyItem>
     [MemoryPackConstructor]
     private GetCurrencyResponse(CurrencyItem? value, List<ResponseMessage> responseMessages) : base(value, responseMessages)
     {
-        Value = value;
     }
 }

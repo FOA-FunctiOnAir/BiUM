@@ -60,7 +60,7 @@ public sealed class TranslationService : ITranslationService
         Exception exception,
         CancellationToken cancellationToken)
     {
-        return await AddMessage(response, code, exception.GetFullMessage(), MessageSeverity.Error, cancellationToken);
+        return await AddMessage(response, code, exception.ToString(), MessageSeverity.Error, cancellationToken);
     }
 
     public async Task<ApiResponse> AddMessage(
@@ -70,7 +70,7 @@ public sealed class TranslationService : ITranslationService
         MessageSeverity severity,
         CancellationToken cancellationToken)
     {
-        return await AddMessage(response, code, exception.GetFullMessage(), severity, cancellationToken);
+        return await AddMessage(response, code, exception.ToString(), severity, cancellationToken);
     }
 
     public async Task<ApiResponse> AddMessage(

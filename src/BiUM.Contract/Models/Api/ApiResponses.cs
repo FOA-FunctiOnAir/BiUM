@@ -2,18 +2,22 @@
 using MemoryPack;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Contract.Models.Api;
 
 [MemoryPackable]
 public partial class ApiResponse
 {
+    [JsonIgnore]
     [MemoryPackInclude]
     protected List<ResponseMessage> ResponseMessages { get; } = [];
 
+    [JsonInclude]
     [MemoryPackIgnore]
     public IReadOnlyList<ResponseMessage> Messages => ResponseMessages;
 
+    [JsonInclude]
     [MemoryPackIgnore]
     public virtual bool Success =>
         ResponseMessages.All(s => s.Severity != MessageSeverity.Error);
@@ -26,6 +30,12 @@ public partial class ApiResponse
     protected ApiResponse(List<ResponseMessage> responseMessages)
     {
         ResponseMessages = responseMessages;
+    }
+
+    [JsonConstructor]
+    protected ApiResponse(IReadOnlyList<ResponseMessage> messages, bool success)
+    {
+        AddMessage(messages);
     }
 
     public void AddMessage(ResponseMessage message)
@@ -43,23 +53,44 @@ public partial class ApiResponse
         ResponseMessages.AddRange(messages);
     }
 
-    public void AddMessage(string message, MessageSeverity? severity)
+    public void AddMessage(ApiResponse response)
+    {
+        ResponseMessages.AddRange(response.ResponseMessages);
+    }
+
+    public void AddMessage(string message)
     {
         ResponseMessages.Add(new()
         {
-            Code = string.Empty,
+            Code = "unknown_error",
             Message = message,
-            Severity = severity ?? MessageSeverity.Error
+            Severity = MessageSeverity.Error
         });
     }
 
-    public void AddMessage(string code, string message, MessageSeverity? severity)
+    public void AddMessage(string message, MessageSeverity severity)
+    {
+        ResponseMessages.Add(new()
+        {
+            Code =
+                severity switch
+                {
+                    MessageSeverity.Warning => "unknown_warning",
+                    MessageSeverity.Error => "unknown_error",
+                    _ => severity.ToString()
+                },
+            Message = message,
+            Severity = severity
+        });
+    }
+
+    public void AddMessage(string code, string message, MessageSeverity severity)
     {
         ResponseMessages.Add(new()
         {
             Code = code,
             Message = message,
-            Severity = severity ?? MessageSeverity.Error
+            Severity = severity
         });
     }
 
@@ -76,22 +107,29 @@ public partial class ApiResponse
 }
 
 [MemoryPackable]
-public partial class ApiResponse<TType> : ApiResponse
+public partial class ApiResponse<TValue> : ApiResponse
 {
+    [JsonInclude]
     [MemoryPackInclude]
-    public TType? Value { get; set; }
+    public TValue? Value { get; set; }
 
     public ApiResponse()
     {
     }
 
-    public ApiResponse(TType? value)
+    public ApiResponse(TValue? value)
     {
         Value = value;
     }
 
     [MemoryPackConstructor]
-    protected ApiResponse(TType? value, List<ResponseMessage> responseMessages) : base(responseMessages)
+    protected ApiResponse(TValue? value, List<ResponseMessage> responseMessages) : base(responseMessages)
+    {
+        Value = value;
+    }
+
+    [JsonConstructor]
+    protected ApiResponse(TValue? value, IReadOnlyList<ResponseMessage> messages, bool success) : base(messages, success)
     {
         Value = value;
     }

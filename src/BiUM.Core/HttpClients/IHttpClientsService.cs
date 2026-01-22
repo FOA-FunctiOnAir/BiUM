@@ -11,9 +11,12 @@ public interface IHttpClientsService
     Task<ApiResponse> CallService(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
         CancellationToken cancellationToken = default);
 
-    Task<ApiResponse<TType>> CallService<TType>(
+    Task<ApiResponse<TResponse>> CallService<TResponse>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         string? q = null,
@@ -21,10 +24,10 @@ public interface IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default);
 
-    Task<ApiResponse<TType>> Get<TType>(
+    Task<ApiResponse<TResponse>> Get<TResponse>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
-        bool? external = false,
+        bool external = false,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -33,12 +36,12 @@ public interface IHttpClientsService
     Task<ApiResponse> Post(
         string url,
         Dictionary<string, dynamic>? parameters = null,
-        bool? external = false,
+        bool external = false,
         CancellationToken cancellationToken = default);
 
-    Task<ApiResponse<TType>> Post<TType>(
+    Task<ApiResponse<TResponse>> Post<TResponse>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
-        bool? external = false,
+        bool external = false,
         CancellationToken cancellationToken = default);
 }

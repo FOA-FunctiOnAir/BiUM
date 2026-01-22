@@ -10,9 +10,9 @@ using System.Security;
 
 namespace BiUM.Infrastructure.MagicOnion;
 
-public static class Helper
+public static class ExceptionExtensions
 {
-    public static StatusCode GetStatusCode(Exception exception)
+    public static StatusCode ToGrpcStatusCode(this Exception exception)
     {
         if (exception is RpcException rpcException)
         {

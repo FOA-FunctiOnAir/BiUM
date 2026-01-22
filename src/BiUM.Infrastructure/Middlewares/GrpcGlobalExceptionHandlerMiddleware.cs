@@ -45,7 +45,7 @@ internal sealed class GrpcGlobalExceptionHandlerMiddleware
                 return;
             }
 
-            var statusCode = Helper.GetStatusCode(ex);
+            var statusCode = ex.ToGrpcStatusCode();
 
             // gRPC errors are conveyed via response Trailers, not in the response body.
             context.Response.StatusCode = 200; // gRPC always returns 200 OK for application-level errors

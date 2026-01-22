@@ -214,7 +214,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 Id = GuidGenerator.New(),
                 Active = true,
                 LastTransactionId = lastTransactionId ?? boltStatus?.LastTransactionId,
-                Error = $"CorrelationId:{lastCorrelationId}, TransactionId:{transactionId}, Message:{ex.GetFullMessage()}"
+                Error = $"CorrelationId:{lastCorrelationId}, TransactionId:{transactionId}, Message:{ex.ToString()}"
             };
 
             _ = _context.Add(newBoltStatus);

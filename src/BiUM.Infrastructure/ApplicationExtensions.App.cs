@@ -1,3 +1,5 @@
+using BiUM.Contract.Enums;
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Configs;
 using BiUM.Infrastructure.Middlewares;
 using HealthChecks.UI.Client;
@@ -5,11 +7,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -58,17 +60,28 @@ public static partial class ApplicationExtensions
                 {
                     var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
 
+                    var jsonSerializerOptions = context.RequestServices.GetService<JsonSerializerOptions>();
+
+                    var response = new ApiResponse();
+
+                    context.Response.ContentType = "application/problem+json";
+
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                    context.Response.Headers["Expires"] = "0";
+                    context.Response.Headers["Pragma"] = "no-cache";
+
                     if (exceptionHandlerFeature?.Error is null)
                     {
-                        var problemDetails = new ProblemDetails
-                        {
-                            Type = "unknown",
-                            Title = UnhandledExceptionOccurred,
-                            Status = StatusCodes.Status500InternalServerError,
-                            Detail = UnhandledExceptionOccurredWithNoException
-                        };
+                        response.AddMessage(
+                            code: "unknown_error",
+                            message: UnhandledExceptionOccurred,
+                            exception: UnhandledExceptionOccurredWithNoException,
+                            severity: MessageSeverity.Error
+                        );
 
-                        await Results.Problem(problemDetails).ExecuteAsync(context);
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+                        await context.Response.WriteAsJsonAsync(response, jsonSerializerOptions, context.RequestAborted);
 
                         logger.LogError(UnhandledExceptionOccurredWithNoException);
 
@@ -79,28 +92,26 @@ public static partial class ApplicationExtensions
 
                     if (isNotProductionLike)
                     {
-                        var problemDetails = new ProblemDetails
-                        {
-                            Type = exception.ToProblemType(),
-                            Title = exception.Message,
-                            Status = StatusCodes.Status500InternalServerError,
-                            Detail = exception.ToString()
-                        };
-
-                        await Results.Problem(problemDetails).ExecuteAsync(context);
+                        response.AddMessage(
+                            code: exception.ToErrorCode(),
+                            message: exception.Message,
+                            exception: exception.ToString(),
+                            severity: MessageSeverity.Error
+                        );
                     }
                     else
                     {
-                        var problemDetails = new ProblemDetails
-                        {
-                            Type = exception.ToProblemType(),
-                            Title = UnhandledExceptionOccurred,
-                            Status = StatusCodes.Status500InternalServerError,
-                            Detail = exception.Message
-                        };
-
-                        await Results.Problem(problemDetails).ExecuteAsync(context);
+                        response.AddMessage(
+                            code: exception.ToErrorCode(),
+                            message: UnhandledExceptionOccurred,
+                            exception: exception.Message,
+                            severity: MessageSeverity.Error
+                        );
                     }
+
+                    context.Response.StatusCode = exception.ToStatusCode();
+
+                    await context.Response.WriteAsJsonAsync(response, jsonSerializerOptions, context.RequestAborted);
 
                     logger.LogError(exception, UnhandledExceptionOccurred);
                 }
@@ -160,18 +171,6 @@ public static partial class ApplicationExtensions
         app.MapMagicOnionService();
 
         return app;
-    }
-
-    private static string ToProblemType(this Exception exception)
-    {
-        var type = exception.GetType().Name;
-
-        if (type.EndsWith(nameof(Exception), StringComparison.Ordinal))
-        {
-            type = type.Remove(type.Length - nameof(Exception).Length);
-        }
-
-        return type.ToSnakeCase();
     }
 
     private sealed class Application;

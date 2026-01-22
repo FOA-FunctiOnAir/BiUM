@@ -1,29 +1,18 @@
-using System.Text;
-
 namespace System;
 
 public static partial class Extensions
 {
-    public static string GetFullMessage(this Exception exception, int maxLevels = 4)
+    private const string UnknownErrorCode = "unknown_error";
+
+    public static string ToErrorCode(this Exception exception)
     {
-        var sb = new StringBuilder();
+        var type = exception.GetType().Name;
 
-        var level = 0;
-
-        var currentException = exception;
-
-        while (currentException is not null && level < 4)
+        if (type.EndsWith(nameof(Exception), StringComparison.Ordinal))
         {
-            sb.AppendLine($"[Level {level}] {currentException.GetType().FullName}");
-            sb.AppendLine($"Message: {currentException.Message}");
-            sb.AppendLine($"StackTrace: {currentException.StackTrace}");
-            sb.AppendLine(new string('-', 3));
-
-            currentException = currentException.InnerException;
-
-            level++;
+            type = type.Remove(type.Length - nameof(Exception).Length);
         }
 
-        return sb.ToString();
+        return string.IsNullOrWhiteSpace(type) ? UnknownErrorCode : type.ToSnakeCase();
     }
 }

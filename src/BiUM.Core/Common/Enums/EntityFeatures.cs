@@ -14,16 +14,19 @@ public enum EntityFeatures
     Save = 50, // Controller, Command, Repository
     Delete = 51, // Controller, Command, Repository
     UpdateBolt = 52, // Controller, Command, Repository
+    UpdatePartial = 53, // Controller, Command, Repository
 
     SaveCommand = 60,  // Command, Repository
     DeleteCommand = 61,  // Command, Repository
     UpdateBoltCommand = 62,  // Command, Repository
+    UpdatePartialCommand = 63,  // Command, Repository
 
     EntityCommands = 69,  // All Commands, All Repository
 
     SaveRepository = 70, // Repository
     DeleteRepository = 71, // Repository
     UpdateBoltRepository = 72, // Repository
+    UpdatePartialRepository = 73, // Repository
 
     EntityRepositories = 79, // All Repository
 

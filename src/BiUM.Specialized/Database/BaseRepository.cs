@@ -8,6 +8,7 @@ using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -20,13 +21,14 @@ public partial class BaseRepository : IBaseRepository
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IDbContext _baseContext;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
 
-    public readonly ICorrelationContextProvider _correlationContextProvider;
-    public readonly CorrelationContext _correlationContext;
-    public readonly ITranslationService _translationService;
-    public readonly IMapper _mapper;
+    public readonly CorrelationContext CorrelationContext;
+    public readonly ITranslationService TranslationService;
+    public readonly ILogger<BaseRepository> Logger;
+    public readonly IMapper Mapper;
 
-    public readonly BiAppOptions _biAppOptions;
+    public readonly BiAppOptions BiAppOptions;
 
     public BaseRepository(IServiceProvider serviceProvider, IDbContext baseContext)
     {
@@ -34,12 +36,13 @@ public partial class BaseRepository : IBaseRepository
         _serviceProvider = serviceProvider;
 
         _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
-        _translationService = _serviceProvider.GetRequiredService<ITranslationService>();
-        _mapper = _serviceProvider.GetRequiredService<IMapper>();
+        TranslationService = _serviceProvider.GetRequiredService<ITranslationService>();
+        Logger = _serviceProvider.GetRequiredService<ILogger<BaseRepository>>();
+        Mapper = _serviceProvider.GetRequiredService<IMapper>();
 
-        _biAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
+        BiAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
 
-        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        CorrelationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     }
 
     public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken)
@@ -66,7 +69,7 @@ public partial class BaseRepository : IBaseRepository
             {
                 var applicationTranslation = translation.ToTranslationEntity<TTranslationBaseEntity>(recordId, columnName);
 
-                dbSetTranslationEntity.Add(applicationTranslation);
+                _ = dbSetTranslationEntity.Add(applicationTranslation);
             }
             else if (translation._rowStatus == RowStatuses.Edited)
             {
@@ -76,7 +79,7 @@ public partial class BaseRepository : IBaseRepository
                 {
                     applicationTranslation.Translation = translation.Translation;
 
-                    dbSetTranslationEntity.Update(applicationTranslation);
+                    _ = dbSetTranslationEntity.Update(applicationTranslation);
                 }
             }
             else if (translation._rowStatus == RowStatuses.Deleted)
@@ -85,7 +88,7 @@ public partial class BaseRepository : IBaseRepository
 
                 if (applicationTranslation is not null)
                 {
-                    dbSetTranslationEntity.Remove(applicationTranslation);
+                    _ = dbSetTranslationEntity.Remove(applicationTranslation);
                 }
             }
         }

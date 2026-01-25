@@ -14,7 +14,7 @@ public partial class BaseRepository : IBaseRepository
         string code,
         CancellationToken cancellationToken)
     {
-        return _translationService.AddMessage(response, code, string.Empty, MessageSeverity.Error, cancellationToken);
+        return TranslationService.AddMessage(response, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
     public virtual Task<ApiResponse> AddMessage(
@@ -23,7 +23,7 @@ public partial class BaseRepository : IBaseRepository
         MessageSeverity severity,
         CancellationToken cancellationToken)
     {
-        return _translationService.AddMessage(response, code, string.Empty, severity, cancellationToken);
+        return TranslationService.AddMessage(response, code, string.Empty, severity, cancellationToken);
     }
 
     public virtual Task<ApiResponse> AddMessage(
@@ -32,7 +32,7 @@ public partial class BaseRepository : IBaseRepository
         Exception exception,
         CancellationToken cancellationToken)
     {
-        return _translationService.AddMessage(response, code, exception, MessageSeverity.Error, cancellationToken);
+        return TranslationService.AddMessage(response, code, exception, MessageSeverity.Error, cancellationToken);
     }
 
     public virtual Task<ApiResponse> AddMessage(
@@ -42,7 +42,7 @@ public partial class BaseRepository : IBaseRepository
         MessageSeverity severity,
         CancellationToken cancellationToken)
     {
-        return _translationService.AddMessage(response, code, exception, severity, cancellationToken);
+        return TranslationService.AddMessage(response, code, exception, severity, cancellationToken);
     }
 
     public virtual Task<ApiResponse> AddMessage(
@@ -52,6 +52,6 @@ public partial class BaseRepository : IBaseRepository
         MessageSeverity severity,
         CancellationToken cancellationToken)
     {
-        return _translationService.AddMessage(response, code, exception, severity, cancellationToken);
+        return TranslationService.AddMessage(response, code, exception, severity, cancellationToken);
     }
 }

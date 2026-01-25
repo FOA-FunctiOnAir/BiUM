@@ -75,8 +75,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         SaveChangesCompletedEventData eventData,
         int result)
     {
-        PublishEntityEventsAsync().GetAwaiter().GetResult();
-        PublishAuditLogEventsAsync().GetAwaiter().GetResult();
+        _ = PublishEntityEventsAsync();
+        _ = PublishAuditLogEventsAsync();
 
         return base.SavedChanges(eventData, result);
     }

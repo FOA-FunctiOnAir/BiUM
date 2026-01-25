@@ -21,13 +21,13 @@ public partial class AccountRepository
         CancellationToken cancellationToken)
     {
         var currencies = await _context.Accounts
-            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
+            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(c =>
                 string.IsNullOrEmpty(q) ||
                 string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
             )
-            .ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(_mapper, pageStart, pageSize, cancellationToken);
+            .ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
 
         return currencies;
     }
@@ -37,9 +37,9 @@ public partial class AccountRepository
         var returnObject = new ApiResponse<IList<GetFwAccountsForNamesDto>>();
 
         var currencies = await _context.Accounts
-            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == _correlationContext.LanguageId))
+            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(m => ids != null && ids.Contains(m.Id))
-            .ToIListAsync<Account, GetFwAccountsForNamesDto>(_mapper, cancellationToken);
+            .ToIListAsync<Account, GetFwAccountsForNamesDto>(Mapper, cancellationToken);
 
         returnObject.Value = currencies;
 

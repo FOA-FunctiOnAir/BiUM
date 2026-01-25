@@ -312,8 +312,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 }
 
                 dynamic handler = scopedServiceProvider.GetRequiredService(handlerType);
+                dynamic typedMessage = message;
 
-                await handler.HandleAsync(message, scopeCancellationToken);
+                await handler.HandleAsync(typedMessage, scopeCancellationToken);
 
                 await channel.BasicAckAsync(args.DeliveryTag, multiple: false, cancellationToken: scopeCancellationToken);
             }

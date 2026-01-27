@@ -13,6 +13,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -292,7 +293,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
                 var message =
                     await _serializer.DeserializeAsync(args.Body.ToArray(), eventType, scopeCancellationToken) ??
-                    throw new InvalidOperationException("Deserialized message is null");
+                    throw new SerializationException("Deserialized message is null");
 
                 var correlationContextHeader = args.BasicProperties.Headers?[HeaderKeys.CorrelationContext];
 

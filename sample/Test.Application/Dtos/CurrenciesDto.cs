@@ -11,11 +11,11 @@ public class CurrenciesDto : BaseDto, IMapFrom<Currency>
 {
     public Guid Type { get; set; }
 
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
-    public string Code { get; set; }
+    public required string Code { get; set; }
 
-    public string CoinCode { get; set; }
+    public required string CoinCode { get; set; }
 
     public int GroupPart { get; set; }
 

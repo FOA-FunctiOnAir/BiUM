@@ -8,5 +8,5 @@ public record SaveAccountCommand : BaseCommandDto
 {
     public required IReadOnlyList<EntityTranslationDto> NameTr { get; set; }
 
-    public string Code { get; set; }
+    public required string Code { get; set; }
 }

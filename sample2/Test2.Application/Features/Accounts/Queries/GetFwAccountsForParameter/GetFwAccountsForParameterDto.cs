@@ -9,7 +9,7 @@ public class GetFwAccountsForParameterDto : BaseForValuesDto<Account>
 {
     public string? Code { get; set; }
 
-    public void Mapping(Profile profile)
+    public static void Mapping(Profile profile)
     {
         profile.CreateMap<Account, GetFwAccountsForParameterDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.AccountTranslations.GetColumnTranslation(nameof(res.Name))));

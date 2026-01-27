@@ -29,7 +29,7 @@ public class CacheItem<T>
 #pragma warning disable CA1000
     public static CacheItem<T> Null { get; } = new(default, true);
     public static CacheItem<T> NoValue { get; } = new(default, false);
-#pragma  warning restore CA1000
+#pragma warning restore CA1000
 
     private bool _isNull;
     public bool IsNull

@@ -5,6 +5,7 @@
     <File Path="AGENTS.md" />
     <File Path="CODE_OF_CONDUCT.md" />
     <File Path="Directory.Build.props" />
+    <File Path="nuget.config" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Solution Items/.github/" />

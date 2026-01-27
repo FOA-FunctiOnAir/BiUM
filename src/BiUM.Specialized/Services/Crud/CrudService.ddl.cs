@@ -14,7 +14,7 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
-    private string GenerateCreateTablePgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
+    private static string GenerateCreateTablePgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
     {
         var schema = ResolveSchema(crud.TenantId);
 
@@ -56,7 +56,7 @@ public partial class CrudService
         return sb.ToString();
     }
 
-    private string GenerateDiffPgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
+    private static string GenerateDiffPgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
     {
         var schema = ResolveSchema(crud.TenantId);
 
@@ -96,9 +96,9 @@ public partial class CrudService
         return sb.ToString();
     }
 
-    private string ToPgSqlType(DomainCrudVersionColumn c)
+    private static string ToPgSqlType(DomainCrudVersionColumn c)
     {
-        var UseTimeZoneInTimestamp = false;
+        var useTimeZoneInTimestamp = false;
 
         if (c.DataTypeId == Ids.DataType.String)
         {
@@ -110,7 +110,7 @@ public partial class CrudService
         if (c.DataTypeId == Ids.DataType.Integer) return "integer";
         if (c.DataTypeId == Ids.DataType.Decimal) return "numeric(18,2)";
         if (c.DataTypeId == Ids.DataType.Boolean) return "boolean";
-        if (c.DataTypeId == Ids.DataType.DateTime) return UseTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
+        if (c.DataTypeId == Ids.DataType.DateTime) return useTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
         if (c.DataTypeId == Ids.DataType.DateOnly) return "date";
         if (c.DataTypeId == Ids.DataType.TimeOnly) return "time without time zone";
         if (c.DataTypeId == Ids.DataType.Object) return "jsonb";
@@ -120,7 +120,7 @@ public partial class CrudService
 
     private static string Q(string ident) => $"\"{ident.Replace("\"", "\"\"")}\"";
 
-    private string GenerateCreateTableMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
+    private static string GenerateCreateTableMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
     {
         var schema = ResolveSchema(crud.TenantId);
 
@@ -164,7 +164,7 @@ public partial class CrudService
         return sb.ToString();
     }
 
-    private string GenerateDiffMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
+    private static string GenerateDiffMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
     {
         var schema = ResolveSchema(crud.TenantId);
 
@@ -281,7 +281,7 @@ public partial class CrudService
 
     public static string GenUuidSqlDefault(string db) => db == "PostgreSQL" ? "gen_random_uuid()" : "NEWID()";
 
-    private string ResolveSchema(Guid tenantId)
+    private static string ResolveSchema(Guid tenantId)
     {
         var compact = tenantId.ToString("N");
         var shorty = compact[..16];
@@ -289,11 +289,11 @@ public partial class CrudService
         return $"t_{shorty}";
     }
 
-    private string GenerateEnsureSchemaPgSql(string schema) => $"CREATE SCHEMA IF NOT EXISTS {Q(schema)};";
+    private static string GenerateEnsureSchemaPgSql(string schema) => $"CREATE SCHEMA IF NOT EXISTS {Q(schema)};";
 
-    private string GenerateEnsurePgcryptoPgSql() => "CREATE EXTENSION IF NOT EXISTS \"pgcrypto\";";
+    private static string GenerateEnsurePgcryptoPgSql() => "CREATE EXTENSION IF NOT EXISTS \"pgcrypto\";";
 
-    private string GenerateEnsureSchemaMsSql(string schema)
+    private static string GenerateEnsureSchemaMsSql(string schema)
     {
         var s = Safe(schema);
 
@@ -327,7 +327,7 @@ END;
         return Guid.TryParse(v.ToString(), out guid);
     }
 
-    public static object? NormalizeValue(Guid dataTypeId, object? value, string db)
+    private static object? NormalizeValue(Guid dataTypeId, object? value, string db)
     {
         if (value is null) return null;
 
@@ -388,9 +388,9 @@ END;
 
     private async Task<DomainCrudVersion> GetVersionByCodeAsync(string code, CancellationToken ct)
     {
-        var version = await _baseContext.DomainCrudVersions
+        var version = await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
-            .Where(x => _baseContext.DomainCruds.Any(dc => dc.Id == x.CrudId && dc.Code == code))
+            .Where(x => DbContext.DomainCruds.Any(dc => dc.Id == x.CrudId && dc.Code == code))
             .OrderByDescending(x => x.Version)
             .FirstOrDefaultAsync(ct);
 
@@ -427,11 +427,11 @@ END;
         void AddParam(object? v) { paramNames.Add($"@p{p}"); paramValues.Add(v); p++; }
 
         AddParam(newId);
-        AddParam(_correlationContext.CorrelationId);
-        AddParam(_correlationContext.TenantId);
+        AddParam(CorrelationContext.CorrelationId);
+        AddParam(CorrelationContext.TenantId);
         AddParam(true);
         AddParam(false);
-        AddParam(_correlationContext.User?.Id);
+        AddParam(CorrelationContext.User?.Id);
         AddParam(false);
 
         valSql.Append($"{paramNames[0]},{paramNames[1]},{paramNames[2]},{paramNames[3]},{paramNames[4]},{paramNames[5]},{NowDateSql(dbType)},{NowTimeSql(dbType)},{paramNames[6]}");
@@ -471,7 +471,7 @@ END;
         var parms = new List<object?>
         {
             id,
-            _correlationContext.User?.Id
+            CorrelationContext.User?.Id
         };
         var p = 2;
 

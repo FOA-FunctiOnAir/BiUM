@@ -32,8 +32,6 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
 
     public async ValueTask<RabbitMQPoolChannel> GetChannelAsync()
     {
-        var provideChannel = false;
-
         lock (_channelCountLock)
         {
             if (_channelCount < _capacity)

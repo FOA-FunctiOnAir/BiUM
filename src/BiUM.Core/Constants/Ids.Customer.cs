@@ -9,7 +9,7 @@ public partial class Ids
     {
         public static class EmptyCustomer
         {
-            public static string Identity = "11111111111";
+            public const string Identity = "11111111111";
         }
 
         public static class System

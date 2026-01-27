@@ -13,12 +13,12 @@ public partial class CrudService
 {
     private async Task<int> ExecuteSqlAsync(string sql, IList<object?> parameters, CancellationToken ct)
     {
-        var conn = _baseContext.Database.GetDbConnection();
+        var conn = DbContext.Database.GetDbConnection();
         var shouldClose = false;
 
         if (conn.State != ConnectionState.Open)
         {
-            await _baseContext.Database.OpenConnectionAsync(ct);
+            await DbContext.Database.OpenConnectionAsync(ct);
             shouldClose = true;
         }
 
@@ -37,19 +37,19 @@ public partial class CrudService
         {
             if (shouldClose)
             {
-                await _baseContext.Database.CloseConnectionAsync();
+                await DbContext.Database.CloseConnectionAsync();
             }
         }
     }
 
     private async Task<long> QueryScalarLongAsync(string sql, object?[] parameters, CancellationToken ct)
     {
-        var conn = _baseContext.Database.GetDbConnection();
+        var conn = DbContext.Database.GetDbConnection();
         var shouldClose = false;
 
         if (conn.State != ConnectionState.Open)
         {
-            await _baseContext.Database.OpenConnectionAsync(ct);
+            await DbContext.Database.OpenConnectionAsync(ct);
             shouldClose = true;
         }
 
@@ -68,7 +68,7 @@ public partial class CrudService
         {
             if (shouldClose)
             {
-                await _baseContext.Database.CloseConnectionAsync();
+                await DbContext.Database.CloseConnectionAsync();
             }
         }
     }
@@ -82,12 +82,12 @@ public partial class CrudService
 
     private async Task<List<IDictionary<string, object?>>> QueryRowsAsync(string sql, object?[] parameters, CancellationToken ct)
     {
-        var conn = _baseContext.Database.GetDbConnection();
+        var conn = DbContext.Database.GetDbConnection();
         var shouldClose = false;
 
         if (conn.State != ConnectionState.Open)
         {
-            await _baseContext.Database.OpenConnectionAsync(ct);
+            await DbContext.Database.OpenConnectionAsync(ct);
             shouldClose = true;
         }
 
@@ -122,7 +122,7 @@ public partial class CrudService
         {
             if (shouldClose)
             {
-                await _baseContext.Database.CloseConnectionAsync();
+                await DbContext.Database.CloseConnectionAsync();
             }
         }
     }

@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.MagicOnion.Filters.Server;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1019: Define accessors for attribute arguments", Justification = "Dependencies are injected via constructor")]
 public class GlobalApiResponseFilter : MagicOnionFilterAttribute
 {
     private const string UnhandledExceptionOccurred = "An unhandled exception occurred";

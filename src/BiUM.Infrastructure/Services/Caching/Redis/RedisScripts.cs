@@ -1,10 +1,13 @@
+namespace BiUM.Infrastructure.Services.Caching.Redis;
+
 using StackExchange.Redis;
+
 public static class RedisScripts
 {
     public static string RemoveIfEqualScript { get; } = @"
         local key = KEYS[1]
         local value = ARGV[1]
-        
+
         if redis.call('get', key) == value then
             return redis.call('del', key)
         else

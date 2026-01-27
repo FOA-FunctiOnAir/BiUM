@@ -9,8 +9,8 @@ public record SaveDomainCrudCommand : BaseCommandDto
 {
     public Guid MicroserviceId { get; set; }
     public IReadOnlyList<BaseEntityTranslationDto>? NameTr { get; set; }
-    public string? Code { get; set; }
-    public string? TableName { get; set; }
+    public required string Code { get; set; }
+    public required string TableName { get; set; }
     public IList<SaveDomainCrudCommandColumn>? DomainCrudColumns { get; set; }
 }
 
@@ -26,8 +26,8 @@ public class SaveDomainCrudCommandColumn
 {
     public Guid Id { get; set; }
     public Guid CrudId { get; set; }
-    public string? PropertyName { get; set; }
-    public string? ColumnName { get; set; }
+    public required string PropertyName { get; set; }
+    public required string ColumnName { get; set; }
     public Guid FieldId { get; set; }
     public Guid DataTypeId { get; set; }
     public int? MaxLength { get; set; }

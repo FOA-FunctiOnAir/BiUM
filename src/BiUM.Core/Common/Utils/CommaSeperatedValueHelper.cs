@@ -69,17 +69,17 @@ public static class CommaSeperatedValueHelper
     {
         var parts = Split(text);
 
-        return parts is null
-            ? null
-            : (IList<T>?)(parts.All(isParsable)
+        return parts.Count == 0
+            ? Array.Empty<T>()
+            : (IList<T>)(parts.All(isParsable)
                 ? parts.Select(parse).ToArray()
-                : null);
+                : []);
     }
 
     private static IList<string> Split(string text)
     {
         return string.IsNullOrWhiteSpace(text)
-            ? null
+            ? Array.Empty<string>()
             : (IList<string>)text.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 

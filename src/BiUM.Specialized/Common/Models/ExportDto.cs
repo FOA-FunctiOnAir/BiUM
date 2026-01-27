@@ -2,7 +2,7 @@ namespace BiUM.Specialized.Common.Models;
 
 public class ExportDto
 {
-    public string Name { get; set; }
-    public string Content { get; set; }
-    public string MimeType { get; set; }
+    public required string Name { get; set; }
+    public required string Content { get; set; }
+    public required string MimeType { get; set; }
 }

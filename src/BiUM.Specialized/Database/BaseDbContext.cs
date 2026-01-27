@@ -9,8 +9,8 @@ public class BaseDbContext : DbContext, IDbContext
 {
     private bool _hardDeleteEnabled = false;
 
-    private readonly EntitySaveChangesInterceptor _entitySaveChangesInterceptor;
-    private readonly BoltEntitySaveChangesInterceptor _boltEntitySaveChangesInterceptor;
+    private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
+    private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
 
     public BaseDbContext(
         DbContextOptions options,

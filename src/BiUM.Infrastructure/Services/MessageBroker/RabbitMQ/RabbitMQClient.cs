@@ -290,7 +290,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             {
                 _logger.LogInformation("Event received {EventType}", eventType.Name);
 
-                var message = await _serializer.DeserializeAsync(args.Body.ToArray(), eventType, scopeCancellationToken);
+                var message =
+                    await _serializer.DeserializeAsync(args.Body.ToArray(), eventType, scopeCancellationToken) ??
+                    throw new InvalidOperationException("Deserialized message is null");
 
                 var correlationContextHeader = args.BasicProperties.Headers?[HeaderKeys.CorrelationContext];
 

@@ -6,9 +6,9 @@ public class BoltOptions
 
     public bool Enable { get; set; }
 
-    public string Branch { get; set; }
+    public required string Branch { get; set; }
 
-    public string Server { get; set; }
+    public required string Server { get; set; }
 
-    public string ConnectionString { get; set; }
+    public required string ConnectionString { get; set; }
 }

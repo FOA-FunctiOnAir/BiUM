@@ -22,41 +22,58 @@ public class CrudController : ApiControllerBase
     }
 
     [HttpPost("{code}")]
-    public async Task<ApiResponse> SaveAsync(string code, [FromBody] JsonElement body, CancellationToken cancellationToken)
+    public Task<ApiResponse> SaveAsync(
+        string code,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
     {
-        var response = await _crudService.SaveAsync(code, body.ToDictionary(), cancellationToken);
-
-        return response;
+        return _crudService.SaveAsync(code, body.ToDictionary(), cancellationToken);
     }
 
     [HttpDelete("{code}")]
-    public async Task<ApiResponse> DeleteAsync(string code, [FromBody] DeleteCrudCommand command, CancellationToken cancellationToken)
+    public Task<ApiResponse> DeleteAsync(
+        string code,
+        [FromBody] DeleteCrudCommand command,
+        CancellationToken cancellationToken)
     {
-        return await _crudService.DeleteAsync(code, command.Id!.Value, false, cancellationToken);
+        return _crudService.DeleteAsync(code, command.Id!.Value, false, cancellationToken);
     }
 
     [HttpGet("{code}")]
-    public async Task<ApiResponse<IDictionary<string, object?>>> GetAsync(string code, string id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> GetAsync(
+        [FromRoute] string code,
+        [FromQuery] Dictionary<string, string>? query,
+        CancellationToken cancellationToken)
+    {
+        query ??= new Dictionary<string, string>();
+
+        if (query.TryGetValue("id", out var id) && !string.IsNullOrEmpty(id))
+        {
+            return await GetAsync(code, id, cancellationToken);
+        }
+
+        return await GetListAsync(code, query, cancellationToken);
+    }
+
+    private async Task<ApiResponse<IDictionary<string, object?>>> GetAsync(
+        [FromRoute] string code,
+        [FromQuery] string id,
+        CancellationToken cancellationToken)
     {
         var response = new ApiResponse<IDictionary<string, object?>>();
 
-        Guid.TryParse(id, out var guidId);
+        Guid guid = Guid.TryParse(id, out guid) ? guid : Guid.Empty;
 
-        var responseGet = await _crudService.GetAsync(code, guidId, cancellationToken);
-
-        response.Value = responseGet;
+        response.Value = await _crudService.GetAsync(code, guid, cancellationToken);
 
         return response;
     }
 
-    [HttpGet("{code}")]
-    public async Task<PaginatedApiResponse<IDictionary<string, object?>>> GetListAsync(
-        string code,
+    private Task<PaginatedApiResponse<IDictionary<string, object?>>> GetListAsync(
+        [FromRoute] string code,
         [FromQuery] Dictionary<string, string> query,
         CancellationToken cancellationToken)
     {
-        var response = await _crudService.GetListAsync(code, query, cancellationToken);
-
-        return response;
+        return _crudService.GetListAsync(code, query, cancellationToken);
     }
 }

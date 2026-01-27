@@ -3,7 +3,7 @@ using System;
 
 namespace BiUM.Core.Constants;
 
-public partial class Ids
+public static partial class Ids
 {
     public static class Application
     {

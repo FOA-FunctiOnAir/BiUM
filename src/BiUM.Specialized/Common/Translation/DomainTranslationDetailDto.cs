@@ -7,5 +7,5 @@ namespace BiUM.Specialized.Common.Translation;
 public class DomainTranslationDetailDto : BaseDto, IMapFrom<DomainTranslationDetail>
 {
     public Guid LanguageId { get; set; }
-    public string Text { get; set; }
+    public required string Text { get; set; }
 }

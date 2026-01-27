@@ -25,8 +25,11 @@ public class CacheItem<T>
     public T? Value { get; set; }
     public TimeSpan? ExpireIn { get; set; }
 
-    public static CacheItem<T> Null { get; } = new CacheItem<T>(default, true);
-    public static CacheItem<T> NoValue { get; } = new CacheItem<T>(default, false);
+
+#pragma warning disable CA1000
+    public static CacheItem<T> Null { get; } = new(default, true);
+    public static CacheItem<T> NoValue { get; } = new(default, false);
+#pragma  warning restore CA1000
 
     private bool _isNull;
     public bool IsNull
@@ -34,5 +37,4 @@ public class CacheItem<T>
         get { return Value is null; }
         set { _isNull = Value is null; }
     }
-
 }

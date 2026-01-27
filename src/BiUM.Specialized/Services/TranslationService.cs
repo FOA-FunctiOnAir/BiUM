@@ -86,7 +86,8 @@ public sealed class TranslationService : ITranslationService
         {
             response.AddMessage(new ResponseMessage
             {
-                Code = $"{_biAppOptions.Domain}.{code}",
+                Code = "translation_not_found",
+                Message = $"Translation not found for code: {code}",
                 Exception = exception,
                 Severity = severity
             });

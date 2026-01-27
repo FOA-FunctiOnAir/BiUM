@@ -4,14 +4,20 @@ using System.Threading.Tasks;
 
 namespace BiUM.Core.Common.Utils;
 
-public class AsyncLock
+public class AsyncLock : IDisposable
 {
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public async ValueTask<AsyncLockReleaser> LockAsync(CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         return new AsyncLockReleaser(_semaphore);
+    }
+
+    public void Dispose()
+    {
+        _semaphore.Dispose();
     }
 
     public struct AsyncLockReleaser : IDisposable

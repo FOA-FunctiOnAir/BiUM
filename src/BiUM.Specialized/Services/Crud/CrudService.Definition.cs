@@ -24,7 +24,7 @@ public partial class CrudService
     {
         var response = new ApiResponse();
 
-        var domainCrud = await _baseContext.DomainCruds
+        var domainCrud = await DbContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -84,7 +84,7 @@ public partial class CrudService
             return response;
         }
 
-        var lastDomainCrudVersion = await _baseContext.DomainCrudVersions
+        var lastDomainCrudVersion = await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
             .OrderByDescending(s => s.Version)
             .FirstOrDefaultAsync(x => x.CrudId == domainCrud.Id, cancellationToken);
@@ -160,7 +160,7 @@ public partial class CrudService
 
             if (!string.IsNullOrWhiteSpace(ddl))
             {
-                await _baseContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
+                await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
             }
 
             foreach (var col in newDomainCrudVersion.DomainCrudVersionColumns!)
@@ -168,9 +168,9 @@ public partial class CrudService
                 col.CrudVersionId = newDomainCrudVersion.Id;
             }
 
-            _baseContext.DomainCrudVersions.Add(newDomainCrudVersion);
+            DbContext.DomainCrudVersions.Add(newDomainCrudVersion);
 
-            await _baseContext.SaveChangesAsync(cancellationToken);
+            await DbContext.SaveChangesAsync(cancellationToken);
 
             //await tx.CommitAsync(cancellationToken);
         }
@@ -195,15 +195,15 @@ public partial class CrudService
             return response;
         }
 
-        var domainCrud = await _baseContext.DomainCruds.FirstOrDefaultAsync(f => f.Id == command.Id, cancellationToken);
+        var domainCrud = await DbContext.DomainCruds.FirstOrDefaultAsync(f => f.Id == command.Id, cancellationToken);
 
         if (domainCrud is null)
         {
             domainCrud = new DomainCrud
             {
-                TenantId = _correlationContext.TenantId!.Value,
+                TenantId = CorrelationContext.TenantId!.Value,
                 MicroserviceId = command.MicroserviceId,
-                Name = command.NameTr.ToTranslationString(),
+                Name = command.NameTr!.ToTranslationString(),
                 Code = command.Code,
                 TableName = command.TableName,
                 Test = command.Test
@@ -220,16 +220,16 @@ public partial class CrudService
                 SortOrder = p.SortOrder
             }).ToList();
 
-            _baseContext.DomainCruds.Add(domainCrud);
+            DbContext.DomainCruds.Add(domainCrud);
         }
         else
         {
-            domainCrud.Name = command.NameTr.ToTranslationString();
+            domainCrud.Name = command.NameTr!.ToTranslationString();
             domainCrud.Code = command.Code;
             domainCrud.TableName = command.TableName;
             domainCrud.Test = command.Test;
 
-            foreach (var domainCrudColumn in command.DomainCrudColumns)
+            foreach (var domainCrudColumn in command.DomainCrudColumns ?? [])
             {
                 if (domainCrudColumn._rowStatus == RowStatuses.New)
                 {
@@ -244,11 +244,11 @@ public partial class CrudService
                         SortOrder = domainCrudColumn.SortOrder
                     };
 
-                    _baseContext.DomainCrudColumns.Add(newDomainCrudColumn);
+                    DbContext.DomainCrudColumns.Add(newDomainCrudColumn);
                 }
                 else if (domainCrudColumn._rowStatus == RowStatuses.Edited)
                 {
-                    var newDomainCrudColumn = await _baseContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
+                    var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
                     newDomainCrudColumn!.PropertyName = domainCrudColumn.PropertyName;
                     newDomainCrudColumn.ColumnName = domainCrudColumn.ColumnName;
                     newDomainCrudColumn.FieldId = domainCrudColumn.FieldId;
@@ -256,22 +256,22 @@ public partial class CrudService
                     newDomainCrudColumn.MaxLength = domainCrudColumn.MaxLength;
                     newDomainCrudColumn.SortOrder = domainCrudColumn.SortOrder;
 
-                    _baseContext.DomainCrudColumns.Update(newDomainCrudColumn);
+                    DbContext.DomainCrudColumns.Update(newDomainCrudColumn);
                 }
                 else if (domainCrudColumn._rowStatus == RowStatuses.Deleted)
                 {
-                    var newDomainCrudColumn = await _baseContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
+                    var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
 
-                    _baseContext.DomainCrudColumns.Remove(newDomainCrudColumn!);
+                    DbContext.DomainCrudColumns.Remove(newDomainCrudColumn!);
                 }
             }
 
-            _baseContext.DomainCruds.Update(domainCrud);
+            DbContext.DomainCruds.Update(domainCrud);
         }
 
-        await SaveTranslations(_baseContext.DomainCrudTranslations, domainCrud.Id, nameof(domainCrud.Name), command.NameTr, cancellationToken);
+        await SaveTranslations(DbContext.DomainCrudTranslations, domainCrud.Id, nameof(domainCrud.Name), command.NameTr ?? [], cancellationToken);
 
-        await _baseContext.SaveChangesAsync(cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -282,7 +282,7 @@ public partial class CrudService
     {
         var response = new ApiResponse();
 
-        var domainCrud = await _baseContext.DomainCruds
+        var domainCrud = await DbContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -293,7 +293,7 @@ public partial class CrudService
             return response;
         }
 
-        var domainCrudVersions = await _baseContext.DomainCrudVersions
+        var domainCrudVersions = await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
             .WhereToListAsync(x => x.CrudId == domainCrud.Id, cancellationToken);
 
@@ -304,9 +304,9 @@ public partial class CrudService
             return response;
         }
 
-        _baseContext.DomainCruds.Remove(domainCrud);
+        DbContext.DomainCruds.Remove(domainCrud);
 
-        await _baseContext.SaveChangesAsync(cancellationToken);
+        await DbContext.SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -317,10 +317,10 @@ public partial class CrudService
     {
         var returnObject = new ApiResponse<DomainCrudDto>();
 
-        var domainCrud = await _baseContext.DomainCruds
+        var domainCrud = await DbContext.DomainCruds
             .Include(p => p.DomainCrudTranslations)
             .Include(m => m.DomainCrudColumns)
-            .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Id == id, _mapper, cancellationToken);
+            .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Id == id, Mapper, cancellationToken);
 
         returnObject.Value = domainCrud;
 
@@ -333,10 +333,10 @@ public partial class CrudService
     {
         var returnObject = new ApiResponse<DomainCrudDto>();
 
-        var domainCrud = await _baseContext.DomainCruds
+        var domainCrud = await DbContext.DomainCruds
             .Include(p => p.DomainCrudTranslations)
             .Include(m => m.DomainCrudColumns)
-            .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Code == code, _mapper, cancellationToken);
+            .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Code == code, Mapper, cancellationToken);
 
         returnObject.Value = domainCrud;
 
@@ -351,13 +351,13 @@ public partial class CrudService
         int? pageSize,
         CancellationToken cancellationToken)
     {
-        var domainCruds = await _baseContext.DomainCruds
-            .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == _correlationContext.LanguageId))
+        var domainCruds = await DbContext.DomainCruds
+            .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == _correlationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
                 (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
-            .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(_mapper, pageStart, pageSize, cancellationToken);
+            .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(Mapper, pageStart, pageSize, cancellationToken);
 
         return domainCruds;
     }
@@ -376,7 +376,7 @@ public partial class CrudService
             {
                 { "MicroserviceId", microserviceId },
                 { "Code", code },
-                { "Columns", columnsParameters }
+                { "Columns", columnsParameters ?? Array.Empty<SaveCrudServicesColumnDto>() }
             };
 
         var responseApi = await _httpClientsService.CallService<ApiResponse>(
@@ -404,5 +404,5 @@ public partial class CrudService
 internal class SaveCrudServicesColumnDto
 {
     public Guid FieldId { get; set; }
-    public string Property { get; set; }
+    public required string Property { get; set; }
 }

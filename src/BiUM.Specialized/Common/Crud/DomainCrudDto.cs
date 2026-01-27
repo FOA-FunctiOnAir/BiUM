@@ -21,7 +21,7 @@ public class DomainCrudDto : BaseDto, IMapFrom<DomainCrud>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<DomainCrud, DomainCrudDto>()
-            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.DomainCrudTranslations.GetColumnTranslation(nameof(res.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(res => res.DomainCrudTranslations.GetColumnTranslations(nameof(res.Name))));
+            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.DomainCrudTranslations!.GetColumnTranslation(nameof(res.Name))))
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(res => res.DomainCrudTranslations!.GetColumnTranslations(nameof(res.Name))));
     }
 }

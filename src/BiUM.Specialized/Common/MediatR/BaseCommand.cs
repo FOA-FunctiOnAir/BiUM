@@ -24,7 +24,7 @@ public record BaseCommandResponseDto<TType> : BaseCommand<ApiResponse<TType>>
 
 public record BaseImportCommandDto : BaseCommandDto
 {
-    public string Name { get; set; }
-    public string Content { get; set; }
-    public string MimeType { get; set; }
+    public required string Name { get; set; }
+    public required string Content { get; set; }
+    public required string MimeType { get; set; }
 }

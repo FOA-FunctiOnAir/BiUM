@@ -15,6 +15,6 @@ public class DomainTranslationsDto : BaseDto, IMapFrom<DomainTranslation>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<DomainTranslation, DomainTranslationsDto>()
-            .ForMember(dto => dto.Text, conf => conf.MapFrom(res => res.DomainTranslationDetails.FirstOrDefault()));
+            .ForMember(dto => dto.Text, conf => conf.MapFrom(res => res.DomainTranslationDetails!.FirstOrDefault()));
     }
 }

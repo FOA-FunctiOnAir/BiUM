@@ -8,5 +8,5 @@ namespace BiApp.Test.Application.Features.Currencies.Events.TestAdded;
 [MemoryPackable]
 public partial class TestAddedEvent : BaseEvent
 {
-    public string Key { get; set; }
+    public required string Key { get; set; }
 }

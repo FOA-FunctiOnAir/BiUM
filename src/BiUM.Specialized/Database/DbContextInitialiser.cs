@@ -5,32 +5,33 @@ using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
-public class DbContextInitialiser<TDbContext> : IDbContextInitialiser
+public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     where TDbContext : DbContext
 {
-    public readonly ILogger<DbContextInitialiser<TDbContext>> _logger;
-    public readonly TDbContext _context;
+    protected TDbContext DbContext { get; }
+    protected ILogger<DbContextInitialiser<TDbContext>> Logger { get; }
 
-    public DbContextInitialiser(ILogger<DbContextInitialiser<TDbContext>> logger, TDbContext context)
+    protected DbContextInitialiser(TDbContext dbContext, ILogger<DbContextInitialiser<TDbContext>> logger)
     {
-        _logger = logger;
-        _context = context;
+        DbContext = dbContext;
+        Logger = logger;
     }
 
     public virtual async Task InitialiseAsync()
     {
         try
         {
-            await _context.Database.EnsureCreatedAsync();
+            await DbContext.Database.EnsureCreatedAsync();
 
-            if (_context.Database.IsSqlServer())
+            if (DbContext.Database.IsSqlServer())
             {
-                await _context.Database.MigrateAsync();
+                await DbContext.Database.MigrateAsync();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initialising the database.");
+            Logger.LogError(ex, "An error occurred while initialising the database.");
+
             throw;
         }
     }

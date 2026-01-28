@@ -17,40 +17,36 @@ using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
-public partial class BaseRepository : IBaseRepository
+public abstract partial class BaseRepository : IBaseRepository
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IDbContext _baseContext;
-    private readonly ICorrelationContextProvider _correlationContextProvider;
+    protected IDbContext DbContext { get; }
 
-    public readonly CorrelationContext CorrelationContext;
-    public readonly ITranslationService TranslationService;
-    public readonly ILogger<BaseRepository> Logger;
-    public readonly IMapper Mapper;
+    protected CorrelationContext CorrelationContext { get; }
+    protected ITranslationService TranslationService { get; }
+    protected ILogger<BaseRepository> Logger { get; }
+    protected IMapper Mapper { get; }
 
-    public readonly BiAppOptions BiAppOptions;
+    protected BiAppOptions BiAppOptions { get; }
 
-    public BaseRepository(IServiceProvider serviceProvider, IDbContext baseContext)
+    protected BaseRepository(IServiceProvider serviceProvider, IDbContext dbContext)
     {
-        _baseContext = baseContext;
-        _serviceProvider = serviceProvider;
+        DbContext = dbContext;
 
-        _correlationContextProvider = _serviceProvider.GetRequiredService<ICorrelationContextProvider>();
-        TranslationService = _serviceProvider.GetRequiredService<ITranslationService>();
-        Logger = _serviceProvider.GetRequiredService<ILogger<BaseRepository>>();
-        Mapper = _serviceProvider.GetRequiredService<IMapper>();
+        var correlationContextProvider = serviceProvider.GetRequiredService<ICorrelationContextProvider>();
 
-        BiAppOptions = _serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
-
-        CorrelationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        CorrelationContext = correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        TranslationService = serviceProvider.GetRequiredService<ITranslationService>();
+        Logger = serviceProvider.GetRequiredService<ILogger<BaseRepository>>();
+        Mapper = serviceProvider.GetRequiredService<IMapper>();
+        BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
-    public virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    protected virtual Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return _baseContext.SaveChangesAsync(cancellationToken);
+        return DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public virtual async Task SaveTranslations<TTranslationBaseEntity>(
+    protected virtual async Task SaveTranslations<TTranslationBaseEntity>(
         DbSet<TTranslationBaseEntity> dbSetTranslationEntity,
         Guid recordId,
         string columnName,
@@ -58,7 +54,7 @@ public partial class BaseRepository : IBaseRepository
         CancellationToken cancellationToken)
         where TTranslationBaseEntity : class, ITranslationBaseEntity, new()
     {
-        if (translations is null || translations.Count == 0)
+        if (translations.Count == 0)
         {
             return;
         }
@@ -69,7 +65,7 @@ public partial class BaseRepository : IBaseRepository
             {
                 var applicationTranslation = translation.ToTranslationEntity<TTranslationBaseEntity>(recordId, columnName);
 
-                _ = dbSetTranslationEntity.Add(applicationTranslation);
+                dbSetTranslationEntity.Add(applicationTranslation);
             }
             else if (translation._rowStatus == RowStatuses.Edited)
             {
@@ -79,7 +75,7 @@ public partial class BaseRepository : IBaseRepository
                 {
                     applicationTranslation.Translation = translation.Translation;
 
-                    _ = dbSetTranslationEntity.Update(applicationTranslation);
+                    dbSetTranslationEntity.Update(applicationTranslation);
                 }
             }
             else if (translation._rowStatus == RowStatuses.Deleted)
@@ -88,7 +84,7 @@ public partial class BaseRepository : IBaseRepository
 
                 if (applicationTranslation is not null)
                 {
-                    _ = dbSetTranslationEntity.Remove(applicationTranslation);
+                    dbSetTranslationEntity.Remove(applicationTranslation);
                 }
             }
         }

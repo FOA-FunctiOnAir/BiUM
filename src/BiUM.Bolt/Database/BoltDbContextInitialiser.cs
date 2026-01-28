@@ -24,8 +24,8 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     private readonly TBoltDbContext _boltContext;
     private static readonly ConcurrentDictionary<Type, Func<DbContext, IQueryable>> QueryFactoryCache = new();
 
-    public BoltDbContextInitialiser(ILogger<BoltDbContextInitialiser<TBoltDbContext, TDbContext>> logger, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext context)
-        : base(logger, context)
+    public BoltDbContextInitialiser(ILogger<BoltDbContextInitialiser<TBoltDbContext, TDbContext>> logger, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext dbContext)
+        : base(dbContext, logger)
     {
         _boltOptions = boltOptions.Value;
         _boltContext = boltContext;
@@ -44,7 +44,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initialising the bolt database.");
+            Logger.LogError(ex, "An error occurred while initialising the bolt database.");
 
             throw;
         }
@@ -60,7 +60,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         BoltStatus? boltStatus = null;
         BoltTransaction? lastTransaction = null;
 
-        var boltStatuses = await GetResultsFromTable<TDbContext, BoltStatus>(_context, $"SELECT * FROM dbo.\"__BOLT_STATUS\" WHERE \"ACTIVE\" = true", cancellationToken);
+        var boltStatuses = await GetResultsFromTable<TDbContext, BoltStatus>(DbContext, $"SELECT * FROM dbo.\"__BOLT_STATUS\" WHERE \"ACTIVE\" = true", cancellationToken);
 
         if (boltStatuses.Any())
         {
@@ -147,7 +147,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                         .Where(x => uniqueIds.Contains(x.Id))
                         .ToListAsync(cancellationToken);
 
-                    var contextDbSetProp = _context.GetType().GetProperty(transaction.TableName);
+                    var contextDbSetProp = DbContext.GetType().GetProperty(transaction.TableName);
 
                     if (contextDbSetProp is null)
                     {
@@ -156,7 +156,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
                     var targetEntityClrType = contextDbSetProp.PropertyType.GetGenericArguments()[0];
 
-                    var targetQuery = GetQueryableIgnoringFilters(_context, targetEntityClrType);
+                    var targetQuery = GetQueryableIgnoringFilters(DbContext, targetEntityClrType);
 
                     var targetEntities = await targetQuery
                         .Cast<IEntity>()
@@ -175,23 +175,23 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     {
                         var deleteEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
 
-                        _context.RemoveRange(deleteEntities);
+                        DbContext.RemoveRange(deleteEntities);
                     }
                     else
                     {
                         var insertEntities = boltEntities.Where(b => targetEntities.All(t => t.Id != b.Id));
                         var updateEntities = boltEntities.Where(b => targetEntities.Any(t => t.Id == b.Id));
 
-                        _context.AddRange(insertEntities);
-                        _context.UpdateRange(updateEntities);
+                        DbContext.AddRange(insertEntities);
+                        DbContext.UpdateRange(updateEntities);
                     }
                 }
 
-                _ = await _context.SaveChangesAsync(cancellationToken);
+                _ = await DbContext.SaveChangesAsync(cancellationToken);
 
                 lastTransactionId = transactionId;
 
-                _context.ChangeTracker.Clear();
+                DbContext.ChangeTracker.Clear();
 
                 executedCorrelations.Add(mainTransaction.CorrelationId);
             }
@@ -200,13 +200,13 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         {
             isError = true;
 
-            _context.ChangeTracker.Clear();
+            DbContext.ChangeTracker.Clear();
 
             if (boltStatus is not null)
             {
                 boltStatus.Active = false;
 
-                _ = _context.Update(boltStatus);
+                _ = DbContext.Update(boltStatus);
             }
 
             var newBoltStatus = new BoltStatus
@@ -217,9 +217,9 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 Error = $"CorrelationId:{lastCorrelationId}, TransactionId:{transactionId}, Message:{ex.ToString()}"
             };
 
-            _ = _context.Add(newBoltStatus);
+            _ = DbContext.Add(newBoltStatus);
 
-            _ = await _context.SaveChangesAsync(cancellationToken);
+            _ = await DbContext.SaveChangesAsync(cancellationToken);
         }
         finally
         {
@@ -235,7 +235,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                 {
                     boltStatus.Active = false;
 
-                    _ = _context.Update(boltStatus);
+                    _ = DbContext.Update(boltStatus);
                 }
 
                 var newBoltStatus = new BoltStatus
@@ -246,9 +246,9 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                     Error = null
                 };
 
-                _ = _context.Add(newBoltStatus);
+                _ = DbContext.Add(newBoltStatus);
 
-                _ = await _context.SaveChangesAsync(cancellationToken);
+                _ = await DbContext.SaveChangesAsync(cancellationToken);
             }
         }
     }
@@ -260,7 +260,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
             var setMethod = typeof(DbContext)
                 .GetMethods()
                 .Single(m =>
-                    m.Name == nameof(DbContext.Set) &&
+                    m.Name == nameof(Microsoft.EntityFrameworkCore.DbContext.Set) &&
                     m.IsGenericMethod &&
                     m.GetParameters().Length == 0)
                 .MakeGenericMethod(type);

@@ -15,23 +15,26 @@ namespace BiUM.Infrastructure.Services.Caching.Redis;
 
 public class RedisClient : IRedisClient
 {
-    private readonly AsyncLock _lock = new();
-    private bool _scriptsLoaded;
-    private LoadedLuaScript? _removeIfEqual;
-    private LoadedLuaScript? _replaceIfEqual;
-
-    private readonly IConnectionMultiplexer _connection;
-    private readonly IDatabase _database;
     private readonly RedisClientOptions _redisClientOptions;
     private readonly ILogger<RedisClient> _logger;
+
+    private readonly AsyncLock _lock = new();
+
+    private readonly IConnectionMultiplexer? _connectionMultiplexer;
+    private readonly IDatabase? _database;
     private readonly TimeSpan? _defaultCacheTimeout;
+
+    private bool _scriptsLoaded;
+
+    private LoadedLuaScript? _removeIfEqual;
+    private LoadedLuaScript? _replaceIfEqual;
 
     public RedisClient(IOptions<RedisClientOptions> redisClientOptions, ILogger<RedisClient> logger)
     {
         _redisClientOptions = redisClientOptions.Value;
         _logger = logger;
 
-        if (_redisClientOptions is null || !_redisClientOptions.Enable)
+        if (!_redisClientOptions.Enable)
         {
             return;
         }
@@ -39,8 +42,8 @@ public class RedisClient : IRedisClient
         var configurationOptions = ConfigurationOptions.Parse(_redisClientOptions.ConnectionString ?? "");
         configurationOptions.AllowAdmin = true;
 
-        _connection = ConnectionMultiplexer.Connect(configurationOptions);
-        _database = _connection.GetDatabase();
+        _connectionMultiplexer = ConnectionMultiplexer.Connect(configurationOptions);
+        _database = _connectionMultiplexer.GetDatabase();
         _defaultCacheTimeout = _redisClientOptions.DefaultCacheTimeout;
     }
 
@@ -55,6 +58,8 @@ public class RedisClient : IRedisClient
     /// <exception cref="ArgumentNullException">Thrown if the key parameter is null or an empty string.</exception>
     public async Task<CacheItem<T>> GetAsync<T>(string key)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -74,7 +79,10 @@ public class RedisClient : IRedisClient
     /// <exception cref="ArgumentNullException">Thrown if the keys parameter is null.</exception>
     public async Task<IDictionary<string, CacheItem<T>>> GetAllAsync<T>(IEnumerable<string> keys)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         var keyArray = keys.ToArray();
+
         var values = await _database.StringGetAsync(keyArray.Select(k => (RedisKey)k).ToArray(), CommandFlags.PreferReplica);
 
         var result = new Dictionary<string, CacheItem<T>>();
@@ -100,6 +108,8 @@ public class RedisClient : IRedisClient
     /// </exceptions>
     public async Task<bool> AddAsync<T>(string key, T value, TimeSpan? expiresIn = null)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (key is null)
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -140,6 +150,8 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> ExistsAsync(string key)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -156,6 +168,8 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public async Task<TimeSpan?> GetExpirationAsync(string key)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -173,11 +187,14 @@ public class RedisClient : IRedisClient
     /// <remarks>If the database connection is lost during the operation, some cache items may not be removed. To ensure that all cache items are removed, it is recommended to retry the operation if necessary.</remarks>
     public async Task<int> RemoveAllAsync<T>(IEnumerable<string>? keys = null)
     {
+        _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         var keyCount = 0;
 
         if (keys is null)
         {
-            var endpoints = _connection.GetEndPoints();
+            var endpoints = _connectionMultiplexer.GetEndPoints();
 
             if (endpoints.Length == 0)
             {
@@ -186,7 +203,7 @@ public class RedisClient : IRedisClient
 
             foreach (var endpoint in endpoints)
             {
-                var server = _connection.GetServer(endpoint);
+                var server = _connectionMultiplexer.GetServer(endpoint);
 
                 if (server.IsReplica)
                 {
@@ -229,11 +246,15 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> RemoveAsync(string key)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         return _database.KeyDeleteAsync(key);
     }
 
     public async Task<bool> RemoveIfEqualsAsync<T>(string key, T expected)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -259,6 +280,8 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> ReplaceAsync<T>(string key, T value, TimeSpan? expiresIn = null)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -281,6 +304,8 @@ public class RedisClient : IRedisClient
 
     public async Task<bool> ReplaceIfEqualsAsync<T>(string key, T value, T expected, TimeSpan? expiresIn = null)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -315,6 +340,8 @@ public class RedisClient : IRedisClient
     /// <exceptions>ArgumentNullException: Thrown if the key parameter is null or an empty string.</exceptions>
     public Task<bool> SetExpirationAsync(string key, TimeSpan expiresIn)
     {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (string.IsNullOrEmpty(key))
         {
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
@@ -330,6 +357,8 @@ public class RedisClient : IRedisClient
 
     private async Task LoadScriptsAsync()
     {
+        _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");
+
         if (_scriptsLoaded)
         {
             return;
@@ -345,9 +374,9 @@ public class RedisClient : IRedisClient
             var removeIfEqual = LuaScript.Prepare(RedisScripts.RemoveIfEqualScript);
             var replaceIfEqual = LuaScript.Prepare(RedisScripts.ReplaceIfEqualScript); // Fixed: Correct script for ReplaceIfEqual
 
-            foreach (var endpoint in _connection.GetEndPoints())
+            foreach (var endpoint in _connectionMultiplexer.GetEndPoints())
             {
-                var server = _connection.GetServer(endpoint);
+                var server = _connectionMultiplexer.GetServer(endpoint);
 
                 if (server.IsReplica)
                 {
@@ -364,7 +393,6 @@ public class RedisClient : IRedisClient
 
     public void Dispose()
     {
-        _connection?.Close();
-        _connection?.Dispose();
+        _connectionMultiplexer?.Dispose();
     }
 }

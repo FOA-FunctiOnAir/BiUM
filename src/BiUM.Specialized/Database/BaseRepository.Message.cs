@@ -1,15 +1,14 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
-using BiUM.Core.Database;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
-public partial class BaseRepository : IBaseRepository
+public partial class BaseRepository
 {
-    public virtual Task<ApiResponse> AddMessage(
+    protected Task<ApiResponse> AddMessage(
         ApiResponse response,
         string code,
         CancellationToken cancellationToken)
@@ -17,7 +16,7 @@ public partial class BaseRepository : IBaseRepository
         return TranslationService.AddMessage(response, code, string.Empty, MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual Task<ApiResponse> AddMessage(
+    protected Task<ApiResponse> AddMessage(
         ApiResponse response,
         string code,
         MessageSeverity severity,
@@ -26,7 +25,7 @@ public partial class BaseRepository : IBaseRepository
         return TranslationService.AddMessage(response, code, string.Empty, severity, cancellationToken);
     }
 
-    public virtual Task<ApiResponse> AddMessage(
+    protected Task<ApiResponse> AddMessage(
         ApiResponse response,
         string code,
         Exception exception,
@@ -35,7 +34,7 @@ public partial class BaseRepository : IBaseRepository
         return TranslationService.AddMessage(response, code, exception, MessageSeverity.Error, cancellationToken);
     }
 
-    public virtual Task<ApiResponse> AddMessage(
+    protected Task<ApiResponse> AddMessage(
         ApiResponse response,
         string code,
         Exception exception,
@@ -45,7 +44,7 @@ public partial class BaseRepository : IBaseRepository
         return TranslationService.AddMessage(response, code, exception, severity, cancellationToken);
     }
 
-    public virtual Task<ApiResponse> AddMessage(
+    protected Task<ApiResponse> AddMessage(
         ApiResponse response,
         string code,
         string exception,

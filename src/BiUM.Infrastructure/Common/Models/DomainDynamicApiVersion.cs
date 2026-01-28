@@ -28,7 +28,7 @@ public class DomainDynamicApiVersion : BaseEntity
     [Column("SOURCE_CODE")]
     public required string SourceCode { get; set; }
 
-    public virtual ICollection<DomainDynamicApiVersionParameter>? Parameters { get; set; }
+    public virtual ICollection<DomainDynamicApiVersionParameter> Parameters { get; set; } = [];
 
     [ForeignKey(nameof(DynamicApiId))]
     public virtual DomainDynamicApi? DynamicApi { get; set; }

@@ -18,7 +18,7 @@ public partial class CurrencyRepository
         if (currency != null)
         {
             var currencyTranslations = await _context.CurrencyTranslations.AsNoTracking()
-                .Where(f => f.RecordId == currency!.Id)
+                .Where(f => f.RecordId == currency.Id)
                 .ToListAsync(cancellationToken);
 
             await _boltContext.AddOrUpdate(1, nameof(_boltContext.Currencies), currency, cancellationToken);

@@ -11,7 +11,7 @@ public static class RabbitMQSerializerExtensions
         this IRabbitMQSerializer serializer,
         T value,
         CancellationToken cancellationToken) =>
-        serializer.SerializeAsync(value, typeof(T), cancellationToken);
+        serializer.SerializeAsync(value!, typeof(T), cancellationToken);
 
     public static async Task<T?> DeserializeAsync<T>(
         this IRabbitMQSerializer serializer,

@@ -16,7 +16,7 @@ public class DomainCrudDto : BaseDto, IMapFrom<DomainCrud>
     public string? Code { get; set; }
     public string? TableName { get; set; }
 
-    public virtual ICollection<DomainCrudColumnDto>? DomainCrudColumns { get; set; }
+    public virtual ICollection<DomainCrudColumnDto> DomainCrudColumns { get; set; } = [];
 
     public void Mapping(Profile profile)
     {

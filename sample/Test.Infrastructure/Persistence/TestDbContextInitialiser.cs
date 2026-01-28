@@ -10,15 +10,15 @@ namespace BiApp.Test.Infrastructure.Persistence;
 
 public partial class DomainBoltDbContextInitialiser : BoltDbContextInitialiser<BoltDbContext, TestDbContext>
 {
-    public DomainBoltDbContextInitialiser(ILogger<DomainBoltDbContextInitialiser> logger, IOptions<BoltOptions> boltOptions, BoltDbContext boltContext, TestDbContext context)
-        : base(logger, boltOptions, boltContext, context)
+    public DomainBoltDbContextInitialiser(ILogger<DomainBoltDbContextInitialiser> logger, IOptions<BoltOptions> boltOptions, BoltDbContext boltContext, TestDbContext dbContext)
+        : base(logger, boltOptions, boltContext, dbContext)
     {
     }
 }
 
 public partial class TestDbContextInitialiser : DbContextInitialiser<TestDbContext>
 {
-    public TestDbContextInitialiser(ILogger<TestDbContextInitialiser> logger, TestDbContext context) : base(logger, context)
+    public TestDbContextInitialiser(ILogger<TestDbContextInitialiser> logger, TestDbContext dbContext) : base(dbContext, logger)
     {
     }
 
@@ -29,7 +29,7 @@ public partial class TestDbContextInitialiser : DbContextInitialiser<TestDbConte
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while seeding the database.");
+            Logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
         }
     }

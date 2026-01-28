@@ -34,5 +34,5 @@ public class DomainDynamicApi : TenantBaseEntity
     [Column("COMPILE_ERROR")]
     public string? CompileError { get; set; }
 
-    public virtual ICollection<DomainDynamicApiParameter>? Parameters { get; set; }
+    public virtual ICollection<DomainDynamicApiParameter> Parameters { get; set; } = [];
 }

@@ -1,60 +1,83 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace BiUM.Specialized.Common.Utils;
 
 public static class EncryptionHelper
 {
-    public static string Encrypt(string clearText)
+    private const int Iterations = 256_789;
+
+    private const int SaltSize = 16; // 128 bits
+    private const int KeySize = 32;  // 256 bits (AES-256)
+    private const int IvSize = 16;   // 128 bits (Default AES block size, don't change)
+
+    private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA256;
+
+    public static byte[] Encrypt(byte[] value, byte[] password)
     {
-        var EncryptionKey = "abc123";
-        var clearBytes = Encoding.Unicode.GetBytes(clearText);
+        // 1. Generate a random salt
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
 
-        using (var encryptor = Aes.Create())
+        // 2. Derive the key from the password and salt
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithm, KeySize);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.GenerateIV(); // Generate a random IV
+
+        var iv = aes.IV;
+
+        using var ms = new MemoryStream();
+
+        // 3. Prepend Salt and IV to the output stream
+        ms.Write(salt, 0, salt.Length);
+        ms.Write(iv, 0, iv.Length);
+
+        // 4. Encrypt the data
+        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
         {
-            var pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
-            encryptor.Key = pdb.GetBytes(32);
-            encryptor.IV = pdb.GetBytes(16);
-
-            using var ms = new MemoryStream();
-
-            using (var cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
-            {
-                cs.Write(clearBytes, 0, clearBytes.Length);
-                cs.Close();
-            }
-
-            clearText = Convert.ToBase64String(ms.ToArray());
+            cs.Write(value, 0, value.Length);
         }
 
-        return clearText;
+        return ms.ToArray();
     }
 
-    public static string Decrypt(string encryptedText)
+    public static byte[] Decrypt(byte[] value, byte[] password)
     {
-        var EncryptionKey = "abc123";
-        encryptedText = encryptedText.Replace(" ", "+");
-        var cipherBytes = Convert.FromBase64String(encryptedText);
+        using var ms = new MemoryStream(value);
 
-        using (var encryptor = Aes.Create())
+        // 1. Read the Salt
+        var salt = new byte[SaltSize];
+
+        if (ms.Read(salt, 0, salt.Length) != salt.Length)
         {
-            var pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
-            encryptor.Key = pdb.GetBytes(32);
-            encryptor.IV = pdb.GetBytes(16);
-
-            using var ms = new MemoryStream();
-
-            using (var cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
-            {
-                cs.Write(cipherBytes, 0, cipherBytes.Length);
-                cs.Close();
-            }
-
-            encryptedText = Encoding.Unicode.GetString(ms.ToArray());
+            throw new ArgumentException("Invalid encrypted data: missing salt");
         }
 
-        return encryptedText;
+        // 2. Read the IV
+        var iv = new byte[IvSize];
+
+        if (ms.Read(iv, 0, iv.Length) != iv.Length)
+        {
+            throw new ArgumentException("Invalid encrypted data: missing IV");
+        }
+
+        // 3. Derive the key using the extracted salt
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithm, KeySize);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        // 4. Decrypt the rest of the stream
+        using var outputMs = new MemoryStream();
+
+        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
+        {
+            cs.CopyTo(outputMs);
+        }
+
+        return outputMs.ToArray();
     }
 }

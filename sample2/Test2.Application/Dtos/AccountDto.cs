@@ -12,13 +12,13 @@ public class AccountDto : BaseDto, IMapFrom<Account>
 {
     public Guid Type { get; set; }
 
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     public List<EntityTranslationDto>? NameTr { get; set; }
 
-    public string Code { get; set; }
+    public required string Code { get; set; }
 
-    public string CoinCode { get; set; }
+    public required string CoinCode { get; set; }
 
     public int GroupPart { get; set; }
 

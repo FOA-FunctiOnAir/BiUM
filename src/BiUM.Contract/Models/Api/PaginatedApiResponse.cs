@@ -21,11 +21,6 @@ public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
         Value = [];
     }
 
-    public static PaginatedApiResponse<TType> Empty()
-    {
-        return new PaginatedApiResponse<TType>();
-    }
-
     public PaginatedApiResponse(IList<TType> items, int count, int pageNumber, int pageSize)
     {
         PageNumber = pageNumber;
@@ -33,4 +28,8 @@ public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
         TotalCount = count;
         Value = new ReadOnlyCollection<TType>(items);
     }
+
+#pragma warning disable CA1000
+    public static PaginatedApiResponse<TType> Empty() => new();
+#pragma warning restore CA1000
 }

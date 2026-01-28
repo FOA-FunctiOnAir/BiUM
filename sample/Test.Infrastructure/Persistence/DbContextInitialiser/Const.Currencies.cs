@@ -2,7 +2,7 @@ using System;
 
 namespace BiApp.Test.Infrastructure.Persistence.DbContextInitialiser;
 
-public partial class TestDbContextInitialiser
+public static partial class TestDbContextInitialiser
 {
     internal static class CurrencyIds
     {

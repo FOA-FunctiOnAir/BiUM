@@ -7,9 +7,10 @@ namespace BiUM.Specialized.Common.Utils;
 public static class EncryptionHelper
 {
     private const int Iterations = 256_789;
+
     private const int SaltSize = 16; // 128 bits
     private const int KeySize = 32;  // 256 bits (AES-256)
-    private const int IvSize = 16;   // 128 bits (AES block size)
+    private const int IvSize = 16;   // 128 bits (Default AES block size, don't change)
 
     private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA256;
 
@@ -42,9 +43,9 @@ public static class EncryptionHelper
         return ms.ToArray();
     }
 
-    public static byte[] Decrypt(byte[] encryptedData, byte[] password)
+    public static byte[] Decrypt(byte[] value, byte[] password)
     {
-        using var ms = new MemoryStream(encryptedData);
+        using var ms = new MemoryStream(value);
 
         // 1. Read the Salt
         var salt = new byte[SaltSize];

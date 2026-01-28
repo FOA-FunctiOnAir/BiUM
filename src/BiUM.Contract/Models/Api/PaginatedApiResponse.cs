@@ -31,5 +31,5 @@ public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
 
 #pragma warning disable CA1000
     public static PaginatedApiResponse<TType> Empty() => new();
-#pragma  warning restore CA1000
+#pragma warning restore CA1000
 }

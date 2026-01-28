@@ -1,61 +1,82 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace BiUM.Specialized.Common.Utils;
 
 public static class EncryptionHelper
 {
-    private const int Iterations = 1000;
-    private const string Key = "abc123";
+    private const int Iterations = 256_789;
+    private const int SaltSize = 16; // 128 bits
+    private const int KeySize = 32;  // 256 bits (AES-256)
+    private const int IvSize = 16;   // 128 bits (AES block size)
 
-    private static readonly byte[] Salt = "Ivan Medvedev"u8.ToArray();
-    private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA1;
+    private static readonly HashAlgorithmName HashAlgorithm = HashAlgorithmName.SHA256;
 
-    private static readonly byte[] EncryptionKey = Rfc2898DeriveBytes.Pbkdf2(Key, Salt, Iterations, HashAlgorithm, 32);
-    private static readonly byte[] EncryptionIV = Rfc2898DeriveBytes.Pbkdf2(EncryptionKey, Salt, Iterations, HashAlgorithm, 16);
-
-    public static string Encrypt(string clearText)
+    public static byte[] Encrypt(byte[] value, byte[] password)
     {
-        var clearBytes = Encoding.Unicode.GetBytes(clearText);
+        // 1. Generate a random salt
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
 
-        using var encryptor = Aes.Create();
+        // 2. Derive the key from the password and salt
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithm, KeySize);
 
-        encryptor.Key = EncryptionKey;
-        encryptor.IV = EncryptionIV;
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.GenerateIV(); // Generate a random IV
+
+        var iv = aes.IV;
 
         using var ms = new MemoryStream();
-        using var cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write);
 
-        cs.Write(clearBytes, 0, clearBytes.Length);
-        cs.Close();
+        // 3. Prepend Salt and IV to the output stream
+        ms.Write(salt, 0, salt.Length);
+        ms.Write(iv, 0, iv.Length);
 
-        clearText = Convert.ToBase64String(ms.ToArray());
+        // 4. Encrypt the data
+        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+        {
+            cs.Write(value, 0, value.Length);
+        }
 
-        return clearText;
+        return ms.ToArray();
     }
 
-    public static string Decrypt(string encryptedText)
+    public static byte[] Decrypt(byte[] encryptedData, byte[] password)
     {
-        encryptedText = encryptedText.Replace(" ", "+");
+        using var ms = new MemoryStream(encryptedData);
 
-        var cipherBytes = Convert.FromBase64String(encryptedText);
+        // 1. Read the Salt
+        var salt = new byte[SaltSize];
 
-        using var encryptor = Aes.Create();
+        if (ms.Read(salt, 0, salt.Length) != salt.Length)
+        {
+            throw new ArgumentException("Invalid encrypted data: missing salt");
+        }
 
-        encryptor.Key = EncryptionKey;
-        encryptor.IV = EncryptionIV;
+        // 2. Read the IV
+        var iv = new byte[IvSize];
 
-        using var ms = new MemoryStream();
+        if (ms.Read(iv, 0, iv.Length) != iv.Length)
+        {
+            throw new ArgumentException("Invalid encrypted data: missing IV");
+        }
 
-        using var cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write);
+        // 3. Derive the key using the extracted salt
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithm, KeySize);
 
-        cs.Write(cipherBytes, 0, cipherBytes.Length);
-        cs.Close();
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
 
-        encryptedText = Encoding.Unicode.GetString(ms.ToArray());
+        // 4. Decrypt the rest of the stream
+        using var outputMs = new MemoryStream();
 
-        return encryptedText;
+        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
+        {
+            cs.CopyTo(outputMs);
+        }
+
+        return outputMs.ToArray();
     }
 }

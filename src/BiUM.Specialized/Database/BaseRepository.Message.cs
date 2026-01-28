@@ -1,6 +1,5 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
-using BiUM.Core.Database;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

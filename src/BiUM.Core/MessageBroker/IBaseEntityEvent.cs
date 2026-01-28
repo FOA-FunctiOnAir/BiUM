@@ -1,5 +1,3 @@
-using System;
-
 namespace BiUM.Core.MessageBroker;
 
 public interface IBaseEntityEvent : IBaseEvent

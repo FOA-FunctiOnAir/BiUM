@@ -1,30 +1,20 @@
 using BiUM.Specialized.Common.Models;
 using System;
-using System.Text;
 using System.Text.Json;
 
 namespace BiUM.Specialized.Common.Utils;
 
 public static class ExportHelper
 {
-    public static ExportDto ExportObject(string name, string mimeType, dynamic data)
+    public static ExportDto Export<T>(string name, string mimeType, T data, byte[] key)
     {
-        var dataSerialized = JsonSerializer.Serialize(data);
-        var dataEncrypted = EncryptionHelper.Encrypt(dataSerialized);
-        var dataBytes = Encoding.UTF8.GetBytes(dataEncrypted);
-        var dataBase64 = Convert.ToBase64String(dataBytes, Base64FormattingOptions.InsertLineBreaks);
+        var serialized = JsonSerializer.SerializeToUtf8Bytes(data);
+        var encrypted = EncryptionHelper.Encrypt(serialized, key);
 
-        var response = new ExportDto
-        {
-            Name = name,
-            MimeType = mimeType,
-            Content = dataBase64
-        };
-
-        return response;
+        return Export(name, mimeType, encrypted);
     }
 
-    public static ExportDto ExportObject(string name, string mimeType, byte[] bytes)
+    public static ExportDto Export(string name, string mimeType, byte[] bytes)
     {
         var val = Convert.ToBase64String(bytes, Base64FormattingOptions.InsertLineBreaks);
 
@@ -36,13 +26,11 @@ public static class ExportHelper
         };
     }
 
-    public static TType? ImportObject<TType>(string content)
+    public static T? Import<T>(string content, byte[] key)
     {
-        var base64EncodedBytes = Convert.FromBase64String(content);
-        var dataString = Encoding.UTF8.GetString(base64EncodedBytes);
-        var dataDecrypt = EncryptionHelper.Decrypt(dataString);
-        var dataOriginal = JsonSerializer.Deserialize<TType>(dataDecrypt);
+        var encrypted = Convert.FromBase64String(content);
+        var decrypted = EncryptionHelper.Decrypt(encrypted, key);
 
-        return dataOriginal;
+        return JsonSerializer.Deserialize<T>(decrypted);
     }
 }

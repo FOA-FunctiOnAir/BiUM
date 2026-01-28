@@ -10,7 +10,7 @@ public class DomainTranslationDto : BaseDto, IMapFrom<DomainTranslation>
 {
     public Guid ApplicationId { get; set; }
     public string? Code { get; set; }
-    public ICollection<DomainTranslationDetailDto>? DomainTranslationDetails { get; set; }
+    public ICollection<DomainTranslationDetailDto> DomainTranslationDetails { get; set; } = [];
 
     public void Mapping(Profile profile)
     {

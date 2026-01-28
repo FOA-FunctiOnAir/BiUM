@@ -16,7 +16,7 @@ public class ServiceDto : BaseTenantDto
     public Guid? ServiceAuthenticationId { get; set; }
     public ServiceAuthenticationDto? Authentication { get; set; }
 
-    public virtual ICollection<ServiceParameterDto>? ServiceParameters { get; set; }
+    public virtual ICollection<ServiceParameterDto> ServiceParameters { get; set; } = [];
 }
 
 public class ServiceParameterDto : BaseDto

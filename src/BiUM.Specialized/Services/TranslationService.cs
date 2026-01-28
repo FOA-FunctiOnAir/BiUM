@@ -95,7 +95,7 @@ public sealed class TranslationService : ITranslationService
             return response;
         }
 
-        var message = translation.DomainTranslationDetails!.First().Text;
+        var message = translation.DomainTranslationDetails.First().Text;
 
         response.AddMessage(new ResponseMessage
         {
@@ -137,7 +137,7 @@ public sealed class TranslationService : ITranslationService
                 TranslationId = domainTranslation.Id,
                 LanguageId = p.LanguageId,
                 Text = p.Text
-            }).ToList();
+            }).ToList() ?? [];
 
             _baseContext.DomainTranslations.Add(domainTranslation);
         }
@@ -235,7 +235,7 @@ public sealed class TranslationService : ITranslationService
     {
         var domainTranslations = await _baseContext.DomainTranslations
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails!.Any(rt => rt.LanguageId == _correlationContext.LanguageId && rt.Text.Contains(q, StringComparison.CurrentCultureIgnoreCase))) &&
+                (string.IsNullOrEmpty(q) || a.DomainTranslationDetails.Any(rt => rt.LanguageId == _correlationContext.LanguageId && rt.Text.Contains(q, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(_mapper, pageStart, pageSize, cancellationToken);
 
@@ -246,11 +246,11 @@ public sealed class TranslationService : ITranslationService
     {
         var translation = await _baseContext.DomainTranslations
             .AsNoTracking()
-            .Include(dt => dt.DomainTranslationDetails!.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
+            .Include(dt => dt.DomainTranslationDetails.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
             .Where(x => x.Code.Equals(code) && x.ApplicationId == _correlationContext.ApplicationId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (translation is null || translation.DomainTranslationDetails is null || translation.DomainTranslationDetails.Count == 0)
+        if (translation is null || translation.DomainTranslationDetails.Count == 0)
         {
             return null;
         }

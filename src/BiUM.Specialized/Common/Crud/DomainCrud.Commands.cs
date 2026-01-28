@@ -11,7 +11,7 @@ public record SaveDomainCrudCommand : BaseCommandDto
     public IReadOnlyList<BaseEntityTranslationDto>? NameTr { get; set; }
     public required string Code { get; set; }
     public required string TableName { get; set; }
-    public IList<SaveDomainCrudCommandColumn>? DomainCrudColumns { get; set; }
+    public IList<SaveDomainCrudCommandColumn> DomainCrudColumns { get; set; } = [];
 }
 
 public record PublishDomainCrudCommand : BaseCommandDto

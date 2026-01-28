@@ -20,7 +20,7 @@ public class DomainCrud : TenantBaseEntity
     public required string TableName { get; set; }
 
 
-    public virtual ICollection<DomainCrudColumn>? DomainCrudColumns { get; set; }
+    public virtual ICollection<DomainCrudColumn> DomainCrudColumns { get; set; } = [];
 
-    public virtual ICollection<DomainCrudTranslation>? DomainCrudTranslations { get; set; }
+    public virtual ICollection<DomainCrudTranslation> DomainCrudTranslations { get; set; } = [];
 }

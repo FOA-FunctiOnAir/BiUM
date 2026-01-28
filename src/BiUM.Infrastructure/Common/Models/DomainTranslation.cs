@@ -13,5 +13,5 @@ public class DomainTranslation : BaseEntity
     [Column("CODE")]
     public required string Code { get; set; }
 
-    public virtual ICollection<DomainTranslationDetail>? DomainTranslationDetails { get; set; }
+    public virtual ICollection<DomainTranslationDetail> DomainTranslationDetails { get; set; } = [];
 }

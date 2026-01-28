@@ -36,7 +36,7 @@ public partial class CurrencyRepository
             _ = _context.Currencies.Update(currency);
         }
 
-        await SaveTranslations(_context.CurrencyTranslations, currency!.Id, nameof(currency.Name), command.NameTr, cancellationToken);
+        await SaveTranslations(_context.CurrencyTranslations, currency.Id, nameof(currency.Name), command.NameTr, cancellationToken);
 
         _ = await SaveChangesAsync(cancellationToken);
 

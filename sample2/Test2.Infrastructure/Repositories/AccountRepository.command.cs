@@ -36,7 +36,7 @@ public partial class AccountRepository
             _ = _context.Accounts.Update(account);
         }
 
-        await SaveTranslations(_context.AccountTranslations, account!.Id, nameof(account.Name), command.NameTr, cancellationToken);
+        await SaveTranslations(_context.AccountTranslations, account.Id, nameof(account.Name), command.NameTr, cancellationToken);
 
         _ = await SaveChangesAsync(cancellationToken);
 

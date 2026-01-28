@@ -88,12 +88,12 @@ internal static class RedisValueExtensions
 
         if (type == typeof(bool) || type == typeof(string) || type.IsNumericType())
         {
-            return (T)Convert.ChangeType(redisValue, type)!;
+            return (T)Convert.ChangeType(redisValue, type);
         }
 
         if (type == typeof(bool?) || type.IsNullableNumericType())
         {
-            return redisValue.IsNull ? default! : (T)Convert.ChangeType(redisValue, Nullable.GetUnderlyingType(type)!)!;
+            return redisValue.IsNull ? default! : (T)Convert.ChangeType(redisValue, Nullable.GetUnderlyingType(type)!);
         }
 
         return JsonSerializer.Deserialize<T>((byte[])redisValue!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, IncludeFields = true })!;

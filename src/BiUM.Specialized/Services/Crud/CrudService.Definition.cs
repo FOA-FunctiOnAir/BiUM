@@ -65,7 +65,7 @@ public partial class CrudService
 
             return response;
         }
-        else if (domainCrud.DomainCrudColumns is null || domainCrud.DomainCrudColumns.Count == 0)
+        else if (domainCrud.DomainCrudColumns.Count == 0)
         {
             response.AddMessage("Crud should have columns", MessageSeverity.Error);
 
@@ -209,7 +209,7 @@ public partial class CrudService
                 Test = command.Test
             };
 
-            domainCrud.DomainCrudColumns = command.DomainCrudColumns?.Select(p => new DomainCrudColumn
+            domainCrud.DomainCrudColumns = command.DomainCrudColumns.Select(p => new DomainCrudColumn
             {
                 CrudId = domainCrud.Id,
                 PropertyName = p.PropertyName,
@@ -297,7 +297,7 @@ public partial class CrudService
             .Include(s => s.DomainCrudVersionColumns)
             .WhereToListAsync(x => x.CrudId == domainCrud.Id, cancellationToken);
 
-        if (domainCrudVersions is not null && domainCrudVersions.Count > 0)
+        if (domainCrudVersions.Count > 0)
         {
             response.AddMessage("You can not delete published Domain Crud", MessageSeverity.Error);
 
@@ -352,9 +352,9 @@ public partial class CrudService
         CancellationToken cancellationToken)
     {
         var domainCruds = await DbContext.DomainCruds
-            .Include(x => x.DomainCrudTranslations!.Where(y => y.LanguageId == CorrelationContext.LanguageId))
+            .Include(x => x.DomainCrudTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations!.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
                 (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(Mapper, pageStart, pageSize, cancellationToken);
@@ -384,13 +384,7 @@ public partial class CrudService
             parameters: parameters,
             cancellationToken: cancellationToken);
 
-        if (responseApi is null)
-        {
-            response.AddMessage("CallService error", MessageSeverity.Error);
-
-            return response;
-        }
-        else if (!responseApi.Success)
+        if (!responseApi.Success)
         {
             response.AddMessage(responseApi.Messages);
 

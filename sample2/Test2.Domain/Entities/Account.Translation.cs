@@ -7,7 +7,7 @@ namespace BiApp.Test2.Domain.Entities;
 [Table("ACCOUNT_TRANSLATION", Schema = "dbo")]
 public class AccountTranslation : TranslationBaseEntity
 {
+    [ForeignKey(nameof(RecordId))]
     [JsonIgnore]
-    [ForeignKey("RecordId")]
-    public virtual Account? Account { get; set; }
+    public Account Account { get; private set; } = null!;
 }

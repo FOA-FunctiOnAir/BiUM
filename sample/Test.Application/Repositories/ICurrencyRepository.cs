@@ -34,7 +34,7 @@ public interface ICurrencyRepository
 
     Task<PaginatedApiResponse<GetFwCurrenciesForParameterDto>> GetFwCurrenciesForParameter(string? q, int? pageStart, int? pageSize, CancellationToken cancellationToken);
 
-    Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> GetFwCurrenciesForNames(IReadOnlyList<Guid>? ids, CancellationToken cancellationToken);
+    Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> GetFwCurrenciesForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
 
     #endregion
 

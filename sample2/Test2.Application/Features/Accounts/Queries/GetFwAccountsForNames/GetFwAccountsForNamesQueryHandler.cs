@@ -18,7 +18,7 @@ public class GetFwAccountsForNamesQueryHandler : IForValuesQueryHandler<GetFwAcc
 
     public async Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> Handle(GetFwAccountsForNamesQuery query, CancellationToken cancellationToken)
     {
-        var response = await _currencyRepository.GetFwAccountsForNames(query.Ids, cancellationToken);
+        var response = await _currencyRepository.GetFwAccountsForNames(query.MultipleIds, cancellationToken);
 
         return response;
     }

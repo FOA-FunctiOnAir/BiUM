@@ -18,7 +18,7 @@ public class Account : BaseEntity
     public required string Code { get; set; }
 
     [JsonIgnore]
-    public virtual ICollection<AccountTranslation> AccountTranslations { get; set; } = [];
+    public ICollection<AccountTranslation> AccountTranslations { get; set; } = [];
 
     public override IBaseEvent? AddCreatedEvent(IMapper? mapper, IBaseEvent? baseEvent)
     {

@@ -3,6 +3,7 @@ using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +20,13 @@ public class GetAccountsQueryHandler : IPaginatedQueryHandler<GetAccountsQuery, 
 
     public async Task<PaginatedApiResponse<AccountsDto>> Handle(GetAccountsQuery query, CancellationToken cancellationToken)
     {
-        var repositoryResponse = await _currencyRepository.GetAccounts(query.Id, query.Name, query.Code, query.PageStart, query.PageSize, cancellationToken);
+        var repositoryResponse = await _currencyRepository.GetAccounts(
+            query.MultipleIds.FirstOrDefault(),
+            query.Name,
+            query.Code,
+            query.PageStart,
+            query.PageSize,
+            cancellationToken);
 
         if (!repositoryResponse.Success || repositoryResponse.Value == null)
         {

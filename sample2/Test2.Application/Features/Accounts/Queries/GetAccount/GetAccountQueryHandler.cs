@@ -2,6 +2,8 @@ using BiApp.Test2.Application.Dtos;
 using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +20,9 @@ public class GetAccountQueryHandler : IQueryHandler<GetAccountQuery, AccountDto>
 
     public async Task<ApiResponse<AccountDto>> Handle(GetAccountQuery query, CancellationToken cancellationToken)
     {
-        var response = await _currencyRepository.GetAccount(query.Id!.Value, cancellationToken);
+        ArgumentException.ThrowIfNullOrWhiteSpace(query.Id);
+
+        var response = await _currencyRepository.GetAccount(query.MultipleIds.First(), cancellationToken);
 
         return response;
     }

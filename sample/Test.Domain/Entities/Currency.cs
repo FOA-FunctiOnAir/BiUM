@@ -15,5 +15,5 @@ public partial class Currency : BaseEntity
     public required string Code { get; set; }
 
     [JsonIgnore]
-    public virtual ICollection<CurrencyTranslation> CurrencyTranslations { get; set; } = [];
+    public ICollection<CurrencyTranslation> CurrencyTranslations { get; set; } = [];
 }

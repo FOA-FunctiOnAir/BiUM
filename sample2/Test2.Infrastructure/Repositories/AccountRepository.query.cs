@@ -17,8 +17,10 @@ public partial class AccountRepository
     {
         var response = new ApiResponse<string>();
 
-        var getCurrencyNamesRequest = new GetCurrencyRequest();
-        getCurrencyNamesRequest.CurrencyId = id.ToString();
+        var getCurrencyNamesRequest = new GetCurrencyRequest
+        {
+            CurrencyId = id.ToString()
+        };
 
         var currencyNamesResponse = await _testRpcService.WithCancellationToken(cancellationToken).GetCurrency(getCurrencyNamesRequest);
 

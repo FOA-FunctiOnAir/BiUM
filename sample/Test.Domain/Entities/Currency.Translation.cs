@@ -7,7 +7,7 @@ namespace BiApp.Test.Domain.Entities;
 [Table("CURRENCY_TRANSLATION", Schema = "dbo")]
 public class CurrencyTranslation : TranslationBaseEntity
 {
+    [ForeignKey(nameof(RecordId))]
     [JsonIgnore]
-    [ForeignKey("RecordId")]
-    public virtual Currency? Currency { get; set; }
+    public Currency Currency { get; private set; } = null!;
 }

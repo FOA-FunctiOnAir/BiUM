@@ -32,13 +32,13 @@ public partial class AccountRepository
         return currencies;
     }
 
-    public async Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> GetFwAccountsForNames(IReadOnlyList<Guid>? ids, CancellationToken cancellationToken)
+    public async Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> GetFwAccountsForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
     {
         var returnObject = new ApiResponse<IList<GetFwAccountsForNamesDto>>();
 
         var currencies = await _context.Accounts
             .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
-            .Where(m => ids != null && ids.Contains(m.Id))
+            .Where(m => ids.Contains(m.Id))
             .ToIListAsync<Account, GetFwAccountsForNamesDto>(Mapper, cancellationToken);
 
         returnObject.Value = currencies;

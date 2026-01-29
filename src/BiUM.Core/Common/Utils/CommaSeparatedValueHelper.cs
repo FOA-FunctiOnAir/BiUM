@@ -53,17 +53,12 @@ public static class CommaSeparatedValueHelper
     {
         if (string.IsNullOrEmpty(text))
         {
-            return Array.Empty<T>();
+            return [];
         }
 
         var type = typeof(T);
 
-        if (!type.IsEnum)
-        {
-            throw new InvalidOperationException($"{type.FullName} is not enum");
-        }
-
-        return ParseAs(text, IsTEnum, ParseTEnum);
+        return type.IsEnum ? ParseAs(text, IsTEnum, ParseTEnum) : [];
 
         bool IsTEnum(string value) => Enum.TryParse<T>(value, ignoreCase, out _);
 
@@ -74,7 +69,7 @@ public static class CommaSeparatedValueHelper
     {
         if (string.IsNullOrEmpty(text))
         {
-            return Array.Empty<T>();
+            return [];
         }
 
         var parts = Split(text);
@@ -89,7 +84,7 @@ public static class CommaSeparatedValueHelper
     private static IReadOnlyList<string> Split(string? text)
     {
         return string.IsNullOrWhiteSpace(text)
-            ? Array.Empty<string>()
+            ? []
             : (IReadOnlyList<string>)text.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 

@@ -10,7 +10,7 @@ public class TenantBaseEntityConfig : IEntityTypeConfiguration<TenantBaseEntity>
     public void Configure(EntityTypeBuilder<TenantBaseEntity> b)
     {
         b.HasKey(x => x.Id);
-        b.Property<Guid>(x => x.Id)
+        b.Property(x => x.Id)
             .HasField("ID")
             .HasColumnOrder(0);
 

@@ -45,15 +45,13 @@ public partial class CrudService
 
             return new ApiResponse();
         }
-        else
-        {
-            var set = $"{QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "true" : "1")}, {QI(api2db["updatedBy"])} = '{CorrelationContext.User?.Id}', {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}";
-            var sqlSoft = $"UPDATE {table} SET {set} WHERE {QI(api2db["id"])} = @p0 AND {QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "false" : "0")}";
 
-            await ExecuteSqlAsync(sqlSoft, new object?[] { id }, cancellationToken);
+        var set = $"{QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "true" : "1")}, {QI(api2db["updatedBy"])} = '{CorrelationContext.User?.Id}', {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}";
+        var sqlSoft = $"UPDATE {table} SET {set} WHERE {QI(api2db["id"])} = @p0 AND {QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "false" : "0")}";
 
-            return new ApiResponse();
-        }
+        await ExecuteSqlAsync(sqlSoft, new object?[] { id }, cancellationToken);
+
+        return new ApiResponse();
     }
 
     public async Task<IDictionary<string, object?>> GetAsync(string code, Guid id, CancellationToken cancellationToken)
@@ -94,8 +92,8 @@ public partial class CrudService
         var parms = new List<object?>();
         var p = 0;
 
-        var allowedApi = new HashSet<string>(version.DomainCrudVersionColumns!.Select(x => x.PropertyName).Concat(BaseApiProperties), StringComparer.OrdinalIgnoreCase);
-        var dynDict = version.DomainCrudVersionColumns!.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+        var allowedApi = new HashSet<string>(version.DomainCrudVersionColumns.Select(x => x.PropertyName).Concat(BaseApiProperties), StringComparer.OrdinalIgnoreCase);
+        var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
 
         foreach (var kv in query)
         {

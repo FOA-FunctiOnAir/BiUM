@@ -262,7 +262,7 @@ public partial class CrudService
         };
         var db2api = api2db.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var c in version.DomainCrudVersionColumns!)
+        foreach (var c in version.DomainCrudVersionColumns)
         {
             api2db[c.PropertyName] = c.ColumnName;
             db2api[c.ColumnName] = c.PropertyName;
@@ -411,7 +411,7 @@ END;
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
-        var dynDict = version.DomainCrudVersionColumns!.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+        var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
         var includeProps = data.Keys.Where(k => dynDict.ContainsKey(k)).ToList();
 
         var newId = GuidGenerator.New();
@@ -465,7 +465,7 @@ END;
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
-        var dynDict = version.DomainCrudVersionColumns!.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+        var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
 
         var set = new StringBuilder();
         var parms = new List<object?>

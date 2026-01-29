@@ -41,43 +41,50 @@ public partial class CrudService
 
             return response;
         }
-        else if (string.IsNullOrEmpty(domainCrud.Code))
+
+        if (string.IsNullOrEmpty(domainCrud.Code))
         {
             response.AddMessage("Crud Code is required", MessageSeverity.Error);
 
             return response;
         }
-        else if (domainCrud.Code.Length < 3)
+
+        if (domainCrud.Code.Length < 3)
         {
             response.AddMessage("Crud Code should be min 3 char", MessageSeverity.Error);
 
             return response;
         }
-        else if (string.IsNullOrEmpty(domainCrud.TableName))
+
+        if (string.IsNullOrEmpty(domainCrud.TableName))
         {
             response.AddMessage("Crud Table Name is required", MessageSeverity.Error);
 
             return response;
         }
-        else if (domainCrud.TableName.Length < 3)
+
+        if (domainCrud.TableName.Length < 3)
         {
             response.AddMessage("Crud Table Name should be min 3 char", MessageSeverity.Error);
 
             return response;
         }
-        else if (domainCrud.DomainCrudColumns.Count == 0)
+
+        if (domainCrud.DomainCrudColumns.Count == 0)
         {
             response.AddMessage("Crud should have columns", MessageSeverity.Error);
 
             return response;
         }
-        else if (domainCrud.DomainCrudColumns.Any(cc => cc.FieldId == Guid.Empty))
+
+        if (domainCrud.DomainCrudColumns.Any(cc => cc.FieldId == Guid.Empty))
         {
             response.AddMessage("Crud Columns should be field", MessageSeverity.Error);
 
             return response;
         }
-        else if (domainCrud.DomainCrudColumns.Any(cc => cc.DataTypeId == Guid.Empty))
+
+        if (domainCrud.DomainCrudColumns.Any(cc => cc.DataTypeId == Guid.Empty))
         {
             response.AddMessage("Crud Columns should be data type", MessageSeverity.Error);
 
@@ -93,35 +100,38 @@ public partial class CrudService
 
         var newDomainCrudVersion = new DomainCrudVersion
         {
-            CorrelationId = GuidGenerator.New(),
+            CorrelationId = CorrelationContext.CorrelationId,
             TenantId = domainCrud.TenantId,
             CrudId = domainCrud.Id,
             TableName = domainCrud.TableName,
             Version = newVersion
         };
 
-        newDomainCrudVersion.DomainCrudVersionColumns = domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn
-        {
-            CorrelationId = GuidGenerator.New(),
-            CrudVersionId = newDomainCrudVersion.Id,
-            PropertyName = c.PropertyName,
-            ColumnName = c.ColumnName,
-            FieldId = c.FieldId,
-            DataTypeId = c.DataTypeId,
-            MaxLength = c.MaxLength,
-            SortOrder = c.SortOrder
-        }).ToList();
+        var newDomainCrudVersionColumns =
+            domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn
+                {
+                    CorrelationId = CorrelationContext.CorrelationId,
+                    CrudVersionId = newDomainCrudVersion.Id,
+                    PropertyName = c.PropertyName,
+                    ColumnName = c.ColumnName,
+                    FieldId = c.FieldId,
+                    DataTypeId = c.DataTypeId,
+                    MaxLength = c.MaxLength,
+                    SortOrder = c.SortOrder
+                })
+                .ToArray();
 
-        var ddl = string.Empty;
         var schema = ResolveSchema(domainCrud.TenantId);
+
+        string ddl;
 
         if (_configuration.GetValue<string>("DatabaseType") == "MSSQL")
         {
             var ensureSchemaSql = GenerateEnsureSchemaMsSql(schema);
 
             var ddlBody = lastDomainCrudVersion is null
-                ? GenerateCreateTableMsSql(domainCrud, newDomainCrudVersion.DomainCrudVersionColumns!)
-                : GenerateDiffMsSql(domainCrud, lastDomainCrudVersion.DomainCrudVersionColumns!, newDomainCrudVersion.DomainCrudVersionColumns!);
+                ? GenerateCreateTableMsSql(domainCrud, newDomainCrudVersionColumns)
+                : GenerateDiffMsSql(domainCrud, lastDomainCrudVersion.DomainCrudVersionColumns, newDomainCrudVersionColumns);
 
             ddl = string.IsNullOrWhiteSpace(ddlBody)
                 ? ensureSchemaSql
@@ -133,8 +143,8 @@ public partial class CrudService
             var ensureSchemaSql = GenerateEnsureSchemaPgSql(schema);
 
             var ddlBody = lastDomainCrudVersion is null
-                ? GenerateCreateTablePgSql(domainCrud, newDomainCrudVersion.DomainCrudVersionColumns!)
-                : GenerateDiffPgSql(domainCrud, lastDomainCrudVersion.DomainCrudVersionColumns!, newDomainCrudVersion.DomainCrudVersionColumns!);
+                ? GenerateCreateTablePgSql(domainCrud, newDomainCrudVersionColumns)
+                : GenerateDiffPgSql(domainCrud, lastDomainCrudVersion.DomainCrudVersionColumns, newDomainCrudVersionColumns);
 
             ddl = string.IsNullOrWhiteSpace(ddlBody)
                 ? ensurePgcryptoSql + ensureSchemaSql
@@ -145,11 +155,11 @@ public partial class CrudService
             return response;
         }
 
-        //using var tx = await _baseContext.Database.BeginTransactionAsync(cancellationToken);
+        // using var transaction = await DbContext.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            var responseSaveCrudServices = await SaveCrudServicesAsync(domainCrud.MicroserviceId, domainCrud.Code, newDomainCrudVersion.DomainCrudVersionColumns, cancellationToken);
+            var responseSaveCrudServices = await SaveCrudServicesAsync(domainCrud.MicroserviceId, domainCrud.Code, newDomainCrudVersionColumns, cancellationToken);
 
             if (!responseSaveCrudServices.Success)
             {
@@ -163,7 +173,7 @@ public partial class CrudService
                 await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
             }
 
-            foreach (var col in newDomainCrudVersion.DomainCrudVersionColumns!)
+            foreach (var col in newDomainCrudVersionColumns)
             {
                 col.CrudVersionId = newDomainCrudVersion.Id;
             }
@@ -172,11 +182,11 @@ public partial class CrudService
 
             await DbContext.SaveChangesAsync(cancellationToken);
 
-            //await tx.CommitAsync(cancellationToken);
+            // await transaction.CommitAsync(cancellationToken);
         }
         catch
         {
-            //await tx.RollbackAsync(cancellationToken);
+            // await transaction.RollbackAsync(cancellationToken);
         }
 
         return response;
@@ -209,7 +219,7 @@ public partial class CrudService
                 Test = command.Test
             };
 
-            domainCrud.DomainCrudColumns = command.DomainCrudColumns.Select(p => new DomainCrudColumn
+            var domainCrudColumns = command.DomainCrudColumns.Select(p => new DomainCrudColumn
             {
                 CrudId = domainCrud.Id,
                 PropertyName = p.PropertyName,
@@ -218,9 +228,10 @@ public partial class CrudService
                 DataTypeId = p.DataTypeId,
                 MaxLength = p.MaxLength,
                 SortOrder = p.SortOrder
-            }).ToList();
+            });
 
             DbContext.DomainCruds.Add(domainCrud);
+            DbContext.DomainCrudColumns.AddRange(domainCrudColumns);
         }
         else
         {
@@ -231,38 +242,60 @@ public partial class CrudService
 
             foreach (var domainCrudColumn in command.DomainCrudColumns ?? [])
             {
-                if (domainCrudColumn._rowStatus == RowStatuses.New)
+                switch (domainCrudColumn._rowStatus)
                 {
-                    var newDomainCrudColumn = new DomainCrudColumn
-                    {
-                        CrudId = domainCrud.Id,
-                        PropertyName = domainCrudColumn.PropertyName,
-                        ColumnName = domainCrudColumn.ColumnName,
-                        FieldId = domainCrudColumn.FieldId,
-                        DataTypeId = domainCrudColumn.DataTypeId,
-                        MaxLength = domainCrudColumn.MaxLength,
-                        SortOrder = domainCrudColumn.SortOrder
-                    };
+                    case RowStatuses.New:
+                        {
+                            var newDomainCrudColumn = new DomainCrudColumn
+                            {
+                                CrudId = domainCrud.Id,
+                                PropertyName = domainCrudColumn.PropertyName,
+                                ColumnName = domainCrudColumn.ColumnName,
+                                FieldId = domainCrudColumn.FieldId,
+                                DataTypeId = domainCrudColumn.DataTypeId,
+                                MaxLength = domainCrudColumn.MaxLength,
+                                SortOrder = domainCrudColumn.SortOrder
+                            };
 
-                    DbContext.DomainCrudColumns.Add(newDomainCrudColumn);
-                }
-                else if (domainCrudColumn._rowStatus == RowStatuses.Edited)
-                {
-                    var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
-                    newDomainCrudColumn!.PropertyName = domainCrudColumn.PropertyName;
-                    newDomainCrudColumn.ColumnName = domainCrudColumn.ColumnName;
-                    newDomainCrudColumn.FieldId = domainCrudColumn.FieldId;
-                    newDomainCrudColumn.DataTypeId = domainCrudColumn.DataTypeId;
-                    newDomainCrudColumn.MaxLength = domainCrudColumn.MaxLength;
-                    newDomainCrudColumn.SortOrder = domainCrudColumn.SortOrder;
+                            DbContext.DomainCrudColumns.Add(newDomainCrudColumn);
 
-                    DbContext.DomainCrudColumns.Update(newDomainCrudColumn);
-                }
-                else if (domainCrudColumn._rowStatus == RowStatuses.Deleted)
-                {
-                    var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
+                            break;
+                        }
 
-                    DbContext.DomainCrudColumns.Remove(newDomainCrudColumn!);
+                    case RowStatuses.Edited:
+                        {
+                            var existingDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
+
+                            if (existingDomainCrudColumn is null)
+                            {
+                                break;
+                            }
+
+                            existingDomainCrudColumn.PropertyName = domainCrudColumn.PropertyName;
+                            existingDomainCrudColumn.ColumnName = domainCrudColumn.ColumnName;
+                            existingDomainCrudColumn.FieldId = domainCrudColumn.FieldId;
+                            existingDomainCrudColumn.DataTypeId = domainCrudColumn.DataTypeId;
+                            existingDomainCrudColumn.MaxLength = domainCrudColumn.MaxLength;
+                            existingDomainCrudColumn.SortOrder = domainCrudColumn.SortOrder;
+
+                            DbContext.DomainCrudColumns.Update(existingDomainCrudColumn);
+
+                            break;
+                        }
+
+                    case RowStatuses.Deleted:
+                        {
+                            var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
+
+                            if (newDomainCrudColumn is null)
+                            {
+                                break;
+                            }
+
+                            DbContext.DomainCrudColumns.Remove(newDomainCrudColumn);
+
+                            break;
+                        }
                 }
             }
 
@@ -362,7 +395,7 @@ public partial class CrudService
         return domainCruds;
     }
 
-    private async Task<ApiResponse> SaveCrudServicesAsync(Guid microserviceId, string code, IList<DomainCrudVersionColumn>? columns, CancellationToken cancellationToken)
+    private async Task<ApiResponse> SaveCrudServicesAsync(Guid microserviceId, string code, ICollection<DomainCrudVersionColumn> columns, CancellationToken cancellationToken)
     {
         var response = new ApiResponse();
 

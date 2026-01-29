@@ -10,7 +10,7 @@ public class TranslationBaseEntityConfig : IEntityTypeConfiguration<TranslationB
     public void Configure(EntityTypeBuilder<TranslationBaseEntity> b)
     {
         b.HasKey(x => x.Id);
-        b.Property<Guid>(x => x.Id)
+        b.Property(x => x.Id)
             .IsRequired()
             .HasField("ID")
             .HasColumnOrder(1);

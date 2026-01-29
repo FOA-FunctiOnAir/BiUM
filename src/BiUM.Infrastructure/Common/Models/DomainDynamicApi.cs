@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -14,16 +15,16 @@ public class DomainDynamicApi : TenantBaseEntity
     public required string Name { get; set; }
 
     [Column("MICROSERVICE_ID")]
-    public required Guid MicroserviceId { get; set; }
+    public Guid MicroserviceId { get; set; }
 
     [Column("HTTP_TYPE")]
-    public required Guid HttpType { get; set; }
+    public Guid HttpType { get; set; }
 
     [Column("EXECUTION_TYPE")]
-    public required Guid ExecutionType { get; set; }
+    public Guid ExecutionType { get; set; }
 
     [Column("RUNTIME_PLATFORM_TYPE")]
-    public required Guid RuntimePlatformType { get; set; }
+    public Guid RuntimePlatformType { get; set; }
 
     [Column("SOURCE_CODE")]
     public required string SourceCode { get; set; }
@@ -34,5 +35,7 @@ public class DomainDynamicApi : TenantBaseEntity
     [Column("COMPILE_ERROR")]
     public string? CompileError { get; set; }
 
-    public virtual ICollection<DomainDynamicApiParameter> Parameters { get; set; } = [];
+    [ForeignKey(nameof(DomainDynamicApiParameter.DynamicApiId))]
+    [JsonIgnore]
+    public ICollection<DomainDynamicApiParameter> DynamicApiParameters { get; } = [];
 }

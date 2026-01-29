@@ -132,14 +132,19 @@ public sealed class TranslationService : ITranslationService
                 Test = command.Test
             };
 
-            domainTranslation.DomainTranslationDetails = command.Translations?.Select(p => new DomainTranslationDetail
+            _baseContext.DomainTranslations.Add(domainTranslation);
+
+            var domainTranslationDetails = command.Translations?.Select(p => new DomainTranslationDetail
             {
                 TranslationId = domainTranslation.Id,
                 LanguageId = p.LanguageId,
                 Text = p.Text
-            }).ToList() ?? [];
+            });
 
-            _baseContext.DomainTranslations.Add(domainTranslation);
+            if (domainTranslationDetails is not null)
+            {
+                _baseContext.DomainTranslationDetails.AddRange(domainTranslationDetails);
+            }
         }
         else
         {
@@ -151,31 +156,52 @@ public sealed class TranslationService : ITranslationService
 
             foreach (var domainTranslationDetail in translations)
             {
-                if (domainTranslationDetail._rowStatus == RowStatuses.New)
+                switch (domainTranslationDetail._rowStatus)
                 {
-                    var newDomainTranslationDetail = new DomainTranslationDetail
-                    {
-                        TranslationId = domainTranslation.Id,
-                        LanguageId = domainTranslationDetail.LanguageId,
-                        Text = domainTranslationDetail.Text
-                    };
+                    case RowStatuses.New:
+                        {
+                            var newDomainTranslationDetail = new DomainTranslationDetail
+                            {
+                                TranslationId = domainTranslation.Id,
+                                LanguageId = domainTranslationDetail.LanguageId,
+                                Text = domainTranslationDetail.Text
+                            };
 
-                    _baseContext.DomainTranslationDetails.Add(newDomainTranslationDetail);
-                }
-                else if (domainTranslationDetail._rowStatus == RowStatuses.Edited)
-                {
-                    var newDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
+                            _baseContext.DomainTranslationDetails.Add(newDomainTranslationDetail);
 
-                    newDomainTranslationDetail!.LanguageId = domainTranslationDetail.LanguageId;
-                    newDomainTranslationDetail.Text = domainTranslationDetail.Text;
+                            break;
+                        }
 
-                    _baseContext.DomainTranslationDetails.Update(newDomainTranslationDetail);
-                }
-                else if (domainTranslationDetail._rowStatus == RowStatuses.Deleted)
-                {
-                    var newDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
+                    case RowStatuses.Edited:
+                        {
+                            var existingDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
 
-                    _baseContext.DomainTranslationDetails.Remove(newDomainTranslationDetail!);
+                            if (existingDomainTranslationDetail is null)
+                            {
+                                break;
+                            }
+
+                            existingDomainTranslationDetail.LanguageId = domainTranslationDetail.LanguageId;
+                            existingDomainTranslationDetail.Text = domainTranslationDetail.Text;
+
+                            _baseContext.DomainTranslationDetails.Update(existingDomainTranslationDetail);
+
+                            break;
+                        }
+
+                    case RowStatuses.Deleted:
+                        {
+                            var newDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
+
+                            if (newDomainTranslationDetail is null)
+                            {
+                                break;
+                            }
+
+                            _baseContext.DomainTranslationDetails.Remove(newDomainTranslationDetail);
+
+                            break;
+                        }
                 }
             }
 

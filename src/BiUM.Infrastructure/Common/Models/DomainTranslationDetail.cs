@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -16,6 +17,7 @@ public class DomainTranslationDetail : BaseEntity
     public Guid LanguageId { get; set; }
 
 
-    [ForeignKey("TranslationId")]
-    public virtual DomainTranslation? DomainTranslation { get; set; }
+    [ForeignKey(nameof(TranslationId))]
+    [JsonIgnore]
+    public DomainTranslation DomainTranslation { get; private set; } = null!;
 }

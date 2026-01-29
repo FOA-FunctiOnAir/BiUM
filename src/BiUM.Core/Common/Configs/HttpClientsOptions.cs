@@ -69,7 +69,8 @@ public class HttpClientsOptions
         {
             return $"{microserviceBaseUrl}{url}";
         }
-        else if (Domains?.TryGetValue(serviceKey, out var baseUrl) is true)
+
+        if (Domains?.TryGetValue(serviceKey, out var baseUrl) is true)
         {
             return $"{baseUrl}{url}";
         }

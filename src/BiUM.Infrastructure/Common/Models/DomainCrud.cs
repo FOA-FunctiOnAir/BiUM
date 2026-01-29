@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -20,7 +21,11 @@ public class DomainCrud : TenantBaseEntity
     public required string TableName { get; set; }
 
 
-    public virtual ICollection<DomainCrudColumn> DomainCrudColumns { get; set; } = [];
+    [ForeignKey(nameof(DomainCrudColumn.CrudId))]
+    [JsonIgnore]
+    public ICollection<DomainCrudColumn> DomainCrudColumns { get; } = [];
 
-    public virtual ICollection<DomainCrudTranslation> DomainCrudTranslations { get; set; } = [];
+    [ForeignKey(nameof(DomainCrudTranslation.RecordId))]
+    [JsonIgnore]
+    public ICollection<DomainCrudTranslation> DomainCrudTranslations { get; } = [];
 }

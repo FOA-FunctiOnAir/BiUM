@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -8,28 +9,31 @@ namespace BiUM.Infrastructure.Common.Models;
 public class DomainDynamicApiVersion : BaseEntity
 {
     [Column("DYNAMIC_API_ID")]
-    public required Guid DynamicApiId { get; set; }
+    public Guid DynamicApiId { get; set; }
 
     [Column("CODE")]
     public required string Code { get; set; }
 
     [Column("VERSION")]
-    public required int Version { get; set; }
+    public int Version { get; set; }
 
     [Column("HTTP_TYPE")]
-    public required Guid HttpType { get; set; }
+    public Guid HttpType { get; set; }
 
     [Column("EXECUTION_TYPE")]
-    public required Guid ExecutionType { get; set; }
+    public Guid ExecutionType { get; set; }
 
     [Column("RUNTIME_PLATFORM_TYPE")]
-    public required Guid RuntimePlatformType { get; set; }
+    public Guid RuntimePlatformType { get; set; }
 
     [Column("SOURCE_CODE")]
     public required string SourceCode { get; set; }
 
-    public virtual ICollection<DomainDynamicApiVersionParameter> Parameters { get; set; } = [];
-
     [ForeignKey(nameof(DynamicApiId))]
-    public virtual DomainDynamicApi? DynamicApi { get; set; }
+    [JsonIgnore]
+    public DomainDynamicApi DynamicApi { get; private set; } = null!;
+
+    [ForeignKey(nameof(DomainDynamicApiVersionParameter.DynamicApiVersionId))]
+    [JsonIgnore]
+    public ICollection<DomainDynamicApiVersionParameter> DynamicApiVersionParameters { get; } = [];
 }

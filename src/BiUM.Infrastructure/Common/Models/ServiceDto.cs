@@ -6,17 +6,17 @@ namespace BiUM.Infrastructure.Common.Models;
 
 public class ServiceDto : BaseTenantDto
 {
-    public required Guid MicroserviceId { get; set; }
+    public Guid MicroserviceId { get; set; }
     public string? MicroserviceRootPath { get; set; }
-    public required Guid Type { get; set; }
+    public Guid Type { get; set; }
     public required string Name { get; set; }
     public required string Url { get; set; }
-    public required Guid HttpType { get; set; }
+    public Guid HttpType { get; set; }
     public int? TimeoutMs { get; set; }
     public Guid? ServiceAuthenticationId { get; set; }
     public ServiceAuthenticationDto? Authentication { get; set; }
 
-    public virtual ICollection<ServiceParameterDto> ServiceParameters { get; set; } = [];
+    public ICollection<ServiceParameterDto> ServiceParameters { get; set; } = [];
 }
 
 public class ServiceParameterDto : BaseDto

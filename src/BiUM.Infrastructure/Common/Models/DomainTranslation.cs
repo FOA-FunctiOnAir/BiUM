@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -13,5 +14,7 @@ public class DomainTranslation : BaseEntity
     [Column("CODE")]
     public required string Code { get; set; }
 
-    public virtual ICollection<DomainTranslationDetail> DomainTranslationDetails { get; set; } = [];
+    [ForeignKey(nameof(DomainTranslationDetail.TranslationId))]
+    [JsonIgnore]
+    public ICollection<DomainTranslationDetail> DomainTranslationDetails { get; } = [];
 }

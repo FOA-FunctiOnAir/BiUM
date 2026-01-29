@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Infrastructure.Common.Models;
 
@@ -10,14 +11,15 @@ public class DomainDynamicApiVersionParameter : BaseEntity
     public Guid DynamicApiVersionId { get; set; }
 
     [Column("DIRECTION_TYPE")]
-    public required Guid DirectionType { get; set; }
+    public Guid DirectionType { get; set; }
 
     [Column("PROPERTY")]
     public required string Property { get; set; }
 
     [Column("FIELD_ID")]
-    public required Guid FieldId { get; set; }
+    public Guid FieldId { get; set; }
 
     [ForeignKey(nameof(DynamicApiVersionId))]
-    public virtual DomainDynamicApiVersion? DynamicApiVersion { get; set; }
+    [JsonIgnore]
+    public DomainDynamicApiVersion DynamicApiVersion { get; private set; } = null!;
 }

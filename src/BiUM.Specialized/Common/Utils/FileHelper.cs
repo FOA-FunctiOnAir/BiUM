@@ -18,7 +18,8 @@ public static class FileHelper
 
             return response;
         }
-        else if (string.IsNullOrEmpty(resourceName))
+
+        if (string.IsNullOrEmpty(resourceName))
         {
             response.AddMessage("ResourceName is null", MessageSeverity.Error);
 

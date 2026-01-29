@@ -9,43 +9,61 @@ public enum EntityFeatures
     EntityUpdatedEvent = 3,
     EntityDeletedEvent = 4,
 
-    EntityEvents = 9,
+    EntityEvents = 49,
 
     Save = 50, // Controller, Command, Repository
     Delete = 51, // Controller, Command, Repository
     UpdateBolt = 52, // Controller, Command, Repository
     UpdatePartial = 53, // Controller, Command, Repository
 
-    SaveCommand = 60,  // Command, Repository
-    DeleteCommand = 61,  // Command, Repository
-    UpdateBoltCommand = 62,  // Command, Repository
-    UpdatePartialCommand = 63,  // Command, Repository
+    EntityCommandControllers = 99,  // All Controllers, All Commands, All Repositories
 
-    EntityCommands = 69,  // All Commands, All Repository
+    SaveCommandAndRepository = 100,  // Command, Repository
+    DeleteCommandAndRepository = 101,  // Command, Repository
+    UpdateBoltCommandAndRepository = 102,  // Command, Repository
+    UpdatePartialCommandAndRepository = 103,  // Command, Repository
 
-    SaveRepository = 70, // Repository
-    DeleteRepository = 71, // Repository
-    UpdateBoltRepository = 72, // Repository
-    UpdatePartialRepository = 73, // Repository
+    EntityCommandsAndRepositories = 149,  // All Commands, All Repositories
 
-    EntityRepositories = 79, // All Repository
+    SaveCommand = 150,  // Command
+    DeleteCommand = 151,  // Command
+    UpdateBoltCommand = 152,  // Command
+    UpdatePartialCommand = 153,  // Command
 
-    Get = 80, // Controller, Query, Repository
-    GetList = 81, // Controller, Query, Repository
-    GetForNames = 82, // Controller, Query, Repository
-    GetForParameter = 83, // Controller, Query, Repository
+    EntityCommands = 199,  // All Commands, All Repository
 
-    GetQuery = 90, // Query, Repository
-    GetListQuery = 91, // Query, Repository
-    GetForNamesQuery = 92, // Query, Repository
-    GetForParameterQuery = 93, // Query, Repository
+    SaveRepository = 200, // Repository
+    DeleteRepository = 201, // Repository
+    UpdateBoltRepository = 202, // Repository
+    UpdatePartialRepository = 203, // Repository
 
-    EntityQueries = 99, // All Query, All Repository
+    EntityCommandRepositories = 249, // All Command Repository
 
-    GetRepository = 100, // Repository
-    GetListRepository = 101, // Repository
-    GetForNamesRepository = 102, // Repository
-    GetForParameterRepository = 103, // Repository
+    Get = 250, // Controller, Query, Repository
+    GetList = 251, // Controller, Query, Repository
+    GetForNames = 252, // Controller, Query, Repository
+    GetForParameter = 253, // Controller, Query, Repository
 
-    EntityQueryRepositories = 109 // All Repository
+    EntityQueryControllers = 299,  // All Controllers, All Queries, All Repositories
+
+    GetQueryAndRepository = 300, // Query, Repository
+    GetListQueryAndRepository = 301, // Query, Repository
+    GetForNamesQueryAndRepository = 302, // Query, Repository
+    GetForParameterQueryAndRepository = 303, // Query, Repository
+
+    EntityQueriesAndRepositories = 349,  // All Queries, All Repositories
+
+    GetQuery = 350, // Query
+    GetListQuery = 351, // Query
+    GetForNamesQuery = 352, // Query
+    GetForParameterQuery = 353, // Query
+
+    EntityQueries = 399, // All Query, All Repository
+
+    GetRepository = 400, // Repository
+    GetListRepository = 401, // Repository
+    GetForNamesRepository = 402, // Repository
+    GetForParameterRepository = 403, // Repository
+
+    EntityQueryRepositories = 449 // All Queries Repository
 }

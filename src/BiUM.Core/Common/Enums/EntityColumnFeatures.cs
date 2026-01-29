@@ -6,7 +6,12 @@ public enum EntityColumnFeatures
 
     EntityTranslation = 10,
 
-    NotSearchable = 100,
+    SetByContextTenantId = 100,
+    SetByContextUserId = 101,
+    SetByContextWorkgroupId = 102,
+    SetByContextRoleId = 103,
 
-    NotReturnForList = 150
+    NotSearchable = 200,
+
+    NotReturnForList = 300
 }

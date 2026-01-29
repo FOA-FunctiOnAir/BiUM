@@ -21,12 +21,12 @@ public sealed class RequestDurationMiddleware
         if (!_logger.IsEnabled(LogLevel.Debug))
         {
             await _next.Invoke(context);
+
             return;
         }
 
         var startTs = Stopwatch.GetTimestamp();
 
-        // execute the request pipeline
         await _next.Invoke(context);
 
         var elapsedTime = Stopwatch.GetElapsedTime(startTs);

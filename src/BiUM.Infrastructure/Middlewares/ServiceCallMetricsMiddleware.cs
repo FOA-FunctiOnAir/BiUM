@@ -85,6 +85,7 @@ public class ServiceCallMetricsMiddleware
         return path.StartsWith("/health") ||
                path.StartsWith("/swagger") ||
                path.StartsWith("/version") ||
+               path.StartsWith("/index.html") ||
                path.StartsWith("/favicon.ico");
     }
 

@@ -1,4 +1,4 @@
-﻿using MemoryPack;
+using MemoryPack;
 
 namespace BiApp.Test2.Contract.Models.Rpc;
 

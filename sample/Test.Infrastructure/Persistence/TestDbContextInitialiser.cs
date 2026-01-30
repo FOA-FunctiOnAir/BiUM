@@ -10,15 +10,15 @@ namespace BiApp.Test.Infrastructure.Persistence;
 
 public partial class DomainBoltDbContextInitialiser : BoltDbContextInitialiser<BoltDbContext, TestDbContext>
 {
-    public DomainBoltDbContextInitialiser(ILogger<DomainBoltDbContextInitialiser> logger, IOptions<BoltOptions> boltOptions, BoltDbContext boltContext, TestDbContext dbContext)
-        : base(logger, boltOptions, boltContext, dbContext)
+    public DomainBoltDbContextInitialiser(IServiceProvider serviceProvider, IOptions<BoltOptions> boltOptions, BoltDbContext boltContext, TestDbContext dbContext)
+        : base(serviceProvider, boltOptions, boltContext, dbContext)
     {
     }
 }
 
 public partial class TestDbContextInitialiser : DbContextInitialiser<TestDbContext>
 {
-    public TestDbContextInitialiser(ILogger<TestDbContextInitialiser> logger, TestDbContext dbContext) : base(dbContext, logger)
+    public TestDbContextInitialiser(TestDbContext dbContext, IServiceProvider serviceProvider) : base(dbContext, serviceProvider)
     {
     }
 

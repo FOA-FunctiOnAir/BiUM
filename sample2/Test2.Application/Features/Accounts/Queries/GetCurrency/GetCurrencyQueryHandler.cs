@@ -2,7 +2,6 @@ using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,9 +18,9 @@ public class GetCurrencyQueryHandler : IQueryHandler<GetCurrencyQuery, string>
 
     public async Task<ApiResponse<string>> Handle(GetCurrencyQuery query, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(query.Id);
+        ArgumentNullException.ThrowIfNull(query.Id);
 
-        var response = await _accountRepository.GetCurrency(query.MultipleIds.First(), cancellationToken);
+        var response = await _accountRepository.GetCurrency(query.Id.Value, cancellationToken);
 
         return response;
     }

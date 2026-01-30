@@ -16,7 +16,7 @@ public partial class CrudService
 {
     private static string GenerateCreateTablePgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
     {
-        var schema = ResolveSchema(crud.TenantId);
+        var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
         var sb = new StringBuilder();
         var table = $"{Q(schema)}.{Q(crud.TableName)}";
@@ -58,7 +58,7 @@ public partial class CrudService
 
     private static string GenerateDiffPgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
     {
-        var schema = ResolveSchema(crud.TenantId);
+        var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
         var sb = new StringBuilder();
         var table = $"{Q(schema)}.{Q(crud.TableName)}";
@@ -122,7 +122,7 @@ public partial class CrudService
 
     private static string GenerateCreateTableMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
     {
-        var schema = ResolveSchema(crud.TenantId);
+        var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
         var sb = new StringBuilder();
         var table = $"[{schema}].[{Safe(crud.TableName)}]";
@@ -166,7 +166,7 @@ public partial class CrudService
 
     private static string GenerateDiffMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
     {
-        var schema = ResolveSchema(crud.TenantId);
+        var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
         var sb = new StringBuilder();
         var table = $"[{schema}].[{Safe(crud.TableName)}]";
@@ -281,10 +281,11 @@ public partial class CrudService
 
     public static string GenUuidSqlDefault(string db) => db == "PostgreSQL" ? "gen_random_uuid()" : "NEWID()";
 
-    private static string ResolveSchema(Guid tenantId)
+    private static string ResolveSchema(Guid applicationId, Guid tenantId)
     {
-        var compact = tenantId.ToString("N");
-        var shorty = compact[..16];
+        var applicationIdString = applicationId.ToString("N");
+        var tenantIdString = tenantId.ToString("N");
+        var shorty = $"{applicationIdString[..16]}_{tenantIdString[..16]}";
 
         return $"t_{shorty}";
     }
@@ -407,7 +408,7 @@ END;
         var (api2db, _) = BuildMaps(version);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
-        var schema = ResolveSchema(version.TenantId);
+        var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -428,7 +429,7 @@ END;
 
         AddParam(newId);
         AddParam(CorrelationContext.CorrelationId);
-        AddParam(CorrelationContext.TenantId);
+        AddParam(CorrelationContext.TenantId!.Value);
         AddParam(true);
         AddParam(false);
         AddParam(CorrelationContext.User?.Id);
@@ -461,7 +462,7 @@ END;
         var (api2db, _) = BuildMaps(version);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
-        var schema = ResolveSchema(version.TenantId);
+        var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 

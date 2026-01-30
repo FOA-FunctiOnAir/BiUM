@@ -17,11 +17,11 @@ public partial class CrudService
 
         if (TryGetGuid(data, "Id", out var id))
         {
-            await UpdateInternalAsync(version, id, data, cancellationToken);
+            _ = await UpdateInternalAsync(version, id, data, cancellationToken);
         }
         else
         {
-            await CreateInternalAsync(version, data, cancellationToken);
+            _ = await CreateInternalAsync(version, data, cancellationToken);
         }
 
         return new ApiResponse();
@@ -33,7 +33,7 @@ public partial class CrudService
         var (api2db, _) = BuildMaps(version);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
-        var schema = ResolveSchema(version.TenantId);
+        var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -60,7 +60,7 @@ public partial class CrudService
         var (api2db, db2api) = BuildMaps(version);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
-        var schema = ResolveSchema(version.TenantId);
+        var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -81,7 +81,7 @@ public partial class CrudService
         var (api2db, db2api) = BuildMaps(version);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
-        var schema = ResolveSchema(version.TenantId);
+        var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
         var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 

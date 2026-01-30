@@ -8,6 +8,9 @@ namespace BiUM.Infrastructure.Common.Models;
 [Table("__CRUD", Schema = "dbo")]
 public class DomainCrud : TenantBaseEntity
 {
+    [Column("APPLICATION_ID")]
+    public Guid ApplicationId { get; set; }
+
     [Column("MICROSERVICE_ID")]
     public Guid MicroserviceId { get; set; }
 
@@ -20,12 +23,9 @@ public class DomainCrud : TenantBaseEntity
     [Column("TABLE_NAME")]
     public required string TableName { get; set; }
 
-
-    [ForeignKey(nameof(DomainCrudColumn.CrudId))]
     [JsonIgnore]
     public ICollection<DomainCrudColumn> DomainCrudColumns { get; } = [];
 
-    [ForeignKey(nameof(DomainCrudTranslation.RecordId))]
     [JsonIgnore]
     public ICollection<DomainCrudTranslation> DomainCrudTranslations { get; } = [];
 }

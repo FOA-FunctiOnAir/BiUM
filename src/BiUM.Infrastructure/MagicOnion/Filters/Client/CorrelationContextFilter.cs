@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Authorization;
+using BiUM.Core.Authorization;
 using BiUM.Core.Constants;
 using BiUM.Core.Serialization;
 using MagicOnion.Client;

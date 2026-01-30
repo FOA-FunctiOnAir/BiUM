@@ -1,5 +1,6 @@
 using BiApp.Test2.Application.Repositories;
 using BiUM.Contract.Models.Api;
+using BiUM.Core.Common.Utils;
 using BiUM.Specialized.Common.MediatR;
 using System.Collections.Generic;
 using System.Threading;
@@ -18,7 +19,12 @@ public class GetFwAccountsForNamesQueryHandler : IForValuesQueryHandler<GetFwAcc
 
     public async Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> Handle(GetFwAccountsForNamesQuery query, CancellationToken cancellationToken)
     {
-        var response = await _currencyRepository.GetFwAccountsForNames(query.MultipleIds, cancellationToken);
+        if (ValidationHelper.CheckNull(query?.Ids))
+        {
+            return ApiResponse.EmptyArray<GetFwAccountsForNamesDto>();
+        }
+
+        var response = await _currencyRepository.GetFwAccountsForNames(query.Ids, cancellationToken);
 
         return response;
     }

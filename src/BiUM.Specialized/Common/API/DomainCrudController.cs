@@ -65,7 +65,7 @@ public class DomainCrudController : ApiControllerBase
     public async Task<PaginatedApiResponse<DomainCrudsDto>> GetDomainCrudsAsync([FromQuery] GetDomainCrudsQuery query, CancellationToken cancellationToken)
     {
 
-        var response = await _crudService.GetDomainCrudsAsync(query.Name, query.Code, query.Q, query.PageStart, query.PageSize, cancellationToken);
+        var response = await _crudService.GetDomainCrudsAsync(query.ApplicationId, query.Name, query.Code, query.Q, query.PageStart, query.PageSize, cancellationToken);
 
         return response;
     }

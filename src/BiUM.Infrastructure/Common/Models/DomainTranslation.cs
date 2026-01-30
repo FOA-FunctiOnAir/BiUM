@@ -14,7 +14,6 @@ public class DomainTranslation : BaseEntity
     [Column("CODE")]
     public required string Code { get; set; }
 
-    [ForeignKey(nameof(DomainTranslationDetail.TranslationId))]
     [JsonIgnore]
     public ICollection<DomainTranslationDetail> DomainTranslationDetails { get; } = [];
 }

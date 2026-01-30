@@ -1,4 +1,4 @@
-﻿using MagicOnion.Client;
+using MagicOnion.Client;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Threading.Tasks;

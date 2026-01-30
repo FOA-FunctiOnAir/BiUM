@@ -1,4 +1,4 @@
-﻿using BiUM.Contract.Enums;
+using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Configs;
 using Grpc.Core;

@@ -1,5 +1,4 @@
 using BiUM.Contract.Models.Api;
-using BiUM.Core.Common.Utils;
 using System;
 using System.Collections.Generic;
 
@@ -7,9 +6,8 @@ namespace BiUM.Specialized.Common.MediatR;
 
 public record BaseQuery<TType> : BaseRequestDto<TType>
 {
-    public string? Id { get; init; }
-
-    public IReadOnlyList<Guid> MultipleIds => field ??= CommaSeparatedValueHelper.ParseAsGuids(Id);
+    public Guid? Id { get; set; }
+    public IReadOnlyList<Guid>? Ids { get; set; }
 
     public string? Q { get; init; }
     public int? PageStart { get; init; }

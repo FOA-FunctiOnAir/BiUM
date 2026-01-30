@@ -1,5 +1,6 @@
-﻿using BiUM.Contract.Enums;
+using BiUM.Contract.Enums;
 using MemoryPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -25,6 +26,10 @@ public partial class ApiResponse
     public ApiResponse()
     {
     }
+
+#pragma warning disable CA1000
+    public static ApiResponse<IList<TValue>> EmptyArray<TValue>() => new() { Value = [] };
+#pragma warning restore CA1000
 
     [MemoryPackConstructor]
     protected ApiResponse(List<ResponseMessage> responseMessages)
@@ -121,6 +126,11 @@ public partial class ApiResponse<TValue> : ApiResponse
     {
         Value = value;
     }
+
+    //#pragma warning disable CA1000
+    //    //public static ApiResponse<IList<TValue>> EmptyArray() => new() { Value = [] };
+    //    public static ApiResponse<IList<TValue>> EmptyArray<TValue>() => new() { Value = [] };
+    //#pragma warning restore CA1000
 
     [MemoryPackConstructor]
     protected ApiResponse(TValue? value, List<ResponseMessage> responseMessages) : base(responseMessages)

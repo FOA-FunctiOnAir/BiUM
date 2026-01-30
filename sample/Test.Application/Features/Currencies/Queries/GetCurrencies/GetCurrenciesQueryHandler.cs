@@ -3,7 +3,6 @@ using BiApp.Test.Application.Repositories;
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,7 +20,7 @@ public class GetCurrenciesQueryHandler : IPaginatedQueryHandler<GetCurrenciesQue
     public async Task<PaginatedApiResponse<CurrenciesDto>> Handle(GetCurrenciesQuery query, CancellationToken cancellationToken)
     {
         var repositoryResponse = await _currencyRepository.GetCurrencies(
-            query.MultipleIds.FirstOrDefault(),
+            query.Id,
             query.Name,
             query.Code,
             query.PageStart,

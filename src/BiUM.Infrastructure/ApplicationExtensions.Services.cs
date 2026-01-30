@@ -239,7 +239,7 @@ public static partial class ApplicationExtensions
 
                 if (objectKey is not string key)
                 {
-                    throw  new InvalidOperationException($"Expected string key but provided {objectKey.GetType().Name}");
+                    throw new InvalidOperationException($"Expected string key but provided {objectKey.GetType().Name}");
                 }
 
                 var grpcOptionsAccessor = sp.GetRequiredService<IOptions<BiGrpcOptions>>();

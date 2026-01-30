@@ -24,8 +24,8 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     private readonly TBoltDbContext _boltContext;
     private static readonly ConcurrentDictionary<Type, Func<DbContext, IQueryable>> QueryFactoryCache = new();
 
-    public BoltDbContextInitialiser(ILogger<BoltDbContextInitialiser<TBoltDbContext, TDbContext>> logger, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext dbContext)
-        : base(dbContext, logger)
+    public BoltDbContextInitialiser(IServiceProvider serviceProvider, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext dbContext)
+        : base(dbContext, serviceProvider)
     {
         _boltOptions = boltOptions.Value;
         _boltContext = boltContext;

@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Configs;
 using BiUM.Infrastructure.MagicOnion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;

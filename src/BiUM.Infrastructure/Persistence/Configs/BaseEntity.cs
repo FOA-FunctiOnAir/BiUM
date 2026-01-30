@@ -1,7 +1,6 @@
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
 
 namespace BiUM.Infrastructure.Persistence.Configs;
 

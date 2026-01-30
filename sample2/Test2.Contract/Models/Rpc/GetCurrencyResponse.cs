@@ -1,4 +1,4 @@
-﻿using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.Api;
 using MemoryPack;
 using System.Collections.Generic;
 

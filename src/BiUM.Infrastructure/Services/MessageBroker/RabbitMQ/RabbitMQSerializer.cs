@@ -1,4 +1,4 @@
-﻿using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.MessageBroker.RabbitMQ;
 using MemoryPack;
 using MemoryPack.Compression;
 using System;

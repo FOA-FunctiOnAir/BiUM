@@ -8,6 +8,7 @@ namespace BiUM.Specialized.Common.Crud;
 
 public class DomainCrudsDto : BaseDto, IMapFrom<DomainCrud>
 {
+    public Guid ApplicationId { get; set; }
     public Guid MicroserviceId { get; set; }
     public string? Name { get; set; }
     public string? Code { get; set; }

@@ -1,4 +1,4 @@
-﻿using BiUM.Core.Common.Exceptions;
+using BiUM.Core.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -42,6 +42,8 @@ public static partial class Extensions
             OperationCanceledException => StatusCodes.Status500InternalServerError,
 
             IndexOutOfRangeException => StatusCodes.Status400BadRequest,
+
+            ApplicationStartupException => StatusCodes.Status500InternalServerError,
 
             _ => StatusCodes.Status500InternalServerError
         };

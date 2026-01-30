@@ -44,6 +44,7 @@ public interface ICrudService
         CancellationToken cancellationToken);
 
     Task<PaginatedApiResponse<DomainCrudsDto>> GetDomainCrudsAsync(
+        Guid? applicationId,
         string? name,
         string? code,
         string? q,

@@ -1,4 +1,6 @@
+using BiUM.Core.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -9,19 +11,21 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     where TDbContext : DbContext
 {
     protected TDbContext DbContext { get; }
+    protected IServiceProvider ServiceProvider { get; }
     protected ILogger<DbContextInitialiser<TDbContext>> Logger { get; }
 
-    protected DbContextInitialiser(TDbContext dbContext, ILogger<DbContextInitialiser<TDbContext>> logger)
+    protected DbContextInitialiser(TDbContext dbContext, IServiceProvider serviceProvider)
     {
         DbContext = dbContext;
-        Logger = logger;
+        ServiceProvider = serviceProvider;
+        Logger = serviceProvider.GetRequiredService<ILogger<DbContextInitialiser<TDbContext>>>();
     }
 
     public virtual async Task InitialiseAsync()
     {
         try
         {
-            await DbContext.Database.EnsureCreatedAsync();
+            _ = await DbContext.Database.EnsureCreatedAsync();
 
             if (DbContext.Database.IsSqlServer())
             {
@@ -32,7 +36,7 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
         {
             Logger.LogError(ex, "An error occurred while initialising the database.");
 
-            throw;
+            throw new ApplicationStartupException(nameof(DbContextInitialiser<>));
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using BiApp.Test.Contract.Models.Rpc;
+using BiApp.Test.Contract.Models.Rpc;
 using MagicOnion;
 
 namespace BiApp.Test.Contract.Services.Rpc;

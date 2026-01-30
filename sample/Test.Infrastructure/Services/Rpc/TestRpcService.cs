@@ -1,4 +1,4 @@
-﻿using BiApp.Test.Application.Repositories;
+using BiApp.Test.Application.Repositories;
 using BiApp.Test.Contract.Models.Rpc;
 using BiApp.Test.Contract.Services.Rpc;
 using BiUM.Specialized.Services;

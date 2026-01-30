@@ -1,6 +1,7 @@
 using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
@@ -93,7 +94,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 ContentType = DefaultContentType,
                 ContentEncoding = DefaultContentEncoding,
                 Persistent = true,
-                MessageId = Guid.NewGuid().ToString("N"),
+                MessageId = GuidGenerator.New().ToString("N"),
                 CorrelationId = correlationContext.CorrelationId.ToString("N"),
                 Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
                 Headers = new Dictionary<string, object?>()
@@ -139,7 +140,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 ContentType = DefaultContentType,
                 ContentEncoding = DefaultContentEncoding,
                 Persistent = true,
-                MessageId = Guid.NewGuid().ToString("N"),
+                MessageId = GuidGenerator.New().ToString("N"),
                 CorrelationId = correlationContext.CorrelationId.ToString("N"),
                 Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
                 Headers = new Dictionary<string, object?>()

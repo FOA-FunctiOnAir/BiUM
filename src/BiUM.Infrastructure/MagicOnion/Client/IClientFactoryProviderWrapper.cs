@@ -1,4 +1,4 @@
-﻿using MagicOnion;
+using MagicOnion;
 using MagicOnion.Client;
 
 namespace BiUM.Infrastructure.MagicOnion.Client;

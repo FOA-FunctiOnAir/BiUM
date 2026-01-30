@@ -1,4 +1,4 @@
-﻿using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.MessageBroker.RabbitMQ;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,5 +17,5 @@ public static class RabbitMQSerializerExtensions
         this IRabbitMQSerializer serializer,
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken) =>
-        (T?) await serializer.DeserializeAsync(value, typeof(T), cancellationToken);
+        (T?)await serializer.DeserializeAsync(value, typeof(T), cancellationToken);
 }

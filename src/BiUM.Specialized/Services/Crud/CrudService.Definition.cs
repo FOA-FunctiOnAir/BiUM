@@ -35,6 +35,13 @@ public partial class CrudService
             return response;
         }
 
+        if (domainCrud.ApplicationId == Guid.Empty)
+        {
+            response.AddMessage("Crud Application is required", MessageSeverity.Error);
+
+            return response;
+        }
+
         if (domainCrud.MicroserviceId == Guid.Empty)
         {
             response.AddMessage("Crud Microservice is required", MessageSeverity.Error);
@@ -101,6 +108,7 @@ public partial class CrudService
         var newDomainCrudVersion = new DomainCrudVersion
         {
             CorrelationId = CorrelationContext.CorrelationId,
+            ApplicationId = domainCrud.ApplicationId,
             TenantId = domainCrud.TenantId,
             CrudId = domainCrud.Id,
             TableName = domainCrud.TableName,
@@ -109,19 +117,19 @@ public partial class CrudService
 
         var newDomainCrudVersionColumns =
             domainCrud.DomainCrudColumns.Select(c => new DomainCrudVersionColumn
-                {
-                    CorrelationId = CorrelationContext.CorrelationId,
-                    CrudVersionId = newDomainCrudVersion.Id,
-                    PropertyName = c.PropertyName,
-                    ColumnName = c.ColumnName,
-                    FieldId = c.FieldId,
-                    DataTypeId = c.DataTypeId,
-                    MaxLength = c.MaxLength,
-                    SortOrder = c.SortOrder
-                })
-                .ToArray();
+            {
+                CorrelationId = CorrelationContext.CorrelationId,
+                CrudVersionId = newDomainCrudVersion.Id,
+                PropertyName = c.PropertyName,
+                ColumnName = c.ColumnName,
+                FieldId = c.FieldId,
+                DataTypeId = c.DataTypeId,
+                MaxLength = c.MaxLength,
+                SortOrder = c.SortOrder
+            })
+            .ToArray();
 
-        var schema = ResolveSchema(domainCrud.TenantId);
+        var schema = ResolveSchema(domainCrud.ApplicationId, domainCrud.TenantId);
 
         string ddl;
 
@@ -170,7 +178,7 @@ public partial class CrudService
 
             if (!string.IsNullOrWhiteSpace(ddl))
             {
-                await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
+                _ = await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
             }
 
             foreach (var col in newDomainCrudVersionColumns)
@@ -178,9 +186,10 @@ public partial class CrudService
                 col.CrudVersionId = newDomainCrudVersion.Id;
             }
 
-            DbContext.DomainCrudVersions.Add(newDomainCrudVersion);
+            _ = DbContext.DomainCrudVersions.Add(newDomainCrudVersion);
+            DbContext.DomainCrudVersionColumns.AddRange(newDomainCrudVersionColumns);
 
-            await DbContext.SaveChangesAsync(cancellationToken);
+            _ = await DbContext.SaveChangesAsync(cancellationToken);
 
             // await transaction.CommitAsync(cancellationToken);
         }
@@ -198,6 +207,13 @@ public partial class CrudService
     {
         var response = new ApiResponse();
 
+        if (command.ApplicationId == Guid.Empty)
+        {
+            response.AddMessage("Application is required", MessageSeverity.Error);
+
+            return response;
+        }
+
         if (command.MicroserviceId == Guid.Empty)
         {
             response.AddMessage("Microservice is required", MessageSeverity.Error);
@@ -211,6 +227,8 @@ public partial class CrudService
         {
             domainCrud = new DomainCrud
             {
+                Id = command.Id ?? GuidGenerator.New(),
+                ApplicationId = command.ApplicationId,
                 TenantId = CorrelationContext.TenantId!.Value,
                 MicroserviceId = command.MicroserviceId,
                 Name = command.NameTr!.ToTranslationString(),
@@ -230,7 +248,7 @@ public partial class CrudService
                 SortOrder = p.SortOrder
             });
 
-            DbContext.DomainCruds.Add(domainCrud);
+            _ = DbContext.DomainCruds.Add(domainCrud);
             DbContext.DomainCrudColumns.AddRange(domainCrudColumns);
         }
         else
@@ -257,7 +275,7 @@ public partial class CrudService
                                 SortOrder = domainCrudColumn.SortOrder
                             };
 
-                            DbContext.DomainCrudColumns.Add(newDomainCrudColumn);
+                            _ = DbContext.DomainCrudColumns.Add(newDomainCrudColumn);
 
                             break;
                         }
@@ -278,7 +296,7 @@ public partial class CrudService
                             existingDomainCrudColumn.MaxLength = domainCrudColumn.MaxLength;
                             existingDomainCrudColumn.SortOrder = domainCrudColumn.SortOrder;
 
-                            DbContext.DomainCrudColumns.Update(existingDomainCrudColumn);
+                            _ = DbContext.DomainCrudColumns.Update(existingDomainCrudColumn);
 
                             break;
                         }
@@ -292,19 +310,19 @@ public partial class CrudService
                                 break;
                             }
 
-                            DbContext.DomainCrudColumns.Remove(newDomainCrudColumn);
+                            _ = DbContext.DomainCrudColumns.Remove(newDomainCrudColumn);
 
                             break;
                         }
                 }
             }
 
-            DbContext.DomainCruds.Update(domainCrud);
+            _ = DbContext.DomainCruds.Update(domainCrud);
         }
 
         await SaveTranslations(DbContext.DomainCrudTranslations, domainCrud.Id, nameof(domainCrud.Name), command.NameTr ?? [], cancellationToken);
 
-        await DbContext.SaveChangesAsync(cancellationToken);
+        _ = await DbContext.SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -337,9 +355,9 @@ public partial class CrudService
             return response;
         }
 
-        DbContext.DomainCruds.Remove(domainCrud);
+        _ = DbContext.DomainCruds.Remove(domainCrud);
 
-        await DbContext.SaveChangesAsync(cancellationToken);
+        _ = await DbContext.SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -377,6 +395,7 @@ public partial class CrudService
     }
 
     public virtual async Task<PaginatedApiResponse<DomainCrudsDto>> GetDomainCrudsAsync(
+        Guid? applicationId,
         string? name,
         string? code,
         string? q,
@@ -386,10 +405,11 @@ public partial class CrudService
     {
         var domainCruds = await DbContext.DomainCruds
             .Include(x => x.DomainCrudTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
-            .Where(a =>
-                (string.IsNullOrEmpty(q) || a.DomainCrudTranslations.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
-                (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
-                (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
+            .Where(dc =>
+                (!applicationId.HasValue || dc.ApplicationId == applicationId.Value) &&
+                (string.IsNullOrEmpty(q) || dc.DomainCrudTranslations.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
+                (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(dc.Name) && dc.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
+                (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(dc.Code) && dc.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(Mapper, pageStart, pageSize, cancellationToken);
 
         return domainCruds;

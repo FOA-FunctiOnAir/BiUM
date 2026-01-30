@@ -35,7 +35,6 @@ public class DomainDynamicApi : TenantBaseEntity
     [Column("COMPILE_ERROR")]
     public string? CompileError { get; set; }
 
-    [ForeignKey(nameof(DomainDynamicApiParameter.DynamicApiId))]
     [JsonIgnore]
     public ICollection<DomainDynamicApiParameter> DynamicApiParameters { get; } = [];
 }

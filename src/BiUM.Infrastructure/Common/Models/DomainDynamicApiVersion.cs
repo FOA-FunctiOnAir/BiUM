@@ -33,7 +33,6 @@ public class DomainDynamicApiVersion : BaseEntity
     [JsonIgnore]
     public DomainDynamicApi DynamicApi { get; private set; } = null!;
 
-    [ForeignKey(nameof(DomainDynamicApiVersionParameter.DynamicApiVersionId))]
     [JsonIgnore]
     public ICollection<DomainDynamicApiVersionParameter> DynamicApiVersionParameters { get; } = [];
 }

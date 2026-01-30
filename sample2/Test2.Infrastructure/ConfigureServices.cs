@@ -15,15 +15,15 @@ public static class ConfigureServices
 {
     public static IServiceCollection AddDomainInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
-        services.AddScoped<ITestDbContext>(sp => sp.GetRequiredService<TestDbContext>());
+        _ = services.AddDatabase<TestDbContext, TestDbContextInitialiser>(configuration);
+        _ = services.AddScoped<ITestDbContext>(sp => sp.GetRequiredService<TestDbContext>());
 
-        services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
-        services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
+        _ = services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
+        _ = services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
 
-        services.AddScoped<IAccountRepository, AccountRepository>();
+        _ = services.AddScoped<IAccountRepository, AccountRepository>();
 
-        services.AddRpcClient<ITestRpcService, RpcServicesClientFactoryProviderWrapper>("test");
+        _ = services.AddRpcClient<ITestRpcService, RpcServicesClientFactoryProviderWrapper>("test");
 
         return services;
     }

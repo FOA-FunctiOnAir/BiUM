@@ -1,4 +1,4 @@
-﻿using BiUM.Contract.Models;
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using System.Threading;
 

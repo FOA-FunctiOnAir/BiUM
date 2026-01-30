@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,12 +32,12 @@ public static class ConfigurationExtensions
         {
             localConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Local.json");
 
-             if (!Path.Exists(localConfigPath))
-             {
-                 Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] appsettings.Local.json not found, skipping overrides.");
+            if (!Path.Exists(localConfigPath))
+            {
+                Console.WriteLine($"[{nameof(OverrideAppLocalServices)}] appsettings.Local.json not found, skipping overrides.");
 
-                 return;
-             }
+                return;
+            }
         }
 
         var overrideKeys = SystemFile.ReadAllLines(localServicesPath)

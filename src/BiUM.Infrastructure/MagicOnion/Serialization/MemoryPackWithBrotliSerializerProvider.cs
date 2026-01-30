@@ -1,4 +1,4 @@
-﻿using Grpc.Core;
+using Grpc.Core;
 using MagicOnion.Serialization;
 using MagicOnion.Serialization.MemoryPack;
 using MemoryPack;

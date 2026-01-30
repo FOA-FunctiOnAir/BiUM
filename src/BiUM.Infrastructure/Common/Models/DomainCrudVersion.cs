@@ -8,6 +8,9 @@ namespace BiUM.Infrastructure.Common.Models;
 [Table("__CRUD_VERSION", Schema = "dbo")]
 public class DomainCrudVersion : TenantBaseEntity
 {
+    [Column("APPLICATION_ID")]
+    public Guid ApplicationId { get; set; }
+
     [Column("CRUD_ID")]
     public Guid CrudId { get; set; }
 
@@ -21,7 +24,6 @@ public class DomainCrudVersion : TenantBaseEntity
     [JsonIgnore]
     public DomainCrud DomainCrud { get; private set; } = null!;
 
-    [ForeignKey(nameof(DomainCrudVersionColumn.CrudVersionId))]
     [JsonIgnore]
     public ICollection<DomainCrudVersionColumn> DomainCrudVersionColumns { get; } = [];
 }

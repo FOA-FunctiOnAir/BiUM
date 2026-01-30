@@ -1,6 +1,7 @@
 using BiApp.Test.Application.Repositories;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,10 @@ public class GetFwCurrenciesForNamesQueryHandler : IForValuesQueryHandler<GetFwC
 
     public async Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> Handle(GetFwCurrenciesForNamesQuery query, CancellationToken cancellationToken)
     {
-        var response = await _currencyRepository.GetFwCurrenciesForNames(query.MultipleIds, cancellationToken);
+        ArgumentNullException.ThrowIfNull(query, nameof(query));
+        ArgumentNullException.ThrowIfNull(query.Ids, nameof(query.Ids));
+
+        var response = await _currencyRepository.GetFwCurrenciesForNames(query.Ids, cancellationToken);
 
         return response;
     }

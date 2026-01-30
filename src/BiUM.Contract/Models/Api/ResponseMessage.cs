@@ -1,4 +1,4 @@
-﻿using BiUM.Contract.Enums;
+using BiUM.Contract.Enums;
 using MemoryPack;
 
 namespace BiUM.Contract.Models.Api;

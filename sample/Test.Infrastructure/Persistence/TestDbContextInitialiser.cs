@@ -4,6 +4,7 @@ using BiUM.Specialized.Database;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiApp.Test.Infrastructure.Persistence;
@@ -22,7 +23,7 @@ public partial class TestDbContextInitialiser : DbContextInitialiser<TestDbConte
     {
     }
 
-    public override async Task SeedAsync()
+    public override async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         try
         {

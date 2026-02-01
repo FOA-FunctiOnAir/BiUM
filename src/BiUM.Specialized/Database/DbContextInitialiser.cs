@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
@@ -21,15 +22,15 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
         Logger = serviceProvider.GetRequiredService<ILogger<DbContextInitialiser<TDbContext>>>();
     }
 
-    public virtual async Task InitialiseAsync()
+    public virtual async Task InitialiseAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            _ = await DbContext.Database.EnsureCreatedAsync();
+            _ = await DbContext.Database.EnsureCreatedAsync(cancellationToken);
 
             if (DbContext.Database.IsSqlServer())
             {
-                await DbContext.Database.MigrateAsync();
+                await DbContext.Database.MigrateAsync(cancellationToken);
             }
         }
         catch (Exception ex)
@@ -40,7 +41,7 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
         }
     }
 
-    public virtual Task SeedAsync()
+    public virtual Task SeedAsync(CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }

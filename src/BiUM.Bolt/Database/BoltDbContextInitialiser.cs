@@ -21,25 +21,25 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
     where TDbContext : DbContext
 {
     private readonly BoltOptions _boltOptions;
-    private readonly TBoltDbContext _boltContext;
+    private readonly TBoltDbContext _boltDbContext;
     private static readonly ConcurrentDictionary<Type, Func<DbContext, IQueryable>> QueryFactoryCache = new();
 
-    public BoltDbContextInitialiser(IServiceProvider serviceProvider, IOptions<BoltOptions> boltOptions, TBoltDbContext boltContext, TDbContext dbContext)
+    public BoltDbContextInitialiser(IServiceProvider serviceProvider, IOptions<BoltOptions> boltOptions, TBoltDbContext boltDbContext, TDbContext dbContext)
         : base(dbContext, serviceProvider)
     {
         _boltOptions = boltOptions.Value;
-        _boltContext = boltContext;
+        _boltDbContext = boltDbContext;
     }
 
-    public virtual async Task InitialiseAsync(CancellationToken cancellationToken = default)
+    public override async Task InitialiseAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            _ = await _boltContext.Database.EnsureCreatedAsync(cancellationToken);
+            _ = await _boltDbContext.Database.EnsureCreatedAsync(cancellationToken);
 
-            if (_boltContext.Database.IsSqlServer())
+            if (_boltDbContext.Database.IsSqlServer())
             {
-                await _boltContext.Database.MigrateAsync(cancellationToken);
+                await _boltDbContext.Database.MigrateAsync(cancellationToken);
             }
         }
         catch (Exception ex)
@@ -70,7 +70,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         if (boltStatus?.LastTransactionId is not null)
         {
             var boltTransactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
-                _boltContext,
+                _boltDbContext,
                 FormattableStringFactory.Create($"SELECT * FROM dbo.\"__BOLT_TRANSACTION\" WHERE \"ID\" = '{boltStatus.LastTransactionId}'"),
                 cancellationToken);
 
@@ -84,7 +84,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
         var lastTransactionQuery = $"SELECT * FROM dbo.\"__BOLT_TRANSACTION\"" + (string.IsNullOrEmpty(lastTransactionQueryStatement) ? "" : lastTransactionQueryStatement) + " ORDER BY \"CREATED\" ASC, \"SORT_ORDER\" ASC, \"CREATED_TIME\" ASC";
 
         var allTransactions = await GetResultsFromTable<TBoltDbContext, BoltTransaction>(
-            _boltContext,
+            _boltDbContext,
             FormattableStringFactory.Create(lastTransactionQuery),
             cancellationToken);
 
@@ -131,7 +131,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                         continue;
                     }
 
-                    var boltContextDbSetProp = _boltContext.GetType().GetProperty(transaction.TableName);
+                    var boltContextDbSetProp = _boltDbContext.GetType().GetProperty(transaction.TableName);
 
                     if (boltContextDbSetProp is null)
                     {
@@ -140,7 +140,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
 
                     var boltEntityClrType = boltContextDbSetProp.PropertyType.GetGenericArguments()[0];
 
-                    var boltQuery = GetQueryableIgnoringFilters(_boltContext, boltEntityClrType);
+                    var boltQuery = GetQueryableIgnoringFilters(_boltDbContext, boltEntityClrType);
 
                     var boltEntities = await boltQuery
                         .Cast<IEntity>()
@@ -163,7 +163,7 @@ public class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbContextIni
                         .Where(x => uniqueIds.Contains(x.Id))
                         .ToListAsync(cancellationToken);
 
-                    var entityType = _boltContext.Model.FindEntityType(boltEntityClrType);
+                    var entityType = _boltDbContext.Model.FindEntityType(boltEntityClrType);
                     var hasParentId = entityType?.FindProperty("ParentId") is not null;
 
                     if (hasParentId)

@@ -83,9 +83,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange)) // Commands: Multiple publishers to single consumer
         {
-            var body = await _serializer.SerializeAsync(message, cancellationToken: CancellationToken.None);
+            var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
 
-            var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: CancellationToken.None);
+            var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
 
             var properties = new BasicProperties
             {
@@ -100,7 +100,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 Headers = new Dictionary<string, object?>()
             };
 
-            properties.Headers![HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+            properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version.ToString();
 
             var exchange = PrefixIfNecessary(eventAttribute.Exchange);
             var messageKey = type.Name.ToSnakeCase();
@@ -120,7 +121,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 routingKey: routingKey,
                 mandatory: false,
                 basicProperties: properties,
-                body: body, cancellationToken: cancellationToken);
+                body: body,
+                cancellationToken: cancellationToken);
 
             _logger.LogInformation("{MessageType} message published to exchange {Exchange} with routingKey {RoutingKey}",
                 type.Name,
@@ -129,9 +131,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
         else // Events: Single publisher to multiple consumers (broadcast)
         {
-            var body = await _serializer.SerializeAsync(message, cancellationToken: CancellationToken.None);
+            var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
 
-            var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: CancellationToken.None);
+            var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
 
             var properties = new BasicProperties
             {
@@ -146,7 +148,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 Headers = new Dictionary<string, object?>()
             };
 
-            properties.Headers![HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+            properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version.ToString();
 
             var messageKey = type.Name.ToSnakeCase();
             var exchange = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
@@ -288,6 +291,10 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             var correlationContextAccessor = scopedServiceProvider.GetService<ICorrelationContextAccessor>();
 
+            var biUMVersionHeader = args.BasicProperties.Headers?[HeaderKeys.BiUMVersion]?.ToString() ?? "0.0.0";
+
+            var biUMVersion = Version.TryParse(biUMVersionHeader, out var version) ? version : new Version(0, 0, 0);
+
             try
             {
                 _logger.LogInformation("Event received {EventType}", eventType.Name);
@@ -310,10 +317,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                         ? await _serializer.DeserializeAsync<CorrelationContext>(rawCorrelationContext, scopeCancellationToken)
                         : CorrelationContext.Empty;
 
-                if (correlationContextAccessor is not null)
-                {
-                    correlationContextAccessor.CorrelationContext = correlationContext;
-                }
+                correlationContextAccessor?.CorrelationContext = correlationContext;
 
                 dynamic handler = scopedServiceProvider.GetRequiredService(handlerType);
                 dynamic typedMessage = message;
@@ -326,7 +330,19 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             {
                 await HandleMessageErrorAsync(channel, args, queueName, ex, scopeCancellationToken);
 
-                _logger.LogError(ex, "Error handling {EventType}", eventType.Name);
+                if (biUMVersion < VersionHelper.Version)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Error handling {EventType}. Message received from an older version of BiUM ({BiUMVersion}), current version is {CurrentBiUMVersion}",
+                        eventType.Name,
+                        biUMVersion,
+                        VersionHelper.Version);
+                }
+                else
+                {
+                    _logger.LogError(ex, "Error handling {EventType}", eventType.Name);
+                }
             }
         };
 

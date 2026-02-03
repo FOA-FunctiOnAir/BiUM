@@ -15,6 +15,9 @@
     <PackageProjectUrl>https://github.com/FOA-FunctiOnAir/BiUM.git</PackageProjectUrl>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
+
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <PackageVersion>$(Version)</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

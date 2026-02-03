@@ -13,11 +13,8 @@ public sealed class CorrelationContextAccessor : ICorrelationContextAccessor
         get => CorrelationContextCurrent.Value?.Context;
         set
         {
-            if (CorrelationContextCurrent.Value is not null)
-            {
-                // Clear current CorrelationContext trapped in the AsyncLocals, as its done.
-                CorrelationContextCurrent.Value.Context = null;
-            }
+            // Clear current CorrelationContext trapped in the AsyncLocals, as its done.
+            CorrelationContextCurrent.Value?.Context = null;
 
             if (value is not null)
             {

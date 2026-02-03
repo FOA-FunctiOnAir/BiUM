@@ -101,8 +101,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             };
 
             properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
-            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version.ToString();
-            properties.Headers[HeaderKeys.BiAppDomain] = _appOptions.Domain;
+            properties.Headers[HeaderKeys.BiUMVersion] = Encoding.UTF8.GetBytes(VersionHelper.Version);
+            properties.Headers[HeaderKeys.BiAppDomain] = Encoding.UTF8.GetBytes(_appOptions.Domain);
 
             var exchange = PrefixIfNecessary(eventAttribute.Exchange);
             var messageKey = type.Name.ToSnakeCase();
@@ -150,7 +150,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             };
 
             properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
-            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version;
+            properties.Headers[HeaderKeys.BiUMVersion] = Encoding.UTF8.GetBytes(VersionHelper.Version);
+            properties.Headers[HeaderKeys.BiAppDomain] = Encoding.UTF8.GetBytes(_appOptions.Domain);
 
             var messageKey = type.Name.ToSnakeCase();
             var exchange = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
@@ -292,24 +293,21 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             var correlationContextAccessor = scopedServiceProvider.GetService<ICorrelationContextAccessor>();
 
-            var biUMVersion = args.BasicProperties.Headers?[HeaderKeys.BiUMVersion]?.ToString();
+            var rawBiUMVersion = GetHeaderValue(args.BasicProperties.Headers, HeaderKeys.BiUMVersion);
+            var biUMVersion = rawBiUMVersion is not null ? Encoding.UTF8.GetString(rawBiUMVersion) : string.Empty;
 
             try
             {
-                _logger.LogInformation("Event received {EventType}", eventType.Name);
+                var rawAppDomain = GetHeaderValue(args.BasicProperties.Headers, HeaderKeys.BiAppDomain);
+                var appDomain = rawAppDomain is not null ? Encoding.UTF8.GetString(rawAppDomain) : string.Empty;
+
+                _logger.LogInformation("Event {EventType} received from {AppDomain}", eventType.Name, appDomain);
 
                 var message =
                     await _serializer.DeserializeAsync(args.Body.ToArray(), eventType, scopeCancellationToken) ??
                     throw new SerializationException("Deserialized message is null");
 
-                var correlationContextHeader = args.BasicProperties.Headers?[HeaderKeys.CorrelationContext];
-
-                var rawCorrelationContext = correlationContextHeader switch
-                {
-                    byte[] bytes => bytes,
-                    ArraySegment<byte> segment => segment.ToArray(),
-                    _ => null
-                };
+                var rawCorrelationContext = GetHeaderValue(args.BasicProperties.Headers, HeaderKeys.CorrelationContext);
 
                 var correlationContext =
                     rawCorrelationContext is not null
@@ -545,5 +543,25 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         message.Created = DateOnly.FromDateTime(now);
         message.CreatedTime = TimeOnly.FromDateTime(now);
+    }
+
+    private static byte[]? GetHeaderValue(IDictionary<string, object?>? headers, string key)
+    {
+        if (headers is null)
+        {
+            return null;
+        }
+
+        if (!headers.TryGetValue(key, out var value))
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            byte[] bytes => bytes,
+            ArraySegment<byte> segment => segment.ToArray(),
+            _ => null
+        };
     }
 }

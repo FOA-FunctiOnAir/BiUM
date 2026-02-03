@@ -8,7 +8,7 @@ using System.Security;
 
 namespace System;
 
-public static partial class Extensions
+public static class Extensions
 {
     public static int ToStatusCode(this Exception exception)
     {

@@ -49,7 +49,7 @@ public static class FileHelper
 
         resourceName = resourceName.Replace(Path.PathSeparator, '.');
 
-        var text = Array.Find(assembly.GetManifestResourceNames(), (string r) => r.EndsWith(resourceName));
+        var text = Array.Find(assembly.GetManifestResourceNames(), r => r.EndsWith(resourceName));
 
         if (string.IsNullOrEmpty(text))
         {

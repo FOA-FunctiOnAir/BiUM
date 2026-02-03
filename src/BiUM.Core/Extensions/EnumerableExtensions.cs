@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace System.Linq;
 
-public static partial class Extensions
+public static class Extensions
 {
     public static IEnumerable<Guid> ToGuidEnumerable(this IEnumerable<string> source)
     {

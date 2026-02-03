@@ -486,7 +486,6 @@ END;
             {
                 if (BaseApiProperties.Contains(prop))
                 {
-                    continue;
                 }
 
                 continue;

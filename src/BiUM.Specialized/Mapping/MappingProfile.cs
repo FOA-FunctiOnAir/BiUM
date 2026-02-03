@@ -1,10 +1,11 @@
+using AutoMapper;
 using System;
 using System.Linq;
 using System.Reflection;
 
 namespace BiUM.Specialized.Mapping;
 
-public class MappingProfile : AutoMapper.Profile
+public class MappingProfile : Profile
 {
     public MappingProfile()
     {
@@ -47,7 +48,7 @@ public class MappingProfile : AutoMapper.Profile
 
         var types = assembly.GetExportedTypes().Where(t => t.GetInterfaces().Any(x => HasInterface(x, mapFromType)));
 
-        var argumentTypes = new[] { typeof(AutoMapper.Profile) };
+        var argumentTypes = new[] { typeof(Profile) };
 
         foreach (var type in types)
         {

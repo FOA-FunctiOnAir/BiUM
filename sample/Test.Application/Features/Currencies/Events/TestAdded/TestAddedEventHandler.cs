@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BiApp.Test.Application.Features.Currencies.Events.TestAdded;
 
-public partial class TestAddedEventHandler : IEventHandler<TestAddedEvent>
+public class TestAddedEventHandler : IEventHandler<TestAddedEvent>
 {
     private readonly ISender _mediator;
     private readonly ILogger<TestAddedEventHandler> _logger;

@@ -18,7 +18,7 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
 
     private readonly ConcurrentQueue<IChannel> _channels = new();
 
-    private int _channelCount = 0;
+    private int _channelCount;
     private object _channelCountLock = new();
 
     public RabbitMQPublisherChannelPool(

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace System.Linq;
 
-public static partial class Extensions
+public static class Extensions
 {
     public static string? GetColumnTranslation<TSource>(this IEnumerable<TSource> source, string columnName)
         where TSource : TranslationBaseEntity

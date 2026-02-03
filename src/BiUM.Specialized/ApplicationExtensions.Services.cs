@@ -2,6 +2,7 @@ using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
 using BiUM.Infrastructure.Services.HttpClients;
+using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Crud;
@@ -24,7 +25,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddRazorPages();
 
         builder.Services.AddControllers()
-            .AddApplicationPart(typeof(BiUM.Specialized.Common.API.ApiControllerBase).Assembly)
+            .AddApplicationPart(typeof(ApiControllerBase).Assembly)
             .AddControllersAsServices()
             .AddJsonOptions(options =>
             {

@@ -9,12 +9,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.MagicOnion.Filters.Server;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1019: Define accessors for attribute arguments", Justification = "Dependencies are injected via constructor")]
+[SuppressMessage("Design", "CA1019: Define accessors for attribute arguments", Justification = "Dependencies are injected via constructor")]
 public class GlobalApiResponseFilter : MagicOnionFilterAttribute
 {
     private const string UnhandledExceptionOccurred = "An unhandled exception occurred";

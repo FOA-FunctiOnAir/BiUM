@@ -30,7 +30,7 @@ public class TranslationBaseEntity : BaseAuditableEntity, ITranslationBaseEntity
     [Column("TRANSLATION", Order = 6)]
     public string? Translation { get; set; }
 
-    public TranslationBaseEntity() : base()
+    public TranslationBaseEntity()
     {
         Id = GuidGenerator.New();
         Column = string.Empty;

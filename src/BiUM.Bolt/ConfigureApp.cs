@@ -18,7 +18,7 @@ public static partial class ConfigureApp
             return;
         }
 
-        var initialiser = serviceProvider.GetRequiredService<IBaseBoltDbContextInitialiser>();
+        var initialiser = serviceProvider.GetRequiredService<IBoltDbContextInitialiser>();
 
         if (biAppOptions.Value.Environment is "Development" or "Production")
         {

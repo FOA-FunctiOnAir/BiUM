@@ -1,9 +1,9 @@
 using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Exceptions;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Npgsql;
 using System;
 
@@ -16,12 +16,13 @@ public static partial class ConfigureApp
         IConfiguration configuration
     )
         where TDbContext : DbContext
-        where TDbContextInitialiser : class
+        where TDbContextInitialiser : class, IBoltDbContextInitialiser
     {
-        services.Configure<BoltOptions>(configuration.GetSection(BoltOptions.Name));
+        var section = configuration.GetSection(BoltOptions.Name);
 
-        var serviceProvider = services.BuildServiceProvider();
-        var boltOptions = serviceProvider.GetRequiredService<IOptions<BoltOptions>>();
+        services.Configure<BoltOptions>(section);
+
+        var boltOptions = section.Get<BoltOptions>() ?? throw new ApplicationStartupException(nameof(BoltOptions));
 
         if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {
@@ -47,7 +48,7 @@ public static partial class ConfigureApp
 
             var boltDbName = databaseName ?? "db";
 
-            var connectionString = string.Format(boltOptions.Value.ConnectionString, boltDbName);
+            var connectionString = string.Format(boltOptions.ConnectionString, boltDbName);
 
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -69,7 +70,7 @@ public static partial class ConfigureApp
                     }));
         }
 
-        services.AddScoped(typeof(IBaseBoltDbContextInitialiser), typeof(TDbContextInitialiser));
+        services.AddScoped<IBoltDbContextInitialiser, TDbContextInitialiser>();
         services.AddScoped<BoltEntitySaveChangesInterceptor>();
 
         services.AddHealthChecks().AddDbContextCheck<TDbContext>();

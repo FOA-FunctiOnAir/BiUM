@@ -19,7 +19,7 @@ public class GetFwCurrenciesForNamesQueryHandler : IForValuesQueryHandler<GetFwC
 
     public async Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> Handle(GetFwCurrenciesForNamesQuery query, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(query, nameof(query));
+        ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(query.Ids, nameof(query.Ids));
 
         var response = await _currencyRepository.GetFwCurrenciesForNames(query.Ids, cancellationToken);

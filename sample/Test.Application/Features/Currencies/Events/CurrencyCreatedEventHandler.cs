@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BiApp.Test.Application.Features.Currencies.Events;
 
-public partial class CurrencyCreatedEventHandler : IEventHandler<CurrencyCreatedEvent>
+public class CurrencyCreatedEventHandler : IEventHandler<CurrencyCreatedEvent>
 {
     private readonly ISender _mediator;
     private readonly ILogger<CurrencyCreatedEventHandler> _logger;

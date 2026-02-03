@@ -1,6 +1,8 @@
+using AutoMapper;
+
 namespace BiUM.Specialized.Mapping;
 
 public interface IMapFrom<T>
 {
-    void Mapping(AutoMapper.Profile profile) => profile.CreateMap(typeof(T), GetType());
+    void Mapping(Profile profile) => profile.CreateMap(typeof(T), GetType());
 }

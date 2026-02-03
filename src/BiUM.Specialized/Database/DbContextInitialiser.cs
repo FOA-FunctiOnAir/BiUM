@@ -26,7 +26,7 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     {
         try
         {
-            _ = await DbContext.Database.EnsureCreatedAsync(cancellationToken);
+            await DbContext.Database.EnsureCreatedAsync(cancellationToken);
 
             if (DbContext.Database.IsSqlServer())
             {
@@ -37,7 +37,9 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
         {
             Logger.LogError(ex, "An error occurred while initialising the database.");
 
-            throw new ApplicationStartupException(nameof(DbContextInitialiser<>));
+            var type = ex.GetType();
+
+            throw new ApplicationStartupException(type.FullName ?? type.Name, ex);
         }
     }
 

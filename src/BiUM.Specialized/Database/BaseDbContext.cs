@@ -7,7 +7,7 @@ namespace BiUM.Specialized.Database;
 
 public class BaseDbContext : DbContext, IDbContext
 {
-    private bool _hardDeleteEnabled = false;
+    private bool _hardDeleteEnabled;
 
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
@@ -70,7 +70,7 @@ public class BaseDbContext : DbContext, IDbContext
                 var prop = Expression.Property(parameter, nameof(BaseEntity.Deleted));
                 var filter = Expression.Lambda(Expression.Equal(prop, Expression.Constant(false)), parameter);
 
-                modelBuilder.Entity(entityType.ClrType).HasIndex([prop.Member.Name]);
+                modelBuilder.Entity(entityType.ClrType).HasIndex(prop.Member.Name);
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
         }

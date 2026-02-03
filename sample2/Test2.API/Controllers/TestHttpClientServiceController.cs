@@ -27,7 +27,7 @@ public class TestHttpClientServiceController : ApiControllerBase
             return Ok(new { Key = "Success", languages.Value });
         }
 
-        return NotFound($"Service Call is not success.");
+        return NotFound("Service Call is not success.");
     }
 
 
@@ -41,7 +41,7 @@ public class TestHttpClientServiceController : ApiControllerBase
             return Ok(new { Key = "Success", assetGroups.Value });
         }
 
-        return NotFound($"Service Call is not success.");
+        return NotFound("Service Call is not success.");
     }
 }
 

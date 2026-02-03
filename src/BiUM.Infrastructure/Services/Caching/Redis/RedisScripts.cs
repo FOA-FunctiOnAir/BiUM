@@ -1,6 +1,6 @@
-namespace BiUM.Infrastructure.Services.Caching.Redis;
-
 using StackExchange.Redis;
+
+namespace BiUM.Infrastructure.Services.Caching.Redis;
 
 public static class RedisScripts
 {

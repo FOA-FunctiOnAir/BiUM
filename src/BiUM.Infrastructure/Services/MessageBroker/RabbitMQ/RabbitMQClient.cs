@@ -37,10 +37,10 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     private readonly RabbitMQPublisherChannelPool _publisherChannelPool;
     private readonly IRabbitMQSerializer _serializer;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly BiAppOptions _appOptions;
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly ILogger<RabbitMQClient> _logger;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     private readonly ConcurrentBag<IChannel> _consumerChannels = [];
 
@@ -50,19 +50,19 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         RabbitMQPublisherChannelPool publisherChannelPool,
         IRabbitMQSerializer serializer,
         ICorrelationContextAccessor correlationContextAccessor,
-        IOptions<BiAppOptions> biAppOptions,
-        IOptions<RabbitMQOptions> rabbitMQOptions,
-        ILogger<RabbitMQClient> logger,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        IOptions<BiAppOptions> appOptionsAccessor,
+        IOptions<RabbitMQOptions> rabbitMQOptionsAccessor,
+        ILogger<RabbitMQClient> logger)
     {
         _connectionProvider = connectionProvider;
         _publisherChannelPool = publisherChannelPool;
         _serializer = serializer;
         _correlationContextAccessor = correlationContextAccessor;
-        _appOptions = biAppOptions.Value;
-        _rabbitMQOptions = rabbitMQOptions.Value;
-        _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
+        _appOptions = appOptionsAccessor.Value;
+        _rabbitMQOptions = rabbitMQOptionsAccessor.Value;
+        _logger = logger;
     }
 
     public async Task PublishAsync<T>(T message, CancellationToken cancellationToken)
@@ -102,6 +102,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
             properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version.ToString();
+            properties.Headers[HeaderKeys.BiAppDomain] = _appOptions.Domain;
 
             var exchange = PrefixIfNecessary(eventAttribute.Exchange);
             var messageKey = type.Name.ToSnakeCase();
@@ -149,7 +150,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             };
 
             properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
-            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version.ToString();
+            properties.Headers[HeaderKeys.BiUMVersion] = VersionHelper.Version;
 
             var messageKey = type.Name.ToSnakeCase();
             var exchange = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
@@ -291,9 +292,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             var correlationContextAccessor = scopedServiceProvider.GetService<ICorrelationContextAccessor>();
 
-            var biUMVersionHeader = args.BasicProperties.Headers?[HeaderKeys.BiUMVersion]?.ToString() ?? "0.0.0";
-
-            var biUMVersion = Version.TryParse(biUMVersionHeader, out var version) ? version : new Version(0, 0, 0);
+            var biUMVersion = args.BasicProperties.Headers?[HeaderKeys.BiUMVersion]?.ToString();
 
             try
             {
@@ -330,11 +329,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             {
                 await HandleMessageErrorAsync(channel, args, queueName, ex, scopeCancellationToken);
 
-                if (biUMVersion < VersionHelper.Version)
+                if (biUMVersion != VersionHelper.Version)
                 {
                     _logger.LogError(
                         ex,
-                        "Error handling {EventType}. Message received from an older version of BiUM ({BiUMVersion}), current version is {CurrentBiUMVersion}",
+                        "Error handling {EventType}. Message received from another version of BiUM ({BiUMVersion}), current version is {CurrentBiUMVersion}",
                         eventType.Name,
                         biUMVersion,
                         VersionHelper.Version);

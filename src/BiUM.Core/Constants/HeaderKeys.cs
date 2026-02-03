@@ -7,5 +7,8 @@ public static class HeaderKeys
     public static string CorrelationId = "x-correlation-id";
     public static string LanguageId = "x-language-id";
     public static string TenantId = "x-tenant-id";
+
+    // RabbitMQ targeted headers
     public static string BiUMVersion = "x-bium-version";
+    public static string BiAppDomain = "x-biapp-domain";
 }

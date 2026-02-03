@@ -1,23 +1,22 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace BiUM.Core.Common.Utils;
 
 public static class VersionHelper
 {
-    public static Version Version => field ??= GetVersion();
+    public static string Version => field ??= GetVersion();
 
-    private static Version GetVersion()
+    private static string GetVersion()
     {
         var assembly = typeof(VersionHelper).Assembly;
 
         var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-        if (!string.IsNullOrWhiteSpace(informationalVersion) && Version.TryParse(informationalVersion, out var version))
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
         {
-            return version;
+            return informationalVersion;
         }
 
-        return assembly.GetName().Version ?? new Version(0, 0, 0);
+        return assembly.GetName().Version?.ToString() ?? "0.0.0";
     }
 }

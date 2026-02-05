@@ -16,6 +16,16 @@ builder.ConfigureSpecializedServices();
 builder.Services.AddDomainApplicationServices(builder.Configuration);
 builder.Services.AddDomainInfrastructureServices(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policyBuilder =>
+    {
+        policyBuilder.AllowAnyHeader();
+        policyBuilder.AllowAnyMethod();
+        policyBuilder.AllowAnyOrigin();
+    });
+});
+
 builder.ConfigureSpecializedHost();
 
 var app = builder.Build();
@@ -33,6 +43,8 @@ app.UseInfrastructure();
 app.UseSpecialized();
 
 app.AddDomainInfrastructureApps();
+
+app.UseCors();
 
 app.MapControllerRoute(
     name: "default",

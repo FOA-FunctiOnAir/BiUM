@@ -313,7 +313,10 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 var rawAppDomain = GetHeaderValue(args.BasicProperties.Headers, HeaderKeys.BiAppDomain);
                 var appDomain = rawAppDomain is not null ? Encoding.UTF8.GetString(rawAppDomain) : string.Empty;
 
-                _logger.LogInformation("Event {EventType} received from {AppDomain}", eventType.Name, appDomain);
+                if (!EventsExcludedFromPublishLog.Contains(eventType.Name))
+                {
+                    _logger.LogInformation("Event {EventType} received from {AppDomain}", eventType.Name, appDomain);
+                }
 
                 var message =
                     await _serializer.DeserializeAsync(args.Body.ToArray(), eventType, scopeCancellationToken) ??

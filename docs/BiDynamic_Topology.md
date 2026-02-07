@@ -15,7 +15,7 @@ Aşağıdaki Mermaid diyagramı [mermaid.live](https://mermaid.live) veya VS Cod
 ```mermaid
 flowchart LR
     subgraph Clients[" "]
-        CA[Client Apps (BiDynamic Web)]
+        CA["Client Apps (BiDynamic Web)"]
     end
 
     subgraph Gateway[" "]
@@ -24,7 +24,7 @@ flowchart LR
 
     subgraph Comms["Servisler arası iletişim"]
         REST[REST + gRPC]
-        MQ[RabbitMQ (event-driven)]
+        MQ["RabbitMQ (event-driven)"]
     end
 
     subgraph Services["BiApp Mikroservisler"]

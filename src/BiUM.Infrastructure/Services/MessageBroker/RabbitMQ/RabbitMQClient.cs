@@ -33,6 +33,12 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     private const string DefaultContentType = "application/x-memorypack";
     private const string DefaultContentEncoding = "brotli";
 
+    private static readonly HashSet<string> EventsExcludedFromPublishLog =
+    [
+        "AuditLogEvent",
+        "ServiceCalledEvent"
+    ];
+
     private readonly RabbitMQConnectionProvider _connectionProvider;
     private readonly RabbitMQPublisherChannelPool _publisherChannelPool;
     private readonly IRabbitMQSerializer _serializer;
@@ -125,10 +131,13 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 body: body,
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("{MessageType} message published to exchange {Exchange} with routingKey {RoutingKey}",
-                type.Name,
-                exchange,
-                routingKey);
+            if (!EventsExcludedFromPublishLog.Contains(type.Name))
+            {
+                _logger.LogInformation("{MessageType} message published to exchange {Exchange} with routingKey {RoutingKey}",
+                    type.Name,
+                    exchange,
+                    routingKey);
+            }
         }
         else // Events: Single publisher to multiple consumers (broadcast)
         {
@@ -173,9 +182,12 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 body: body,
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("{MessageType} message broadcasted to fanout exchange {Exchange}",
-                type.Name,
-                exchange);
+            if (!EventsExcludedFromPublishLog.Contains(type.Name))
+            {
+                _logger.LogInformation("{MessageType} message broadcasted to fanout exchange {Exchange}",
+                    type.Name,
+                    exchange);
+            }
         }
     }
 
@@ -312,7 +324,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 var correlationContext =
                     rawCorrelationContext is not null
                         ? await _serializer.DeserializeAsync<CorrelationContext>(rawCorrelationContext, scopeCancellationToken)
-                        : CorrelationContext.Empty;
+                        : (message is IBaseEvent baseEvent && baseEvent.CorrelationId != Guid.Empty
+                            ? new CorrelationContext { CorrelationId = baseEvent.CorrelationId }
+                            : CorrelationContext.Empty);
 
                 correlationContextAccessor?.CorrelationContext = correlationContext;
 

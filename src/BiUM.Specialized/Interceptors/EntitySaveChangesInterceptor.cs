@@ -25,7 +25,6 @@ namespace BiUM.Specialized.Interceptors;
 public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly ICorrelationContextProvider _correlationContextProvider;
-    private readonly CorrelationContext _correlationContext;
     private readonly IDateTimeService _dateTimeService;
     private readonly IRabbitMQClient? _rabbitMQClient;
     private readonly IMapper? _mapper;
@@ -46,8 +45,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         _rabbitMQClient = rabbitMQClient;
         _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
-
-        _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -117,20 +114,30 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
+        var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
         var now = _dateTimeService.Now.ToUniversalTime();
 
         foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.CorrelationId = _correlationContext.CorrelationId;
-                entry.Entity.CreatedBy = _correlationContext.User?.Id;
+                entry.Entity.CorrelationId = correlationContext.CorrelationId;
+                if (entry.Entity is ITenantBaseEntity tenantEntity && correlationContext.TenantId.HasValue)
+                {
+                    tenantEntity.TenantId = correlationContext.TenantId.Value;
+                }
+                entry.Entity.CreatedBy = correlationContext.User?.Id;
                 entry.Entity.Created = DateOnly.FromDateTime(now);
                 entry.Entity.CreatedTime = TimeOnly.FromDateTime(now);
             }
             else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
             {
-                entry.Entity.UpdatedBy = _correlationContext.User?.Id;
+                entry.Entity.CorrelationId = correlationContext.CorrelationId;
+                if (entry.Entity is ITenantBaseEntity tenantEntity && correlationContext.TenantId.HasValue)
+                {
+                    tenantEntity.TenantId = correlationContext.TenantId.Value;
+                }
+                entry.Entity.UpdatedBy = correlationContext.User?.Id;
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
@@ -139,7 +146,12 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.State = EntityState.Modified;
                 entry.Entity.Deleted = true;
 
-                entry.Entity.UpdatedBy = _correlationContext.User?.Id;
+                entry.Entity.CorrelationId = correlationContext.CorrelationId;
+                if (entry.Entity is ITenantBaseEntity tenantEntity && correlationContext.TenantId.HasValue)
+                {
+                    tenantEntity.TenantId = correlationContext.TenantId.Value;
+                }
+                entry.Entity.UpdatedBy = correlationContext.User?.Id;
                 entry.Entity.Updated = DateOnly.FromDateTime(now);
                 entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
             }
@@ -178,7 +190,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
-        var userId = _correlationContext.User?.Id ?? Guid.Empty;
+        var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        var userId = correlationContext.User?.Id ?? Guid.Empty;
 
         foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
@@ -207,29 +220,40 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
                 case EntityState.Modified:
                     {
-                        var changedProps = entry.Properties
+                        var modifiedProps = entry.Properties
                             .Where(p => p.IsModified && !p.Metadata.IsPrimaryKey())
                             .ToList();
 
-                        if (changedProps.Count == 0)
+                        if (modifiedProps.Count == 0)
                         {
                             continue;
                         }
 
                         var before = new Dictionary<string, object?>();
-                        var fields = new List<string>();
+                        var changedFields = new List<string>();
 
-                        foreach (var prop in changedProps)
+                        foreach (var prop in modifiedProps)
                         {
-                            before[prop.Metadata.Name] = prop.OriginalValue;
+                            var original = prop.OriginalValue;
+                            var current = prop.CurrentValue;
 
-                            fields.Add(prop.Metadata.Name);
+                            before[prop.Metadata.Name] = original;
+
+                            if (HasValueChanged(original, current))
+                            {
+                                changedFields.Add(prop.Metadata.Name);
+                            }
+                        }
+
+                        if (changedFields.Count == 0)
+                        {
+                            continue;
                         }
 
                         beforeJson = JsonSerializer.Serialize(before);
                         afterJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
-                        changedFieldsJson = JsonSerializer.Serialize(fields);
-                        changeCount = changedProps.Count;
+                        changedFieldsJson = JsonSerializer.Serialize(changedFields);
+                        changeCount = changedFields.Count;
 
                         break;
                     }
@@ -248,6 +272,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
             _auditBuffer.Add(new AuditLogEvent
             {
+                CorrelationId = correlationContext.CorrelationId,
                 ServiceName = _biAppOptions?.Domain ?? string.Empty,
                 EntityName = entry.Entity.GetType().Name,
                 EntityId = entry.Entity.Id.ToString(),
@@ -261,6 +286,41 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 CreatedBy = userId
             });
         }
+    }
+
+    private static bool HasValueChanged(object? original, object? current)
+    {
+        if (original is null && current is null)
+        {
+            return false;
+        }
+
+        if (original is null || current is null)
+        {
+            return true;
+        }
+
+        if (original is Guid guidOrig && current is Guid guidCur)
+        {
+            return guidOrig != guidCur;
+        }
+
+        if (original is DateTime dtOrig && current is DateTime dtCur)
+        {
+            return dtOrig != dtCur;
+        }
+
+        if (original is DateOnly dOrig && current is DateOnly dCur)
+        {
+            return dOrig != dCur;
+        }
+
+        if (original is TimeOnly tOrig && current is TimeOnly tCur)
+        {
+            return tOrig != tCur;
+        }
+
+        return !original.Equals(current);
     }
 
     private async Task PublishEntityEventsAsync()

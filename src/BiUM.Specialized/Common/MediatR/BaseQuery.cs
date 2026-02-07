@@ -7,7 +7,7 @@ namespace BiUM.Specialized.Common.MediatR;
 public record BaseQuery<TType> : BaseRequestDto<TType>
 {
     public Guid? Id { get; init; }
-    public IReadOnlyList<Guid> Ids { get; init; } = [];
+    public IReadOnlyList<Guid>? Ids { get; init; }
 
     public string? Q { get; init; }
     public int? PageStart { get; init; }

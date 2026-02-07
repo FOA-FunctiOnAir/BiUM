@@ -9,13 +9,14 @@
 Aşağıdaki Mermaid diyagramı [mermaid.live](https://mermaid.live) veya VS Code Mermaid eklentisi ile PNG/SVG olarak dışa aktarılabilir.
 
 ## Güncellemeler
-- **Client Apps** yanında **BiDynamic Web** (React SPA) gösterilir.
-- Servisler arası iletişim: **REST + gRPC** ve **RabbitMQ (event-driven)** ayrıca belirtilir.
+- **Client Apps** altında **BiDynamic Web** ve **BiDynamic Mobile** aynı font stiliyle gösterilir (parantez yok).
+- Servisler arası iletişim: **REST + gRPC** ve **RabbitMQ (event-driven)** belirtilir.
+- **SigNoz** (Traces & Logs) observability katmanı olarak eklenir.
 
 ```mermaid
 flowchart LR
     subgraph Clients[" "]
-        CA["Client Apps (BiDynamic Web)"]
+        CA["Client Apps<br/>BiDynamic Web<br/>BiDynamic Mobile"]
     end
 
     subgraph Gateway[" "]
@@ -40,6 +41,10 @@ flowchart LR
         BIUM[BiUM · Core · Infra · Specialized · Bolt]
     end
 
+    subgraph Observability[" "]
+        SigNoz[SigNoz<br/>Traces & Logs]
+    end
+
     subgraph Data[" "]
         Rabbit[RabbitMQ]
         DB[(PostgreSQL / SQL Server)]
@@ -52,6 +57,8 @@ flowchart LR
     REST --> Services
     MQ --> Services
     Services --> BIUM
+    Services --> SigNoz
+    BIUM --> SigNoz
     Services --> Rabbit
     Services --> DB
     Services --> Redis
@@ -64,6 +71,7 @@ flowchart TB
     subgraph Client["İstemci"]
         CA[Client Apps]
         BDW[BiDynamic Web]
+        BDM[BiDynamic Mobile]
     end
 
     GW[BiApp.Gateway]
@@ -80,6 +88,7 @@ flowchart TB
     end
 
     BIUM[BiUM]
+    SigNoz[SigNoz - Traces & Logs]
     Rabbit[RabbitMQ]
     DB[(PostgreSQL/SQL Server)]
 
@@ -87,6 +96,7 @@ flowchart TB
     GW --> Comm
     Comm --> Micro
     Micro --> BIUM
+    Micro --> SigNoz
     Micro --> Rabbit
     Micro --> DB
 ```

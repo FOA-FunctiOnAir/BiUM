@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/BiDynamic_Topology.md" />
+    <File Path="docs/BiDynamic_Topology.mmd" />
+    <File Path="docs/BiDynamic_Topology.png" />
+  </Folder>
   <Folder Name="/sample/">
     <File Path="sample/Directory.Build.props" />
     <Project Path="sample/Test.API/Test.API.csproj" />

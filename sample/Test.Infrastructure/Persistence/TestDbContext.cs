@@ -3,24 +3,27 @@ using BiUM.Bolt.Database.Entities;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace BiApp.Test.Infrastructure.Persistence;
 
 public class TestDbContext : BaseDbContext, ITestDbContext
 {
     public TestDbContext(
+        IServiceProvider serviceProvider,
         DbContextOptions<TestDbContext> options,
         EntitySaveChangesInterceptor entitySaveChangesInterceptor
-    ) : base(options, entitySaveChangesInterceptor)
+    ) : base(serviceProvider, options, entitySaveChangesInterceptor)
     {
     }
 
     public TestDbContext(
+        IServiceProvider serviceProvider,
         DbContextOptions<TestDbContext> options,
         DbContextOptions<BoltDbContext> boltOptions,
         BoltEntitySaveChangesInterceptor entitySaveChangesInterceptor,
         bool useBolt
-    ) : base(boltOptions, entitySaveChangesInterceptor)
+    ) : base(serviceProvider, boltOptions, entitySaveChangesInterceptor)
     {
     }
 

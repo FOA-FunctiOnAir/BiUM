@@ -11,4 +11,6 @@ public class BiAppOptions
     public required string Domain { get; set; }
 
     public string DomainVersion { get; set; } = "v1";
+
+    public string EncryptionKey { get; set; } = string.Empty;
 }

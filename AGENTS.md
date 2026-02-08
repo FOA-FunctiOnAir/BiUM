@@ -42,13 +42,15 @@ graph TD
 ### `src/` Modules
 
 - **`BiUM.Core`**: Base abstractions and interfaces.
-    - `Common/`: Utilities, Config Options (`BoltOptions`, `RabbitMQOptions`).
+    - `Common/`: Utilities, Config Options (`BoltOptions`, `RabbitMQOptions`); `BiAppOptions` includes `EncryptionKey` for `[EncryptedData]` conversion.
+    - `Common/Attributes/`: `EncryptedDataAttribute` for marking properties as encrypted/hashed at persistence (with `Reversible` flag).
+    - `Common/Utils/`: `EncryptionHelper` for Encrypt/Decrypt (byte[] or string), Hash/Verify (non-reversible), Protect/Unprotect (reversible flag); used by the value converter and by application code (e.g. login, export).
     - `Database/`: `IRepository`, `IUnitOfWork`.
     - `MessageBroker/`: `IEventBus`.
     - `Logging/`: Logging interfaces.
 
 - **`BiUM.Infrastructure`**: Concrete implementations of Core.
-    - `Persistence/`: EF Core base implementations.
+    - `Persistence/`: EF Core base implementations, `ValueConverters/EncryptedDataValueConverter`, `Extensions/ModelBuilderEncryptedDataExtensions` (apply `[EncryptedData]` conversion from model with encryption key).
     - `Services/`: FileService (`SimpleHtmlToPdf`), Redis, RabbitMQ implementations.
 
 - **`BiUM.Contract`**: Shared resources.

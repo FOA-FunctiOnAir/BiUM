@@ -1,6 +1,11 @@
+using BiUM.Core.Common.Configs;
 using BiUM.Infrastructure.Common.Models;
+using BiUM.Infrastructure.Persistence.Extensions;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using System;
 using System.Linq.Expressions;
 
 namespace BiUM.Specialized.Database;
@@ -11,21 +16,28 @@ public class BaseDbContext : DbContext, IDbContext
 
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
+    protected BiAppOptions BiAppOptions { get; }
 
     public BaseDbContext(
+        IServiceProvider serviceProvider,
         DbContextOptions options,
         EntitySaveChangesInterceptor entitySaveChangesInterceptor
     ) : base(options)
     {
         _entitySaveChangesInterceptor = entitySaveChangesInterceptor;
+
+        BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
     public BaseDbContext(
+        IServiceProvider serviceProvider,
         DbContextOptions options,
         BoltEntitySaveChangesInterceptor boltEntitySaveChangesInterceptor
     ) : base(options)
     {
         _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
+
+        BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
     public DbSet<DomainCrud> DomainCruds => Set<DomainCrud>();
@@ -73,6 +85,11 @@ public class BaseDbContext : DbContext, IDbContext
                 modelBuilder.Entity(entityType.ClrType).HasIndex(prop.Member.Name);
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
+        }
+
+        if (!string.IsNullOrEmpty(BiAppOptions?.EncryptionKey))
+        {
+            modelBuilder.ApplyEncryptedDataConversion(BiAppOptions.EncryptionKey);
         }
 
         base.OnModelCreating(modelBuilder);

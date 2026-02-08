@@ -21,12 +21,13 @@ public class BoltDbContext : TestDbContext, IBoltDbContext
     private readonly ICorrelationContextProvider _correlationContextProvider;
 
     public BoltDbContext(
+        IServiceProvider serviceProvider,
         ICorrelationContextProvider correlationContextProvider,
         DbContextOptions<TestDbContext> dbOptions,
         DbContextOptions<BoltDbContext> boltDbOptions,
         IOptions<BoltOptions> boltOptions,
         BoltEntitySaveChangesInterceptor entitySaveChangesInterceptor
-    ) : base(dbOptions, boltDbOptions, entitySaveChangesInterceptor, true)
+    ) : base(serviceProvider, dbOptions, boltDbOptions, entitySaveChangesInterceptor, true)
     {
         _correlationContextProvider = correlationContextProvider;
         _correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;

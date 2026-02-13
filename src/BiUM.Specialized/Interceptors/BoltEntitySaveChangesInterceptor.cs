@@ -60,7 +60,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
-                if (entry.Entity is TenantBaseEntity tenantEntity && correlationContext.TenantId.HasValue)
+                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
@@ -71,7 +71,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
             else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
-                if (entry.Entity is TenantBaseEntity tenantEntity && correlationContext.TenantId.HasValue)
+                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }

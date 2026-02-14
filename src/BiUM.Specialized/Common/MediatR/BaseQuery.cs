@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.Api;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 
@@ -10,6 +11,8 @@ public record BaseQuery<TType> : BaseRequestDto<TType>
     public IReadOnlyList<Guid>? Ids { get; init; }
 
     public string? Q { get; init; }
+    [FromQuery(Name = "Filters")]
+    public Dictionary<string, string>? Filters { get; init; }
     public int? PageStart { get; init; }
     public int? PageSize { get; init; }
 }

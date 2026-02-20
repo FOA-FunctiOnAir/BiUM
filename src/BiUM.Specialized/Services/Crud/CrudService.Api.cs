@@ -17,7 +17,16 @@ public partial class CrudService
 
         if (TryGetGuid(data, "Id", out var id))
         {
-            _ = await UpdateInternalAsync(version, id, data, cancellationToken);
+            var existing = await GetAsync(code, id, cancellationToken);
+
+            if (existing != null && existing.Keys.Count > 0)
+            {
+                _ = await UpdateInternalAsync(version, id, data, cancellationToken);
+            }
+            else
+            {
+                _ = await CreateInternalAsync(version, data, cancellationToken);
+            }
         }
         else
         {

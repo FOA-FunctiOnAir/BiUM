@@ -25,12 +25,12 @@ public partial class CrudService
             }
             else
             {
-                _ = await CreateInternalAsync(version, data, cancellationToken);
+                _ = await CreateInternalAsync(version, id, data, cancellationToken);
             }
         }
         else
         {
-            _ = await CreateInternalAsync(version, data, cancellationToken);
+            _ = await CreateInternalAsync(version, null, data, cancellationToken);
         }
 
         return new ApiResponse();

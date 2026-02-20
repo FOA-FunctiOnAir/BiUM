@@ -403,7 +403,7 @@ END;
         return version;
     }
 
-    private async Task<Guid> CreateInternalAsync(DomainCrudVersion version, IDictionary<string, object?> data, CancellationToken ct)
+    private async Task<Guid> CreateInternalAsync(DomainCrudVersion version, Guid? id, IDictionary<string, object?> data, CancellationToken ct)
     {
         var (api2db, _) = BuildMaps(version);
 
@@ -415,7 +415,7 @@ END;
         var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
         var includeProps = data.Keys.Where(k => dynDict.ContainsKey(k)).ToList();
 
-        var newId = GuidGenerator.New();
+        var newId = id ?? GuidGenerator.New();
 
         var colSql = new StringBuilder();
         var valSql = new StringBuilder();

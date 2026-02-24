@@ -20,7 +20,9 @@ public static partial class Extensions
     {
         var query = queryable.AsNoTracking();
 
-        var item = mapper.Map<TDestination>(await query.FirstAsync(cancellationToken));
+        var result = await query.FirstAsync(cancellationToken);
+
+        var item = mapper.Map<TDestination>(result);
 
         return item;
     }
@@ -36,12 +38,14 @@ public static partial class Extensions
     {
         var query = queryable.AsNoTracking();
 
-        var item = mapper.Map<TDestination>(await query.FirstAsync(predicate, cancellationToken));
+        var result = await query.FirstAsync(predicate, cancellationToken);
+
+        var item = mapper.Map<TDestination>(result);
 
         return item;
     }
 
-    public static async Task<TDestination> FirstOrDefaultAsync<TSource, TDestination>(
+    public static async Task<TDestination?> FirstOrDefaultAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,
         CancellationToken cancellationToken = default
@@ -51,12 +55,19 @@ public static partial class Extensions
     {
         var query = queryable.AsNoTracking();
 
-        var item = mapper.Map<TDestination>(await query.FirstOrDefaultAsync(cancellationToken));
+        var result = await query.FirstOrDefaultAsync(cancellationToken);
+
+        if (result is null)
+        {
+            return null;
+        }
+
+        var item = mapper.Map<TDestination>(result);
 
         return item;
     }
 
-    public static async Task<TDestination> FirstOrDefaultAsync<TSource, TDestination>(
+    public static async Task<TDestination?> FirstOrDefaultAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         Expression<Func<TSource, bool>> predicate,
         IMapper mapper,
@@ -67,7 +78,14 @@ public static partial class Extensions
     {
         var query = queryable.AsNoTracking();
 
-        var item = mapper.Map<TDestination>(await query.FirstOrDefaultAsync(predicate, cancellationToken));
+        var result = await query.FirstOrDefaultAsync(predicate, cancellationToken);
+
+        if (result is null)
+        {
+            return null;
+        }
+
+        var item = mapper.Map<TDestination>(result);
 
         return item;
     }

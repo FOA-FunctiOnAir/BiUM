@@ -4,9 +4,9 @@ namespace BiUM.Specialized.Common.Utils;
 
 public static class MoneyHelper
 {
-    private static readonly string[] _ones = { "", "Bir", "İki", "Üç", "Dört", "Beş", "Altı", "Yedi", "Sekiz", "Dokuz" };
-    private static readonly string[] _tens = { "", "On", "Yirmi", "Otuz", "Kırk", "Elli", "Altmış", "Yetmiş", "Seksen", "Doksan" };
-    private static readonly string[] _hundreds = { "", "Yüz", "İki Yüz", "Üç Yüz", "Dört Yüz", "Beş Yüz", "Altı Yüz", "Yedi Yüz", "Sekiz Yüz", "Dokuz Yüz" };
+    private static readonly string[] _ones = ["", "Bir", "İki", "Üç", "Dört", "Beş", "Altı", "Yedi", "Sekiz", "Dokuz"];
+    private static readonly string[] _tens = ["", "On", "Yirmi", "Otuz", "Kırk", "Elli", "Altmış", "Yetmiş", "Seksen", "Doksan"];
+    private static readonly string[] _hundreds = ["", "Yüz", "İki Yüz", "Üç Yüz", "Dört Yüz", "Beş Yüz", "Altı Yüz", "Yedi Yüz", "Sekiz Yüz", "Dokuz Yüz"];
 
     public static string ConvertMoneyToWords(decimal amount, string currencyName = "Türk Lirası", string currencyCoinName = "Kuruş")
     {

@@ -429,7 +429,7 @@ public partial class CrudService
             {
                 { "MicroserviceId", microserviceId },
                 { "Code", code },
-                { "Columns", columnsParameters ?? Array.Empty<SaveCrudServicesColumnDto>() }
+                { "Columns", columnsParameters ?? [] }
             };
 
         var responseApi = await _httpClientsService.CallService<ApiResponse>(

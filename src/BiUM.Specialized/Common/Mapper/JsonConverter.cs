@@ -13,7 +13,7 @@ internal static class JsonReadHelpers
         if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out value)) return true;
         if (r.TokenType == JsonTokenType.String && long.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
 
-        value = default;
+        value = 0;
 
         return false;
     }
@@ -23,7 +23,7 @@ internal static class JsonReadHelpers
         if (r.TokenType == JsonTokenType.Number && r.TryGetDouble(out value)) return true;
         if (r.TokenType == JsonTokenType.String && double.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
 
-        value = default;
+        value = 0;
 
         return false;
     }
@@ -33,7 +33,7 @@ internal static class JsonReadHelpers
         if (r.TokenType == JsonTokenType.Number && r.TryGetDecimal(out value)) return true;
         if (r.TokenType == JsonTokenType.String && decimal.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
 
-        value = default;
+        value = 0;
 
         return false;
     }
@@ -56,7 +56,7 @@ internal static class JsonReadHelpers
                 break;
         }
 
-        value = default;
+        value = false;
 
         return false;
     }
@@ -232,7 +232,7 @@ public sealed class JsonDecimalConverter : JsonConverter<decimal>
 public sealed class JsonDateTimeLenientConverter : JsonConverter<DateTime>
 {
     private static readonly string[] Formats =
-    {
+    [
         "O",
         "yyyy-MM-dd",
         "yyyy-MM-ddTHH:mm:ss",
@@ -240,7 +240,7 @@ public sealed class JsonDateTimeLenientConverter : JsonConverter<DateTime>
         "dd.MM.yyyy",
         "dd.MM.yyyy HH:mm",
         "dd.MM.yyyy HH:mm:ss"
-    };
+    ];
 
     public override DateTime Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
@@ -303,7 +303,7 @@ public sealed class JsonDateTimeOffsetLenientConverter : JsonConverter<DateTimeO
 
 public sealed class JsonDateOnlyLenientConverter : JsonConverter<DateOnly>
 {
-    private static readonly string[] Formats = { "yyyy-MM-dd", "dd.MM.yyyy", "O" };
+    private static readonly string[] Formats = ["yyyy-MM-dd", "dd.MM.yyyy", "O"];
 
     public override DateOnly Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
@@ -330,7 +330,7 @@ public sealed class JsonDateOnlyLenientConverter : JsonConverter<DateOnly>
 
 public sealed class JsonTimeOnlyLenientConverter : JsonConverter<TimeOnly>
 {
-    private static readonly string[] Formats = { "HH:mm:ss", "HH:mm" };
+    private static readonly string[] Formats = ["HH:mm:ss", "HH:mm"];
 
     public override TimeOnly Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
@@ -422,7 +422,7 @@ public sealed class JsonEnumNullConverterFactory : JsonConverterFactory
 
 public sealed class JsonTimeSpanConverter : JsonConverter<TimeSpan>
 {
-    private static readonly string[] Formats = { "c", "g", "G" };
+    private static readonly string[] Formats = ["c", "g", "G"];
 
     public override TimeSpan Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
@@ -468,11 +468,11 @@ public sealed class JsonNullToEmptyListConverterFactory : JsonConverterFactory
     {
         public override List<T> Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
         {
-            if (r.TokenType == JsonTokenType.Null) return new();
+            if (r.TokenType == JsonTokenType.Null) return [];
 
             var list = JsonSerializer.Deserialize<List<T>>(ref r, o);
 
-            return list ?? new();
+            return list ?? [];
         }
 
         public override void Write(Utf8JsonWriter w, List<T> value, JsonSerializerOptions o)

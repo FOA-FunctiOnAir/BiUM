@@ -16,7 +16,7 @@ public static class RedisScripts
 
     public static RedisResult RemoveIfEqual(IDatabase redis, RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
     {
-        var result = (long)redis.ScriptEvaluate(RemoveIfEqualScript, new[] { key }, new[] { value }, flags);
+        var result = (long)redis.ScriptEvaluate(RemoveIfEqualScript, [key], [value], flags);
         return result == 1 ? RedisResult.Create(1, ResultType.Integer) : RedisResult.Create(0, ResultType.Integer);
     }
 
@@ -38,7 +38,7 @@ public static class RedisScripts
 
     public static RedisResult ReplaceIfEqual(IDatabase redis, RedisKey key, RedisValue value, RedisValue expected, object expires, CommandFlags flags = CommandFlags.None)
     {
-        var result = (long)redis.ScriptEvaluate(ReplaceIfEqualScript, new[] { key }, new[] { value, expected, (RedisValue)(expires?.ToString() ?? "") }, flags);
+        var result = (long)redis.ScriptEvaluate(ReplaceIfEqualScript, [key], [value, expected, (RedisValue)(expires?.ToString() ?? "")], flags);
         return result == 1 ? RedisResult.Create(1, ResultType.Integer) : RedisResult.Create(0, ResultType.Integer);
     }
 }

@@ -17,6 +17,7 @@ public sealed partial class CorrelationContext
     public string? ConnectionId { get; init; }
     public string? TraceId { get; init; }
     public string? IpAddress { get; init; }
+    public string? ClientHost { get; init; }
     public Guid? ApplicationId { get; init; }
     public Guid? TenantId { get; init; }
     public Guid? LanguageId { get; init; }

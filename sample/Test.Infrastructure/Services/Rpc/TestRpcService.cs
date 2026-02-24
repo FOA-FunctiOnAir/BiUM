@@ -27,14 +27,14 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
 
         var response = new GetCurrencyResponse();
 
-        if (string.IsNullOrWhiteSpace(request.CurrencyId))
+        if (request.CurrencyId == Guid.Empty)
         {
             await _translationService.AddMessage(response, "NoCurrencyCode", cancellationToken);
 
             return response;
         }
 
-        var currencyId = request.CurrencyId.ToGuid();
+        var currencyId = request.CurrencyId;
 
         var currencyResponse = await _currencyRepository.GetCurrency(currencyId, cancellationToken);
 
@@ -54,9 +54,9 @@ public sealed class TestRpcService : ServiceBase<ITestRpcService>, ITestRpcServi
 
         response.Value = new()
         {
-            CurrencyId = currencyResponse.Value.Id.ToString(),
+            CurrencyId = currencyResponse.Value.Id,
             CurrencyCode = currencyResponse.Value.Code,
-            CurrencyType = currencyResponse.Value.Type.ToString(),
+            CurrencyType = currencyResponse.Value.Type,
             CurrencyName = currencyResponse.Value.Name
         };
 

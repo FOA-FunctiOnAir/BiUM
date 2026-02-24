@@ -19,7 +19,7 @@ public partial class AccountRepository
 
         var getCurrencyNamesRequest = new GetCurrencyRequest
         {
-            CurrencyId = id.ToString()
+            CurrencyId = id
         };
 
         var currencyNamesResponse = await _testRpcService.WithCancellationToken(cancellationToken).GetCurrency(getCurrencyNamesRequest);
@@ -40,21 +40,23 @@ public partial class AccountRepository
     {
         var response = new ApiResponse<AccountDto>();
 
-        if (id != Guid.Empty)
+        if (id == Guid.Empty)
         {
-            var account = await _context.Accounts
-                .Include(c => c.AccountTranslations)
-                .FirstOrDefaultAsync<Account, AccountDto>(x => x.Id == id, Mapper, cancellationToken);
-
-            if (account is null)
-            {
-                await AddMessage(response, "AccountNotFound", cancellationToken);
-
-                return response;
-            }
-
-            response.Value = account;
+            return response;
         }
+
+        var account = await _context.Accounts
+            .Include(c => c.AccountTranslations)
+            .FirstOrDefaultAsync<Account, AccountDto>(x => x.Id == id, Mapper, cancellationToken);
+
+        if (account is null)
+        {
+            await AddMessage(response, "AccountNotFound", cancellationToken);
+
+            return response;
+        }
+
+        response.Value = account;
 
         return response;
     }

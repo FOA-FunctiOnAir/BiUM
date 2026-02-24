@@ -45,6 +45,4 @@ public class TestHttpClientServiceController : ApiControllerBase
     }
 }
 
-public class GetQuery
-{
-}
+public class GetQuery;

@@ -14,13 +14,9 @@ public record BaseSchedulerCommand : BaseRequestDto<ApiResponse>
     public Guid? TenantId { get; set; }
 }
 
-public record BaseCommandDto : BaseCommand<ApiResponse>
-{
-}
+public record BaseCommandDto : BaseCommand<ApiResponse>;
 
-public record BaseCommandResponseDto<TType> : BaseCommand<ApiResponse<TType>>
-{
-}
+public record BaseCommandResponseDto<TType> : BaseCommand<ApiResponse<TType>>;
 
 public record BaseImportCommandDto : BaseCommandDto
 {

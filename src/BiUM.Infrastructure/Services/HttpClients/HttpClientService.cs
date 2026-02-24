@@ -1145,7 +1145,5 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    private struct Void
-    {
-    }
+    private struct Void;
 }

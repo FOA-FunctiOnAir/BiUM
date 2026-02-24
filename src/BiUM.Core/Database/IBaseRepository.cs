@@ -1,5 +1,3 @@
 namespace BiUM.Core.Database;
 
-public interface IBaseRepository
-{
-}
+public interface IBaseRepository;

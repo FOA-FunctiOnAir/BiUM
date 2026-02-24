@@ -15,13 +15,9 @@ public record SaveDomainCrudCommand : BaseCommandDto
     public IList<SaveDomainCrudCommandColumn> DomainCrudColumns { get; set; } = [];
 }
 
-public record PublishDomainCrudCommand : BaseCommandDto
-{
-}
+public record PublishDomainCrudCommand : BaseCommandDto;
 
-public record DeleteDomainCrudCommand : BaseCommandDto
-{
-}
+public record DeleteDomainCrudCommand : BaseCommandDto;
 
 public class SaveDomainCrudCommandColumn
 {

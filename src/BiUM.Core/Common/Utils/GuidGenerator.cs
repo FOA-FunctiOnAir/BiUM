@@ -10,7 +10,7 @@ public static class GuidGenerator
 
     public static Guid New()
     {
-        return Guid.NewGuid();
+        return Guid.CreateVersion7();
     }
 
     public static Guid NewGuid(string seed)

@@ -20,6 +20,7 @@ public sealed partial class CorrelationContext
     public string? ClientHost { get; init; }
     public Guid? ApplicationId { get; init; }
     public Guid? TenantId { get; init; }
+    public string? TenantName { get; init; }
     public Guid? LanguageId { get; init; }
     public Guid? ResourceId { get; init; }
     public DateTime CreatedAt { get; } = DateTime.UtcNow;

@@ -229,7 +229,7 @@ public partial class CrudService
             {
                 Id = command.Id ?? GuidGenerator.New(),
                 ApplicationId = command.ApplicationId,
-                TenantId = CorrelationContext.TenantId!.Value,
+                TenantId = CorrelationContext.TenantId,
                 MicroserviceId = command.MicroserviceId,
                 Name = command.NameTr!.ToTranslationString(),
                 Code = command.Code,

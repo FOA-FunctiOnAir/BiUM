@@ -60,9 +60,9 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
-                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
+                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId != Guid.Empty)
                 {
-                    tenantEntity.TenantId = correlationContext.TenantId.Value;
+                    tenantEntity.TenantId = correlationContext.TenantId;
                 }
                 entry.Entity.CreatedBy = correlationContext.User?.Id;
                 entry.Entity.Created = DateOnly.FromDateTime(now);
@@ -71,9 +71,9 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
             else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
-                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
+                if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId != Guid.Empty)
                 {
-                    tenantEntity.TenantId = correlationContext.TenantId.Value;
+                    tenantEntity.TenantId = correlationContext.TenantId;
                 }
                 entry.Entity.UpdatedBy = correlationContext.User?.Id;
                 entry.Entity.Updated = DateOnly.FromDateTime(now);

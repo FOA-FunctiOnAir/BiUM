@@ -429,7 +429,7 @@ END;
 
         AddParam(newId);
         AddParam(CorrelationContext.CorrelationId);
-        AddParam(CorrelationContext.TenantId!.Value);
+        AddParam(CorrelationContext.TenantId);
         AddParam(true);
         AddParam(false);
         AddParam(CorrelationContext.User?.Id);

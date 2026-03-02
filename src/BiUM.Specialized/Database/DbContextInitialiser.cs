@@ -19,6 +19,7 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     {
         DbContext = dbContext;
         ServiceProvider = serviceProvider;
+
         Logger = serviceProvider.GetRequiredService<ILogger<DbContextInitialiser<TDbContext>>>();
     }
 

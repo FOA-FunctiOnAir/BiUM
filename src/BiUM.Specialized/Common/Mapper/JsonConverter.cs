@@ -10,8 +10,15 @@ internal static class JsonReadHelpers
 {
     public static bool TryReadInt64(ref Utf8JsonReader r, out long value)
     {
-        if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out value)) return true;
-        if (r.TokenType == JsonTokenType.String && long.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
+        if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out value))
+        {
+            return true;
+        }
+
+        if (r.TokenType == JsonTokenType.String && long.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+        {
+            return true;
+        }
 
         value = 0;
 
@@ -20,8 +27,15 @@ internal static class JsonReadHelpers
 
     public static bool TryReadDouble(ref Utf8JsonReader r, out double value)
     {
-        if (r.TokenType == JsonTokenType.Number && r.TryGetDouble(out value)) return true;
-        if (r.TokenType == JsonTokenType.String && double.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
+        if (r.TokenType == JsonTokenType.Number && r.TryGetDouble(out value))
+        {
+            return true;
+        }
+
+        if (r.TokenType == JsonTokenType.String && double.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+        {
+            return true;
+        }
 
         value = 0;
 
@@ -30,8 +44,15 @@ internal static class JsonReadHelpers
 
     public static bool TryReadDecimal(ref Utf8JsonReader r, out decimal value)
     {
-        if (r.TokenType == JsonTokenType.Number && r.TryGetDecimal(out value)) return true;
-        if (r.TokenType == JsonTokenType.String && decimal.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value)) return true;
+        if (r.TokenType == JsonTokenType.Number && r.TryGetDecimal(out value))
+        {
+            return true;
+        }
+
+        if (r.TokenType == JsonTokenType.String && decimal.TryParse(r.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+        {
+            return true;
+        }
 
         value = 0;
 
@@ -76,8 +97,15 @@ public sealed class JsonBoolConverter : JsonConverter<bool>
 {
     public override bool Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return false;
-        if (JsonReadHelpers.TryReadBooleanLenient(ref r, out var v)) return v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return false;
+        }
+
+        if (JsonReadHelpers.TryReadBooleanLenient(ref r, out var v))
+        {
+            return v;
+        }
 
         return false;
     }
@@ -90,8 +118,15 @@ public sealed class JsonIntConverter : JsonConverter<int>
 {
     public override int Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (int)v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (int)v;
+        }
 
         return 0;
     }
@@ -103,8 +138,15 @@ public sealed class JsonLongConverter : JsonConverter<long>
 {
     public override long Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0L;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0L;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return v;
+        }
 
         return 0L;
     }
@@ -116,8 +158,15 @@ public sealed class JsonShortConverter : JsonConverter<short>
 {
     public override short Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (short)v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (short)v;
+        }
 
         return 0;
     }
@@ -129,8 +178,15 @@ public sealed class JsonByteConverter : JsonConverter<byte>
 {
     public override byte Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (byte)v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (byte)v;
+        }
 
         return 0;
     }
@@ -142,8 +198,15 @@ public sealed class JsonSByteConverter : JsonConverter<sbyte>
 {
     public override sbyte Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (sbyte)v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (sbyte)v;
+        }
 
         return 0;
     }
@@ -155,8 +218,15 @@ public sealed class JsonUIntConverter : JsonConverter<uint>
 {
     public override uint Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0U;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (uint)Math.Max(v, 0);
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0U;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (uint)Math.Max(v, 0);
+        }
 
         return 0U;
     }
@@ -168,8 +238,15 @@ public sealed class JsonULongConverter : JsonConverter<ulong>
 {
     public override ulong Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0UL;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return v < 0 ? 0UL : (ulong)v;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0UL;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return v < 0 ? 0UL : (ulong)v;
+        }
 
         return 0UL;
     }
@@ -181,8 +258,15 @@ public sealed class JsonUShortConverter : JsonConverter<ushort>
 {
     public override ushort Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0;
-        if (JsonReadHelpers.TryReadInt64(ref r, out var v)) return (ushort)Math.Max(v, 0);
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0;
+        }
+
+        if (JsonReadHelpers.TryReadInt64(ref r, out var v))
+        {
+            return (ushort)Math.Max(v, 0);
+        }
 
         return 0;
     }
@@ -194,8 +278,15 @@ public sealed class JsonFloatConverter : JsonConverter<float>
 {
     public override float Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0f;
-        if (JsonReadHelpers.TryReadDouble(ref r, out var d)) return (float)d;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0f;
+        }
+
+        if (JsonReadHelpers.TryReadDouble(ref r, out var d))
+        {
+            return (float)d;
+        }
 
         return 0f;
     }
@@ -207,8 +298,15 @@ public sealed class JsonDoubleConverter : JsonConverter<double>
 {
     public override double Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0d;
-        if (JsonReadHelpers.TryReadDouble(ref r, out var d)) return d;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0d;
+        }
+
+        if (JsonReadHelpers.TryReadDouble(ref r, out var d))
+        {
+            return d;
+        }
 
         return 0d;
     }
@@ -220,8 +318,15 @@ public sealed class JsonDecimalConverter : JsonConverter<decimal>
 {
     public override decimal Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return 0m;
-        if (JsonReadHelpers.TryReadDecimal(ref r, out var d)) return d;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return 0m;
+        }
+
+        if (JsonReadHelpers.TryReadDecimal(ref r, out var d))
+        {
+            return d;
+        }
 
         return 0m;
     }
@@ -244,24 +349,38 @@ public sealed class JsonDateTimeLenientConverter : JsonConverter<DateTime>
 
     public override DateTime Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return DateTime.MinValue;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return DateTime.MinValue;
+        }
 
         if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out var num))
+        {
             return JsonReadHelpers.FromEpochSmart(num);
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
-            if (string.IsNullOrWhiteSpace(s)) return DateTime.MinValue;
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                return DateTime.MinValue;
+            }
 
             if (DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto))
+            {
                 return dto.UtcDateTime;
+            }
 
             if (DateTime.TryParseExact(s, Formats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+            {
                 return DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime();
+            }
 
             if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dtx))
+            {
                 return DateTime.SpecifyKind(dtx, DateTimeKind.Local).ToUniversalTime();
+            }
         }
 
         return DateTime.MinValue;
@@ -275,21 +394,34 @@ public sealed class JsonDateTimeOffsetLenientConverter : JsonConverter<DateTimeO
 {
     public override DateTimeOffset Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return DateTimeOffset.MinValue;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return DateTimeOffset.MinValue;
+        }
 
         if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out var num))
+        {
             return JsonReadHelpers.FromEpochSmart(num);
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
 
-            if (string.IsNullOrWhiteSpace(s)) return DateTimeOffset.MinValue;
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                return DateTimeOffset.MinValue;
+            }
+
             if (DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto))
+            {
                 return dto.ToUniversalTime();
+            }
 
             if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+            {
                 return new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Local)).ToUniversalTime();
+            }
         }
 
         return DateTimeOffset.MinValue;
@@ -307,18 +439,32 @@ public sealed class JsonDateOnlyLenientConverter : JsonConverter<DateOnly>
 
     public override DateOnly Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return DateOnly.MinValue;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return DateOnly.MinValue;
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
 
-            if (string.IsNullOrWhiteSpace(s)) return DateOnly.MinValue;
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                return DateOnly.MinValue;
+            }
 
             foreach (var f in Formats)
-                if (DateOnly.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)) return d;
+            {
+                if (DateOnly.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                {
+                    return d;
+                }
+            }
 
-            if (DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d2)) return d2;
+            if (DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d2))
+            {
+                return d2;
+            }
         }
 
         return DateOnly.MinValue;
@@ -334,17 +480,31 @@ public sealed class JsonTimeOnlyLenientConverter : JsonConverter<TimeOnly>
 
     public override TimeOnly Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return TimeOnly.MinValue;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return TimeOnly.MinValue;
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
-            if (string.IsNullOrWhiteSpace(s)) return TimeOnly.MinValue;
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                return TimeOnly.MinValue;
+            }
 
             foreach (var f in Formats)
-                if (TimeOnly.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tOnly)) return tOnly;
+            {
+                if (TimeOnly.TryParseExact(s, f, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tOnly))
+                {
+                    return tOnly;
+                }
+            }
 
-            if (TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var t2)) return t2;
+            if (TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var t2))
+            {
+                return t2;
+            }
         }
 
         return TimeOnly.MinValue;
@@ -360,13 +520,19 @@ public sealed class JsonGuidConverter : JsonConverter<Guid>
 {
     public override Guid Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return Guid.Empty;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return Guid.Empty;
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
 
-            if (Guid.TryParse(s, out var g)) return g;
+            if (Guid.TryParse(s, out var g))
+            {
+                return g;
+            }
 
             return Guid.Empty;
         }
@@ -393,21 +559,33 @@ public sealed class JsonEnumNullConverterFactory : JsonConverterFactory
     {
         public override TEnum Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
         {
-            if (r.TokenType == JsonTokenType.Null) return default;
+            if (r.TokenType == JsonTokenType.Null)
+            {
+                return default;
+            }
 
             if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out var n))
+            {
                 return (TEnum)Enum.ToObject(typeof(TEnum), n);
+            }
 
             if (r.TokenType == JsonTokenType.String)
             {
                 var s = r.GetString();
-                if (string.IsNullOrWhiteSpace(s)) return default;
+                if (string.IsNullOrWhiteSpace(s))
+                {
+                    return default;
+                }
 
                 if (long.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var num))
+                {
                     return (TEnum)Enum.ToObject(typeof(TEnum), num);
+                }
 
                 if (Enum.TryParse<TEnum>(s, true, out var byName))
+                {
                     return byName;
+                }
             }
 
             return default;
@@ -426,17 +604,31 @@ public sealed class JsonTimeSpanConverter : JsonConverter<TimeSpan>
 
     public override TimeSpan Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
-        if (r.TokenType == JsonTokenType.Null) return TimeSpan.Zero;
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return TimeSpan.Zero;
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString();
-            if (string.IsNullOrWhiteSpace(s)) return TimeSpan.Zero;
+            if (string.IsNullOrWhiteSpace(s))
+            {
+                return TimeSpan.Zero;
+            }
 
             foreach (var f in Formats)
-                if (TimeSpan.TryParseExact(s, f, CultureInfo.InvariantCulture, out var ts)) return ts;
+            {
+                if (TimeSpan.TryParseExact(s, f, CultureInfo.InvariantCulture, out var ts))
+                {
+                    return ts;
+                }
+            }
 
-            if (TimeSpan.TryParse(s, CultureInfo.InvariantCulture, out var ts2)) return ts2;
+            if (TimeSpan.TryParse(s, CultureInfo.InvariantCulture, out var ts2))
+            {
+                return ts2;
+            }
         }
 
         if (r.TokenType == JsonTokenType.Number && r.TryGetInt64(out var num))
@@ -468,7 +660,10 @@ public sealed class JsonNullToEmptyListConverterFactory : JsonConverterFactory
     {
         public override List<T> Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
         {
-            if (r.TokenType == JsonTokenType.Null) return [];
+            if (r.TokenType == JsonTokenType.Null)
+            {
+                return [];
+            }
 
             var list = JsonSerializer.Deserialize<List<T>>(ref r, o);
 
@@ -485,25 +680,37 @@ public sealed class JsonNullableBoolConverter : JsonConverter<bool?>
     public override bool? Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
     {
         if (r.TokenType == JsonTokenType.Null)
+        {
             return null;
+        }
 
         if (r.TokenType == JsonTokenType.True)
+        {
             return true;
+        }
 
         if (r.TokenType == JsonTokenType.False)
+        {
             return false;
+        }
 
         if (r.TokenType == JsonTokenType.String)
         {
             var s = r.GetString()?.Trim();
             if (string.IsNullOrEmpty(s))
+            {
                 return null;
+            }
 
             if (bool.TryParse(s, out var b))
+            {
                 return b;
+            }
 
             if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var i))
+            {
                 return i != 0;
+            }
 
             return null;
         }
@@ -511,7 +718,9 @@ public sealed class JsonNullableBoolConverter : JsonConverter<bool?>
         if (r.TokenType == JsonTokenType.Number)
         {
             if (r.TryGetInt64(out var n))
+            {
                 return n != 0;
+            }
         }
 
         return null;
@@ -520,8 +729,12 @@ public sealed class JsonNullableBoolConverter : JsonConverter<bool?>
     public override void Write(Utf8JsonWriter w, bool? value, JsonSerializerOptions o)
     {
         if (value.HasValue)
+        {
             w.WriteBooleanValue(value.Value);
+        }
         else
+        {
             w.WriteNullValue();
+        }
     }
 }

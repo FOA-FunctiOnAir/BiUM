@@ -9,7 +9,9 @@ public static partial class Extensions
     public static Dictionary<string, object?> ToDictionary(this JsonElement element)
     {
         if (element.ValueKind != JsonValueKind.Object)
+        {
             throw new InvalidOperationException("JsonElement is not an object");
+        }
 
         var dict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -29,8 +31,16 @@ public static partial class Extensions
                 return e.GetString();
 
             case JsonValueKind.Number:
-                if (e.TryGetInt64(out var i64)) return i64;
-                if (e.TryGetDouble(out var dbl)) return dbl;
+                if (e.TryGetInt64(out var i64))
+                {
+                    return i64;
+                }
+
+                if (e.TryGetDouble(out var dbl))
+                {
+                    return dbl;
+                }
+
                 return decimal.Parse(e.GetRawText(), CultureInfo.InvariantCulture);
 
             case JsonValueKind.True: return true;
@@ -44,7 +54,10 @@ public static partial class Extensions
                 {
                     var list = new List<object?>();
                     foreach (var item in e.EnumerateArray())
+                    {
                         list.Add(ToNetObject(item));
+                    }
+
                     return list;
                 }
 

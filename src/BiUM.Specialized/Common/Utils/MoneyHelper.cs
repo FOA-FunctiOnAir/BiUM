@@ -40,7 +40,10 @@ public static class MoneyHelper
 
     private static string ConvertIntegerToWords(int number)
     {
-        if (number == 0) return "Sıfır";
+        if (number == 0)
+        {
+            return "Sıfır";
+        }
 
         var words = "";
         var millions = number / 1000000;

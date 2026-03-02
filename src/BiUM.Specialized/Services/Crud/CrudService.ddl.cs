@@ -14,6 +14,8 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
+    private const string DbTypePostgresql = "PostgreSQL";
+
     private static string GenerateCreateTablePgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> cols)
     {
         var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
@@ -40,7 +42,10 @@ public partial class CrudService
             $"    {Q("TEST")} boolean NOT NULL DEFAULT false"
         };
 
-        foreach (var line in fixedCols) sb.AppendLine(line + ",");
+        foreach (var line in fixedCols)
+        {
+            sb.AppendLine(line + ",");
+        }
 
         var list = cols.ToList();
         for (var i = 0; i < list.Count; i++)
@@ -56,7 +61,7 @@ public partial class CrudService
         return sb.ToString();
     }
 
-    private static string GenerateDiffPgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
+    private static string GenerateDiffPgSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, DomainCrudVersionColumn[] newCols)
     {
         var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
@@ -102,18 +107,53 @@ public partial class CrudService
 
         if (c.DataTypeId == Ids.DataType.String)
         {
-            if (c.MaxLength.HasValue && c.MaxLength.Value > 0) return $"varchar({c.MaxLength.Value})";
+            if (c.MaxLength is > 0)
+            {
+                return $"varchar({c.MaxLength.Value})";
+            }
 
             return "text";
         }
-        if (c.DataTypeId == Ids.DataType.Guid) return "uuid";
-        if (c.DataTypeId == Ids.DataType.Integer) return "integer";
-        if (c.DataTypeId == Ids.DataType.Decimal) return "numeric(18,2)";
-        if (c.DataTypeId == Ids.DataType.Boolean) return "boolean";
-        if (c.DataTypeId == Ids.DataType.DateTime) return useTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
-        if (c.DataTypeId == Ids.DataType.DateOnly) return "date";
-        if (c.DataTypeId == Ids.DataType.TimeOnly) return "time without time zone";
-        if (c.DataTypeId == Ids.DataType.Object) return "jsonb";
+
+        if (c.DataTypeId == Ids.DataType.Guid)
+        {
+            return "uuid";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Integer)
+        {
+            return "integer";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Decimal)
+        {
+            return "numeric(18,2)";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Boolean)
+        {
+            return "boolean";
+        }
+
+        if (c.DataTypeId == Ids.DataType.DateTime)
+        {
+            return useTimeZoneInTimestamp ? "timestamp with time zone" : "timestamp without time zone";
+        }
+
+        if (c.DataTypeId == Ids.DataType.DateOnly)
+        {
+            return "date";
+        }
+
+        if (c.DataTypeId == Ids.DataType.TimeOnly)
+        {
+            return "time without time zone";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Object)
+        {
+            return "jsonb";
+        }
 
         return "text";
     }
@@ -147,7 +187,10 @@ public partial class CrudService
             "        [TEST] bit NOT NULL CONSTRAINT [DF_" + Safe(crud.TableName) + "_TEST] DEFAULT (0)"
         };
 
-        foreach (var line in fixedCols) sb.AppendLine(line + ",");
+        foreach (var line in fixedCols)
+        {
+            sb.AppendLine(line + ",");
+        }
 
         var list = cols.ToList();
         for (var i = 0; i < list.Count; i++)
@@ -164,7 +207,7 @@ public partial class CrudService
         return sb.ToString();
     }
 
-    private static string GenerateDiffMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, IEnumerable<DomainCrudVersionColumn> newCols)
+    private static string GenerateDiffMsSql(DomainCrud crud, IEnumerable<DomainCrudVersionColumn> prevCols, DomainCrudVersionColumn[] newCols)
     {
         var schema = ResolveSchema(crud.ApplicationId, crud.TenantId);
 
@@ -215,29 +258,55 @@ public partial class CrudService
     {
         if (c.DataTypeId == Ids.DataType.String)
         {
-            var len = c.MaxLength.HasValue && c.MaxLength > 0 ? c.MaxLength.Value.ToString() : "MAX";
+            var len = c.MaxLength is > 0 ? c.MaxLength.Value.ToString() : "MAX";
 
             return $"nvarchar({len})";
         }
-        if (c.DataTypeId == Ids.DataType.Guid) return "uniqueidentifier";
-        if (c.DataTypeId == Ids.DataType.Integer) return "int";
-        if (c.DataTypeId == Ids.DataType.Decimal) return "decimal(18,2)";
-        if (c.DataTypeId == Ids.DataType.Boolean) return "bit";
-        if (c.DataTypeId == Ids.DataType.DateTime) return "datetime2(7)";
-        if (c.DataTypeId == Ids.DataType.DateOnly) return "date";
-        if (c.DataTypeId == Ids.DataType.TimeOnly) return "time(7)";
-        if (c.DataTypeId == Ids.DataType.Object) return "nvarchar(MAX)";
+
+        if (c.DataTypeId == Ids.DataType.Guid)
+        {
+            return "uniqueidentifier";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Integer)
+        {
+            return "int";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Decimal)
+        {
+            return "decimal(18,2)";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Boolean)
+        {
+            return "bit";
+        }
+
+        if (c.DataTypeId == Ids.DataType.DateTime)
+        {
+            return "datetime2(7)";
+        }
+
+        if (c.DataTypeId == Ids.DataType.DateOnly)
+        {
+            return "date";
+        }
+
+        if (c.DataTypeId == Ids.DataType.TimeOnly)
+        {
+            return "time(7)";
+        }
+
+        if (c.DataTypeId == Ids.DataType.Object)
+        {
+            return "nvarchar(MAX)";
+        }
 
         return "nvarchar(MAX)";
     }
 
-    public static readonly HashSet<string> BaseColumns = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ID","CORRELATION_ID","TENANT_ID","ACTIVE","DELETED",
-        "CREATED","CREATED_TIME","CREATED_BY","UPDATED","UPDATED_TIME","UPDATED_BY","TEST"
-    };
-
-    public static readonly HashSet<string> BaseApiProperties = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> BaseApiProperties = new(StringComparer.OrdinalIgnoreCase)
     {
         "id","correlationId","tenantId","active","deleted",
         "created","createdTime","createdBy","updated","updatedTime","updatedBy","test"
@@ -260,26 +329,25 @@ public partial class CrudService
             ["updatedBy"] = "UPDATED_BY",
             ["test"] = "TEST"
         };
-        var db2api = api2db.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
+
+        var db2Api = api2db.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var c in version.DomainCrudVersionColumns)
         {
             api2db[c.PropertyName] = c.ColumnName;
-            db2api[c.ColumnName] = c.PropertyName;
+            db2Api[c.ColumnName] = c.PropertyName;
         }
 
-        return (api2db, db2api);
+        return (api2db, db2Api);
     }
 
-    public static string QuotePg(string ident) => $"\"{ident.Replace("\"", "\"\"")}\"";
+    private static string QuotePg(string ident) => $"\"{ident.Replace("\"", "\"\"")}\"";
 
-    public static string QuoteMs(string ident) => $"[{ident.Replace("]", "]]")}]";
+    private static string QuoteMs(string ident) => $"[{ident.Replace("]", "]]")}]";
 
-    public static string NowDateSql(string db) => db == "PostgreSQL" ? "now()::date" : "CAST(GETDATE() AS date)";
+    private static string NowDateSql(string db) => db == DbTypePostgresql ? "now()::date" : "CAST(GETDATE() AS date)";
 
-    public static string NowTimeSql(string db) => db == "PostgreSQL" ? "now()::time" : "CAST(GETDATE() AS time)";
-
-    public static string GenUuidSqlDefault(string db) => db == "PostgreSQL" ? "gen_random_uuid()" : "NEWID()";
+    private static string NowTimeSql(string db) => db == DbTypePostgresql ? "now()::time" : "CAST(GETDATE() AS time)";
 
     private static string ResolveSchema(Guid applicationId, Guid tenantId)
     {
@@ -328,58 +396,124 @@ END;
         return Guid.TryParse(v.ToString(), out guid);
     }
 
-    private static object? NormalizeValue(Guid dataTypeId, object? value, string db)
+    private static object? NormalizeValue(Guid dataTypeId, object? value)
     {
-        if (value is null) return null;
+        if (value is null)
+        {
+            return null;
+        }
 
         if (dataTypeId == Ids.DataType.Guid)
         {
-            if (value is Guid g) return g;
-            if (Guid.TryParse(value.ToString(), out var gg)) return gg;
+            if (value is Guid g)
+            {
+                return g;
+            }
+
+            if (Guid.TryParse(value.ToString(), out var gg))
+            {
+                return gg;
+            }
 
             throw new ArgumentException("Invalid Guid");
         }
+
         if (dataTypeId == Ids.DataType.Integer)
         {
-            if (value is int i) return i;
-            if (int.TryParse(value.ToString(), out var ii)) return ii;
+            if (value is int i)
+            {
+                return i;
+            }
+
+            if (int.TryParse(value.ToString(), out var ii))
+            {
+                return ii;
+            }
 
             throw new ArgumentException("Invalid Integer");
         }
+
         if (dataTypeId == Ids.DataType.Decimal)
         {
-            if (value is decimal d) return d;
-            if (decimal.TryParse(value.ToString(), out var dd)) return dd;
+            if (value is decimal d)
+            {
+                return d;
+            }
+
+            if (decimal.TryParse(value.ToString(), out var dd))
+            {
+                return dd;
+            }
 
             throw new ArgumentException("Invalid Decimal");
         }
+
         if (dataTypeId == Ids.DataType.Boolean)
         {
-            if (value is bool b) return b;
-            if (bool.TryParse(value.ToString(), out var bb)) return bb;
+            if (value is bool b)
+            {
+                return b;
+            }
+
+            if (bool.TryParse(value.ToString(), out var bb))
+            {
+                return bb;
+            }
 
             throw new ArgumentException("Invalid Boolean");
         }
+
         if (dataTypeId == Ids.DataType.DateOnly)
         {
-            if (value is DateOnly d) return d;
-            if (DateOnly.TryParse(value.ToString(), out var dd)) return dd;
-            if (DateTime.TryParse(value.ToString(), out var dt)) return DateOnly.FromDateTime(dt);
+            if (value is DateOnly d)
+            {
+                return d;
+            }
+
+            if (DateOnly.TryParse(value.ToString(), out var dd))
+            {
+                return dd;
+            }
+
+            if (DateTime.TryParse(value.ToString(), out var dt))
+            {
+                return DateOnly.FromDateTime(dt);
+            }
 
             throw new ArgumentException("Invalid DateOnly");
         }
+
         if (dataTypeId == Ids.DataType.TimeOnly)
         {
-            if (value is TimeOnly t) return t;
-            if (TimeOnly.TryParse(value.ToString(), out var tt)) return tt;
-            if (DateTime.TryParse(value.ToString(), out var dt)) return TimeOnly.FromDateTime(dt);
+            if (value is TimeOnly t)
+            {
+                return t;
+            }
+
+            if (TimeOnly.TryParse(value.ToString(), out var tt))
+            {
+                return tt;
+            }
+
+            if (DateTime.TryParse(value.ToString(), out var dt))
+            {
+                return TimeOnly.FromDateTime(dt);
+            }
 
             throw new ArgumentException("Invalid TimeOnly");
         }
+
         if (dataTypeId == Ids.DataType.DateTime)
         {
-            if (value is DateTime dt) return dt;
-            if (DateTime.TryParse(value.ToString(), out var dtt)) return dtt;
+            if (value is DateTime dt)
+            {
+                return dt;
+            }
+
+            if (DateTime.TryParse(value.ToString(), out var dtt))
+            {
+                return dtt;
+            }
 
             throw new ArgumentException("Invalid DateTime");
         }
@@ -395,22 +529,16 @@ END;
             .OrderByDescending(x => x.Version)
             .FirstOrDefaultAsync(ct);
 
-        if (version is null)
-        {
-            throw new InvalidOperationException("No version published for code");
-        }
-
-        return version;
+        return version ?? throw new InvalidOperationException("No version published for code");
     }
 
     private async Task<Guid> CreateInternalAsync(DomainCrudVersion version, Guid? id, IDictionary<string, object?> data, CancellationToken ct)
     {
         var (api2db, _) = BuildMaps(version);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
+        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
-        string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
-        var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
+        var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
         var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
         var includeProps = data.Keys.Where(k => dynDict.ContainsKey(k)).ToList();
@@ -423,9 +551,7 @@ END;
         var paramValues = new List<object?>();
         var p = 0;
 
-        colSql.Append($"{QI(api2db["id"])},{QI(api2db["correlationId"])},{QI(api2db["tenantId"])},{QI(api2db["active"])},{QI(api2db["deleted"])},{QI(api2db["createdBy"])},{QI(api2db["created"])},{QI(api2db["createdTime"])},{QI(api2db["test"])}");
-
-        void AddParam(object? v) { paramNames.Add($"@p{p}"); paramValues.Add(v); p++; }
+        colSql.Append($"{Quote(api2db["id"])},{Quote(api2db["correlationId"])},{Quote(api2db["tenantId"])},{Quote(api2db["active"])},{Quote(api2db["deleted"])},{Quote(api2db["createdBy"])},{Quote(api2db["created"])},{Quote(api2db["createdTime"])},{Quote(api2db["test"])}");
 
         AddParam(newId);
         AddParam(CorrelationContext.CorrelationId);
@@ -437,13 +563,12 @@ END;
 
         valSql.Append($"{paramNames[0]},{paramNames[1]},{paramNames[2]},{paramNames[3]},{paramNames[4]},{paramNames[5]},{NowDateSql(dbType)},{NowTimeSql(dbType)},{paramNames[6]}");
 
-        for (var i = 0; i < includeProps.Count; i++)
+        foreach (var prop in includeProps)
         {
-            var prop = includeProps[i];
             var meta = dynDict[prop];
-            var norm = NormalizeValue(meta.DataTypeId, data[prop], dbType);
+            var norm = NormalizeValue(meta.DataTypeId, data[prop]);
 
-            colSql.Append($",{QI(api2db[prop])}");
+            colSql.Append($",{Quote(api2db[prop])}");
 
             AddParam(norm);
 
@@ -455,16 +580,19 @@ END;
         await ExecuteSqlAsync(sql, paramValues, ct);
 
         return newId;
+
+        void AddParam(object? v) { paramNames.Add($"@p{p}"); paramValues.Add(v); p++; }
+
+        string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
     }
 
     private async Task<int> UpdateInternalAsync(DomainCrudVersion version, Guid id, IDictionary<string, object?> data, CancellationToken ct)
     {
         var (api2db, _) = BuildMaps(version);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? "PostgreSQL";
+        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
-        string QI(string s) => dbType == "PostgreSQL" ? QuotePg(s) : QuoteMs(s);
-        var table = dbType == "PostgreSQL" ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
+        var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
         var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
 
@@ -476,24 +604,22 @@ END;
         };
         var p = 2;
 
-        set.Append($"{QI(api2db["updatedBy"])} = @p1, {QI(api2db["updated"])} = {NowDateSql(dbType)}, {QI(api2db["updatedTime"])} = {NowTimeSql(dbType)}");
+        set.Append($"{Quote(api2db["updatedBy"])} = @p1, {Quote(api2db["updated"])} = {NowDateSql(dbType)}, {Quote(api2db["updatedTime"])} = {NowTimeSql(dbType)}");
 
-        foreach (var kv in data)
+        foreach (var (key, value) in data)
         {
-            var prop = kv.Key;
-
-            if (!dynDict.TryGetValue(prop, out var meta))
+            if (!dynDict.TryGetValue(key, out var meta))
             {
-                if (BaseApiProperties.Contains(prop))
+                if (BaseApiProperties.Contains(key))
                 {
                 }
 
                 continue;
             }
 
-            var norm = NormalizeValue(meta.DataTypeId, kv.Value, dbType);
+            var norm = NormalizeValue(meta.DataTypeId, value);
 
-            set.Append($", {QI(api2db[prop])} = @p{p}");
+            set.Append($", {Quote(api2db[key])} = @p{p}");
             parms.Add(norm);
             p++;
         }
@@ -503,10 +629,12 @@ END;
             return 0;
         }
 
-        var sql = $"UPDATE {table} SET {set} WHERE {QI(api2db["id"])} = @p0 AND {QI(api2db["deleted"])} = {(dbType == "PostgreSQL" ? "false" : "0")}";
+        var sql = $"UPDATE {table} SET {set} WHERE {Quote(api2db["id"])} = @p0 AND {Quote(api2db["deleted"])} = {(dbType == DbTypePostgresql ? "false" : "0")}";
 
         var affected = await ExecuteSqlAsync(sql, parms, ct);
 
         return affected;
+
+        string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
     }
 }

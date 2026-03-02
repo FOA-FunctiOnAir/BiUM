@@ -1,10 +1,11 @@
 using MemoryPack;
+using System;
 
 namespace BiUM.Contract.Models;
 
 [MemoryPackable]
 public partial class IdNameMessage
 {
-    public required string Id { get; set; }
+    public required Guid Id { get; set; }
     public required string Name { get; set; }
 }

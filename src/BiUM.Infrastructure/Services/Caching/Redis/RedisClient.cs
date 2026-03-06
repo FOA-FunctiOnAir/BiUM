@@ -2,6 +2,7 @@ using BiUM.Contract.Models.Caching.Redis;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
+using BiUM.Infrastructure.Common.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -16,6 +17,7 @@ namespace BiUM.Infrastructure.Services.Caching.Redis;
 public class RedisClient : IRedisClient
 {
     private readonly RedisClientOptions _redisClientOptions;
+    private readonly IDateTimeService _dateTimeService;
     private readonly ILogger<RedisClient> _logger;
 
     private readonly AsyncLock _lock = new();
@@ -29,9 +31,10 @@ public class RedisClient : IRedisClient
     private LoadedLuaScript? _removeIfEqual;
     private LoadedLuaScript? _replaceIfEqual;
 
-    public RedisClient(IOptions<RedisClientOptions> redisClientOptions, ILogger<RedisClient> logger)
+    public RedisClient(IOptions<RedisClientOptions> redisClientOptions, IDateTimeService dateTimeService, ILogger<RedisClient> logger)
     {
         _redisClientOptions = redisClientOptions.Value;
+        _dateTimeService = dateTimeService;
         _logger = logger;
 
         if (!_redisClientOptions.Enable)
@@ -135,7 +138,7 @@ public class RedisClient : IRedisClient
             }
             else
             {
-                expiresIn = TimeSpan.FromTicks(DateTime.UtcNow.AddMinutes(1).Ticks);
+                expiresIn = TimeSpan.FromTicks(_dateTimeService.Now.AddMinutes(1).Ticks);
             }
         }
 
@@ -295,7 +298,7 @@ public class RedisClient : IRedisClient
             }
             else
             {
-                expiresIn = TimeSpan.FromTicks(DateTime.UtcNow.AddMinutes(1).Ticks);
+                expiresIn = TimeSpan.FromTicks(_dateTimeService.Now.AddMinutes(1).Ticks);
             }
         }
 

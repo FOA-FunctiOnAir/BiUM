@@ -5,6 +5,7 @@ using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Infrastructure.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -44,6 +45,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     private readonly IRabbitMQSerializer _serializer;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IDateTimeService _dateTimeService;
     private readonly BiAppOptions _appOptions;
     private readonly RabbitMQOptions _rabbitMQOptions;
     private readonly ILogger<RabbitMQClient> _logger;
@@ -57,6 +59,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         IRabbitMQSerializer serializer,
         ICorrelationContextAccessor correlationContextAccessor,
         IServiceScopeFactory serviceScopeFactory,
+        IDateTimeService dateTimeService,
         IOptions<BiAppOptions> appOptionsAccessor,
         IOptions<RabbitMQOptions> rabbitMQOptionsAccessor,
         ILogger<RabbitMQClient> logger)
@@ -66,6 +69,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         _serializer = serializer;
         _correlationContextAccessor = correlationContextAccessor;
         _serviceScopeFactory = serviceScopeFactory;
+        _dateTimeService = dateTimeService;
         _appOptions = appOptionsAccessor.Value;
         _rabbitMQOptions = rabbitMQOptionsAccessor.Value;
         _logger = logger;
@@ -102,7 +106,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 Persistent = true,
                 MessageId = GuidGenerator.New().ToString("N"),
                 CorrelationId = correlationContext.CorrelationId.ToString("N"),
-                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                Timestamp = new AmqpTimestamp(_dateTimeService.OffsetNow.ToUnixTimeSeconds()),
                 Headers = new Dictionary<string, object?>()
             };
 
@@ -154,7 +158,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 Persistent = true,
                 MessageId = GuidGenerator.New().ToString("N"),
                 CorrelationId = correlationContext.CorrelationId.ToString("N"),
-                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                Timestamp = new AmqpTimestamp(_dateTimeService.OffsetNow.ToUnixTimeSeconds()),
                 Headers = new Dictionary<string, object?>()
             };
 
@@ -418,7 +422,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                     properties.Headers ??= new Dictionary<string, object?>();
                     properties.Headers[OriginalQueueHeader] = queueName;
                     properties.Headers[FailureReasonHeader] = exception.Message;
-                    properties.Headers[FailureTimestampHeader] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    properties.Headers[FailureTimestampHeader] = _dateTimeService.OffsetNow.ToUnixTimeSeconds();
 
                     await channel.BasicPublishAsync(
                         exchange: DeadLetterExchange,
@@ -554,12 +558,10 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         properties.Headers[RetryCountHeader] = count;
     }
 
-    private static void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
+    private void EnsureEventTimestamps<T>(T message) where T : IBaseEvent
     {
-        var now = DateTime.UtcNow;
-
-        message.Created = DateOnly.FromDateTime(now);
-        message.CreatedTime = TimeOnly.FromDateTime(now);
+        message.Created = _dateTimeService.Today;
+        message.CreatedTime = _dateTimeService.TimeNow;
     }
 
     private static byte[]? GetHeaderValue(IDictionary<string, object?>? headers, string key)

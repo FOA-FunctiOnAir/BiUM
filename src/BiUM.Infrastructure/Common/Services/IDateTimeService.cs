@@ -4,7 +4,10 @@ namespace BiUM.Infrastructure.Common.Services;
 
 public interface IDateTimeService
 {
-    DateTime Now { get; }
-    DateOnly Today { get; }
-    TimeOnly TimeNow { get; }
+    public DateTime Now { get; }
+    public DateTimeOffset OffsetNow { get; }
+    public DateOnly Today { get; }
+    public DateOnly OffsetToday { get; }
+    public TimeOnly TimeNow { get; }
+    public TimeOnly OffsetTimeNow { get; }
 }

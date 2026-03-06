@@ -115,7 +115,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
 
         var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
-        var now = _dateTimeService.Now.ToUniversalTime();
 
         foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
@@ -127,8 +126,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
                 entry.Entity.CreatedBy = correlationContext.User?.Id;
-                entry.Entity.Created = DateOnly.FromDateTime(now);
-                entry.Entity.CreatedTime = TimeOnly.FromDateTime(now);
+                entry.Entity.Created = _dateTimeService.Today;
+                entry.Entity.CreatedTime = _dateTimeService.TimeNow;
             }
             else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
             {
@@ -138,8 +137,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
                 entry.Entity.UpdatedBy = correlationContext.User?.Id;
-                entry.Entity.Updated = DateOnly.FromDateTime(now);
-                entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
+                entry.Entity.Updated = _dateTimeService.Today;
+                entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
             else if (entry.State == EntityState.Deleted && !baseDbContext.HardDeleteEnabled)
             {
@@ -152,8 +151,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
                 entry.Entity.UpdatedBy = correlationContext.User?.Id;
-                entry.Entity.Updated = DateOnly.FromDateTime(now);
-                entry.Entity.UpdatedTime = TimeOnly.FromDateTime(now);
+                entry.Entity.Updated = _dateTimeService.Today;
+                entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
 
             CollectEntityEvents(entry);

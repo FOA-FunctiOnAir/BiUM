@@ -9,31 +9,31 @@ namespace BiUM.Specialized.Services;
 
 public interface ITranslationService
 {
-    Task<ApiResponse> AddMessage(
+    Task AddMessage(
         ApiResponse response,
         string code,
         CancellationToken cancellationToken);
 
-    Task<ApiResponse> AddMessage(
+    Task AddMessage(
         ApiResponse response,
         string code,
         MessageSeverity severity,
         CancellationToken cancellationToken);
 
-    Task<ApiResponse> AddMessage(
+    Task AddMessage(
         ApiResponse response,
         string code,
         Exception exception,
         CancellationToken cancellationToken);
 
-    Task<ApiResponse> AddMessage(
+    Task AddMessage(
         ApiResponse response,
         string code,
         Exception exception,
         MessageSeverity severity,
         CancellationToken cancellationToken);
 
-    Task<ApiResponse> AddMessage(
+    Task AddMessage(
         ApiResponse response,
         string code,
         string exception,

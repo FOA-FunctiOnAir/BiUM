@@ -1,4 +1,3 @@
-using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
@@ -30,70 +29,70 @@ public partial class CrudService
 
         if (domainCrud is null)
         {
-            response.AddMessage("Crud definition not found", MessageSeverity.Error);
+            await AddMessage(response, "crud_definition_not_found", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.ApplicationId == Guid.Empty)
         {
-            response.AddMessage("Crud Application is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_application_is_required", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.MicroserviceId == Guid.Empty)
         {
-            response.AddMessage("Crud Microservice is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_microservice_is_required", cancellationToken);
 
             return response;
         }
 
         if (string.IsNullOrEmpty(domainCrud.Code))
         {
-            response.AddMessage("Crud Code is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_code_is_required", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.Code.Length < 3)
         {
-            response.AddMessage("Crud Code should be min 3 char", MessageSeverity.Error);
+            await AddMessage(response, "crud_code_should_be_min_char", cancellationToken);
 
             return response;
         }
 
         if (string.IsNullOrEmpty(domainCrud.TableName))
         {
-            response.AddMessage("Crud Table Name is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_table_name_is_required", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.TableName.Length < 3)
         {
-            response.AddMessage("Crud Table Name should be min 3 char", MessageSeverity.Error);
+            await AddMessage(response, "crud_table_name_should_be_min_char", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.DomainCrudColumns.Count == 0)
         {
-            response.AddMessage("Crud should have columns", MessageSeverity.Error);
+            await AddMessage(response, "crud_should_have_columns", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.DomainCrudColumns.Any(cc => cc.FieldId == Guid.Empty))
         {
-            response.AddMessage("Crud Columns should be field", MessageSeverity.Error);
+            await AddMessage(response, "crud_columns_should_be_field", cancellationToken);
 
             return response;
         }
 
         if (domainCrud.DomainCrudColumns.Any(cc => cc.DataTypeId == Guid.Empty))
         {
-            response.AddMessage("Crud Columns should be data type", MessageSeverity.Error);
+            await AddMessage(response, "crud_columns_should_be_data_type", cancellationToken);
 
             return response;
         }
@@ -209,14 +208,14 @@ public partial class CrudService
 
         if (command.ApplicationId == Guid.Empty)
         {
-            response.AddMessage("Application is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_application_is_required", cancellationToken);
 
             return response;
         }
 
         if (command.MicroserviceId == Guid.Empty)
         {
-            response.AddMessage("Microservice is required", MessageSeverity.Error);
+            await AddMessage(response, "crud_microservice_is_required", cancellationToken);
 
             return response;
         }
@@ -339,7 +338,7 @@ public partial class CrudService
 
         if (domainCrud is null)
         {
-            response.AddMessage("Domain Crud not found", MessageSeverity.Error);
+            await AddMessage(response, "crud_definition_not_found", cancellationToken);
 
             return response;
         }
@@ -350,7 +349,7 @@ public partial class CrudService
 
         if (domainCrudVersions.Count > 0)
         {
-            response.AddMessage("You can not delete published Domain Crud", MessageSeverity.Error);
+            await AddMessage(response, "crud_definition_can_not_delete_that_published", cancellationToken);
 
             return response;
         }

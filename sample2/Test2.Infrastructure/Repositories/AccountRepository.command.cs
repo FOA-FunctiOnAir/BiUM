@@ -51,7 +51,7 @@ public partial class AccountRepository
 
         if (entity is null)
         {
-            _ = await AddMessage(response, "AccountNotFound", cancellationToken);
+            await AddMessage(response, "AccountNotFound", cancellationToken);
 
             return response;
         }

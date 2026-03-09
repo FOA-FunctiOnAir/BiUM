@@ -1,5 +1,4 @@
 using BiApp.Test2.Application.Repositories;
-using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using System.Threading;
@@ -19,13 +18,6 @@ public class GetFwAccountsForParameterQueryHandler : IPaginatedForValuesQueryHan
     public async Task<PaginatedApiResponse<GetFwAccountsForParameterDto>> Handle(GetFwAccountsForParameterQuery query, CancellationToken cancellationToken)
     {
         var repositoryResponse = await _currencyRepository.GetFwAccountsForParameter(query.Q, query.PageStart, query.PageSize, cancellationToken);
-
-        if (!repositoryResponse.Success || repositoryResponse.Value == null)
-        {
-            repositoryResponse.AddMessage("No Account found.", MessageSeverity.Error);
-
-            return repositoryResponse;
-        }
 
         return repositoryResponse;
     }

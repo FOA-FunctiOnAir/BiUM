@@ -1,5 +1,6 @@
 using AutoMapper;
 using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.MessageBroker;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,25 @@ namespace BiUM.Specialized.Database;
 
 public static partial class Extensions
 {
+    public static async Task<PaginatedApiResponse<TSource>> ToPaginatedListAsync<TSource>(
+        this IQueryable<TSource> queryable,
+        IBaseQuery baseQuery,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var items = await query.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+
+        return new PaginatedApiResponse<TSource>(
+            baseQuery: baseQuery,
+            items: items,
+            count: await query.CountAsync(cancellationToken)
+        );
+    }
+
+    [Obsolete("Use ToPaginatedListAsync instead.", false)]
     public static async Task<PaginatedApiResponse<TSource>> ToPaginatedListAsync<TSource>(
         this IQueryable<TSource> queryable,
         int? pageStart = 0,
@@ -35,6 +55,27 @@ public static partial class Extensions
         );
     }
 
+    public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        IBaseQuery baseQuery,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking();
+
+        var items = mapper.Map<List<TDestination>>(await query.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken));
+
+        return new PaginatedApiResponse<TDestination>(
+            baseQuery: baseQuery,
+            items: items,
+            count: await query.CountAsync(cancellationToken)
+        );
+    }
+
+    [Obsolete("Use ToPaginatedListAsync instead.", false)]
     public static async Task<PaginatedApiResponse<TDestination>> ToPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         IMapper mapper,
@@ -63,6 +104,28 @@ public static partial class Extensions
     public static async Task<PaginatedApiResponse<TDestination>> WhereToPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         Expression<Func<TSource, bool>> predicate,
+        IBaseQuery baseQuery,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking().Where(predicate);
+
+        var items = mapper.Map<List<TDestination>>(await query.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken));
+
+        return new PaginatedApiResponse<TDestination>(
+            baseQuery: baseQuery,
+            items: items,
+            count: await query.CountAsync(cancellationToken)
+        );
+    }
+
+    [Obsolete("Use WhereToPaginatedListAsync instead.", false)]
+    public static async Task<PaginatedApiResponse<TDestination>> WhereToPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
         IMapper mapper,
         int? pageStart = 0,
         int? pageSize = 10,
@@ -86,6 +149,28 @@ public static partial class Extensions
         );
     }
 
+    public static async Task<PaginatedApiResponse<TDestination>> WhereToPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, int, bool>> predicate,
+        IBaseQuery baseQuery,
+        IMapper mapper,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var query = queryable.AsNoTracking().Where(predicate);
+
+        var items = mapper.Map<List<TDestination>>(await query.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken));
+
+        return new PaginatedApiResponse<TDestination>(
+            baseQuery: baseQuery,
+            items: items,
+            count: await query.CountAsync(cancellationToken)
+        );
+    }
+
+    [Obsolete("Use WhereToPaginatedListAsync instead.", false)]
     public static async Task<PaginatedApiResponse<TDestination>> WhereToPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> queryable,
         Expression<Func<TSource, int, bool>> predicate,

@@ -89,21 +89,23 @@ public class GlobalApiResponseFilter : MagicOnionFilterAttribute
 
             if (isNotProductionLike)
             {
-                responseInstance.AddMessage(
-                    code: GetCode(exception),
-                    message: exception.Message,
-                    exception: exception.ToString(),
-                    severity: MessageSeverity.Error
-                );
+                responseInstance.AddMessage(new ResponseMessage()
+                {
+                    Code = GetCode(exception),
+                    Message = exception.Message,
+                    Exception = exception.ToString(),
+                    Severity = MessageSeverity.Error
+                });
             }
             else
             {
-                responseInstance.AddMessage(
-                    code: GetCode(exception),
-                    message: UnhandledExceptionOccurred,
-                    exception: exception.Message,
-                    severity: MessageSeverity.Error
-                );
+                responseInstance.AddMessage(new ResponseMessage()
+                {
+                    Code = GetCode(exception),
+                    Message = UnhandledExceptionOccurred,
+                    Exception = exception.Message,
+                    Severity = MessageSeverity.Error
+                });
             }
 
             return responseInstance;

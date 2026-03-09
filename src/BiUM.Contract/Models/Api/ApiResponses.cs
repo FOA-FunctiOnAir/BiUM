@@ -19,8 +19,11 @@ public partial class ApiResponse
 
     [JsonInclude]
     [MemoryPackIgnore]
-    public virtual bool Success =>
-        ResponseMessages.All(s => s.Severity != MessageSeverity.Error);
+    public virtual bool Success => ResponseMessages.All(s => s.Severity != MessageSeverity.Error);
+
+    [JsonIgnore]
+    [MemoryPackIgnore]
+    public virtual bool Warning => ResponseMessages.All(s => s.Severity == MessageSeverity.Warning);
 
     public ApiResponse()
     {
@@ -39,74 +42,7 @@ public partial class ApiResponse
     [JsonConstructor]
     protected ApiResponse(IReadOnlyList<ResponseMessage> messages, bool success)
     {
-        AddMessage(messages);
-    }
-
-    public void AddMessage(ResponseMessage message)
-    {
-        ResponseMessages.Add(message);
-    }
-
-    public void AddMessage(IList<ResponseMessage> messages)
-    {
-        ResponseMessages.AddRange(messages);
-    }
-
-    public void AddMessage(IReadOnlyList<ResponseMessage> messages)
-    {
-        ResponseMessages.AddRange(messages);
-    }
-
-    public void AddMessage(ApiResponse response)
-    {
-        ResponseMessages.AddRange(response.ResponseMessages);
-    }
-
-    public void AddMessage(string message)
-    {
-        ResponseMessages.Add(new()
-        {
-            Code = "unknown_error",
-            Message = message,
-            Severity = MessageSeverity.Error
-        });
-    }
-
-    public void AddMessage(string message, MessageSeverity severity)
-    {
-        ResponseMessages.Add(new()
-        {
-            Code =
-                severity switch
-                {
-                    MessageSeverity.Warning => "unknown_warning",
-                    MessageSeverity.Error => "unknown_error",
-                    _ => severity.ToString()
-                },
-            Message = message,
-            Severity = severity
-        });
-    }
-
-    public void AddMessage(string code, string message, MessageSeverity severity)
-    {
-        ResponseMessages.Add(new()
-        {
-            Code = code,
-            Message = message,
-            Severity = severity
-        });
-    }
-
-    public void AddMessage(string code, string message, string exception, MessageSeverity severity)
-    {
-        ResponseMessages.Add(new()
-        {
-            Code = code,
-            Message = message,
-            Exception = exception,
-            Severity = severity
-        });
+        ResponseMessages = messages.ToList();
     }
 }
 

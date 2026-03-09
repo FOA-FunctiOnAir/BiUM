@@ -1,6 +1,7 @@
 using BiApp.Test.Application.Dtos;
 using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.MessageBroker;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -55,7 +56,7 @@ public partial class CurrencyRepository
         return response;
     }
 
-    public async Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, int? pageStart, int? pageSize, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, IBaseQuery baseQuery, CancellationToken cancellationToken)
     {
         var currencys = _context.Currencies
             .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
@@ -63,9 +64,10 @@ public partial class CurrencyRepository
                 (!id.HasValue || p.Id == id.Value) &&
                 (string.IsNullOrWhiteSpace(name) || p.Name.ToLower().Contains(name.Trim().ToLower())) &&
                 (string.IsNullOrEmpty(code) || p.Code == code)
-            );
+            )
+            .OrderBy(c => c.Created);
 
-        var result = await currencys.ToPaginatedListAsync<Currency, CurrenciesDto>(Mapper, pageStart ?? 0, pageSize ?? 10, cancellationToken);
+        var result = await currencys.ToPaginatedListAsync<Currency, CurrenciesDto>(baseQuery, Mapper, cancellationToken);
 
         return result;
     }

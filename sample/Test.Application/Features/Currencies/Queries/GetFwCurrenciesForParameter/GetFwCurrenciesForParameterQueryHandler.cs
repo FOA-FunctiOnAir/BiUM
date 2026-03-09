@@ -1,5 +1,4 @@
 using BiApp.Test.Application.Repositories;
-using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.MediatR;
 using System.Threading;
@@ -19,13 +18,6 @@ public class GetFwCurrenciesForParameterQueryHandler : IPaginatedForValuesQueryH
     public async Task<PaginatedApiResponse<GetFwCurrenciesForParameterDto>> Handle(GetFwCurrenciesForParameterQuery query, CancellationToken cancellationToken)
     {
         var repositoryResponse = await _currencyRepository.GetFwCurrenciesForParameter(query.Q, query.PageStart, query.PageSize, cancellationToken);
-
-        if (!repositoryResponse.Success || repositoryResponse.Value == null)
-        {
-            repositoryResponse.AddMessage("No Currency found.", MessageSeverity.Error);
-
-            return repositoryResponse;
-        }
 
         return repositoryResponse;
     }

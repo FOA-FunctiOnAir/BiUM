@@ -1,18 +1,19 @@
 using BiApp.Test.Application.Dtos;
 using BiApp.Test.Application.Repositories;
-using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
+using BiUM.Specialized.Common;
 using BiUM.Specialized.Common.MediatR;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiApp.Test.Application.Features.Currencies.Queries.GetCurrencies;
 
-public class GetCurrenciesQueryHandler : IPaginatedQueryHandler<GetCurrenciesQuery, CurrenciesDto>
+public class GetCurrenciesQueryHandler : ApplicationBase, IPaginatedQueryHandler<GetCurrenciesQuery, CurrenciesDto>
 {
     private readonly ICurrencyRepository _currencyRepository;
 
-    public GetCurrenciesQueryHandler(ICurrencyRepository currencyRepository)
+    public GetCurrenciesQueryHandler(IServiceProvider serviceProvider, ICurrencyRepository currencyRepository) : base(serviceProvider)
     {
         _currencyRepository = currencyRepository;
     }
@@ -23,13 +24,12 @@ public class GetCurrenciesQueryHandler : IPaginatedQueryHandler<GetCurrenciesQue
             query.Id,
             query.Name,
             query.Code,
-            query.PageStart,
-            query.PageSize,
+            query,
             cancellationToken);
 
         if (!repositoryResponse.Success || repositoryResponse.Value == null)
         {
-            repositoryResponse.AddMessage("No Account found.", MessageSeverity.Error);
+            await AddMessage(repositoryResponse, "Failed to retrieve Currencies.", cancellationToken);
 
             return repositoryResponse;
         }

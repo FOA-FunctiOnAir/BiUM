@@ -162,19 +162,25 @@ public class HttpClientService : IHttpClientsService
 
             var result = new ApiResponse<TResponse>();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
-        finally
-        {
-            await PublishServiceCalledEventAsync(
-                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-                endpoint: finalUrl ?? originalUrl,
-                httpMethod: httpMethod,
-                executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-                isSuccess: isSuccessful);
-        }
+        //finally
+        //{
+        //    await PublishServiceCalledEventAsync(
+        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+        //        endpoint: finalUrl ?? originalUrl,
+        //        httpMethod: httpMethod,
+        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
+        //        isSuccess: isSuccessful);
+        //}
     }
 
     public async Task<ApiResponse> Post(
@@ -226,19 +232,25 @@ public class HttpClientService : IHttpClientsService
 
             var result = new ApiResponse();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
-        finally
-        {
-            await PublishServiceCalledEventAsync(
-                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-                endpoint: finalUrl ?? originalUrl,
-                httpMethod: httpMethod,
-                executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-                isSuccess: isSuccessful);
-        }
+        //finally
+        //{
+        //    await PublishServiceCalledEventAsync(
+        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+        //        endpoint: finalUrl ?? originalUrl,
+        //        httpMethod: httpMethod,
+        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
+        //        isSuccess: isSuccessful);
+        //}
     }
 
     public async Task<ApiResponse<TResponse>> Post<TResponse>(
@@ -290,19 +302,25 @@ public class HttpClientService : IHttpClientsService
 
             var result = new ApiResponse<TResponse>();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
-        finally
-        {
-            await PublishServiceCalledEventAsync(
-                serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-                endpoint: finalUrl ?? originalUrl,
-                httpMethod: httpMethod,
-                executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-                isSuccess: isSuccessful);
-        }
+        //finally
+        //{
+        //    await PublishServiceCalledEventAsync(
+        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
+        //        endpoint: finalUrl ?? originalUrl,
+        //        httpMethod: httpMethod,
+        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
+        //        isSuccess: isSuccessful);
+        //}
     }
 
 
@@ -340,7 +358,12 @@ public class HttpClientService : IHttpClientsService
             {
                 var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
 
-                result.AddMessage("value_error", "Unable to get service info", MessageSeverity.Error);
+                result.AddMessage(new ResponseMessage()
+                {
+                    Code = "value_error",
+                    Message = "Unable to get service info",
+                    Severity = MessageSeverity.Error
+                });
 
                 return result;
             }
@@ -386,21 +409,27 @@ public class HttpClientService : IHttpClientsService
 
             var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
-        finally
-        {
-            var url = finalUrl ?? serviceUrl ?? serviceId.ToString();
+        //finally
+        //{
+        //    var url = finalUrl ?? serviceUrl ?? serviceId.ToString();
 
-            await PublishServiceCalledEventAsync(
-                serviceName: ExtractServiceName(url),
-                endpoint: url,
-                httpMethod: httpMethod ?? HttpMethod.Get,
-                executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-                isSuccess: isSuccessful);
-        }
+        //    await PublishServiceCalledEventAsync(
+        //        serviceName: ExtractServiceName(url),
+        //        endpoint: url,
+        //        httpMethod: httpMethod ?? HttpMethod.Get,
+        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
+        //        isSuccess: isSuccessful);
+        //}
     }
 
     private async Task<(string, HttpMethod, HttpResponseMessage)> ExecuteInternalCallAsync(
@@ -615,19 +644,25 @@ public class HttpClientService : IHttpClientsService
 
             var result = new ApiResponse<ServiceDto>();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
-        finally
-        {
-            await PublishServiceCalledEventAsync(
-                serviceName: ExtractServiceName(finalUrl ?? getServiceUrl),
-                endpoint: finalUrl ?? getServiceUrl,
-                httpMethod: httpMethod,
-                executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-                isSuccess: isSuccessful);
-        }
+        //finally
+        //{
+        //    await PublishServiceCalledEventAsync(
+        //        serviceName: ExtractServiceName(finalUrl ?? getServiceUrl),
+        //        endpoint: finalUrl ?? getServiceUrl,
+        //        httpMethod: httpMethod,
+        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
+        //        isSuccess: isSuccessful);
+        //}
     }
 
     private static string AppendParametersAsQueryString(string url, Dictionary<string, dynamic>? parameters = null)
@@ -1050,7 +1085,12 @@ public class HttpClientService : IHttpClientsService
 
                 if (!isSuccessful)
                 {
-                    externalResult.AddMessage(UnexpectedSuccessErrorCode, "The response was expected to be an error, but indicates success.", MessageSeverity.Warning);
+                    externalResult.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Warning
+                    });
                 }
 
                 return externalResult;
@@ -1067,7 +1107,12 @@ public class HttpClientService : IHttpClientsService
 
                 if (result.Success)
                 {
-                    result.AddMessage(UnexpectedSuccessErrorCode, "The response was expected to be an error, but indicates success.", MessageSeverity.Warning);
+                    result.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Error
+                    });
 
                     return result;
                 }
@@ -1075,7 +1120,12 @@ public class HttpClientService : IHttpClientsService
 
             result = new ApiResponse();
 
-            result.AddMessage(DeserializationFailedErrorCode, "Unable to deserialize the response", MessageSeverity.Warning);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = DeserializationFailedErrorCode,
+                Message = "Unable to deserialize the response",
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
@@ -1083,7 +1133,13 @@ public class HttpClientService : IHttpClientsService
         {
             var result = new ApiResponse();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
@@ -1106,7 +1162,12 @@ public class HttpClientService : IHttpClientsService
 
                 if (!isSuccessful)
                 {
-                    externalResult.AddMessage(UnexpectedSuccessErrorCode, "The response was expected to be an error, but indicates success.", MessageSeverity.Warning);
+                    externalResult.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Warning
+                    });
                 }
 
                 return externalResult;
@@ -1123,7 +1184,12 @@ public class HttpClientService : IHttpClientsService
 
                 if (result.Success)
                 {
-                    result.AddMessage(UnexpectedSuccessErrorCode, "The response was expected to be an error, but indicates success.", MessageSeverity.Warning);
+                    result.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Error
+                    });
 
                     return result;
                 }
@@ -1131,7 +1197,12 @@ public class HttpClientService : IHttpClientsService
 
             result = new ApiResponse<TResponse>();
 
-            result.AddMessage(DeserializationFailedErrorCode, "Unable to deserialize the response", MessageSeverity.Warning);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = DeserializationFailedErrorCode,
+                Message = "Unable to deserialize the response",
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }
@@ -1139,7 +1210,13 @@ public class HttpClientService : IHttpClientsService
         {
             var result = new ApiResponse<TResponse>();
 
-            result.AddMessage(ex.ToErrorCode(), _isProductionLike ? ex.Message : ex.ToString(), MessageSeverity.Error);
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
 
             return result;
         }

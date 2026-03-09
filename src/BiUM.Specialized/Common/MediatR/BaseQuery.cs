@@ -1,11 +1,12 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.MessageBroker;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 
 namespace BiUM.Specialized.Common.MediatR;
 
-public record BaseQuery<TType> : BaseRequestDto<TType>
+public record BaseQuery<TType> : BaseRequestDto<TType>, IBaseQuery
 {
     public Guid? Id { get; init; }
     public IReadOnlyList<Guid>? Ids { get; init; }
@@ -13,6 +14,8 @@ public record BaseQuery<TType> : BaseRequestDto<TType>
     public string? Q { get; init; }
     [FromQuery(Name = "Filters")]
     public Dictionary<string, string>? Filters { get; init; }
+    public string? SortBy { get; init; }
+    public SortDirection? SortDirection { get; init; }
     public int? PageStart { get; init; }
     public int? PageSize { get; init; }
 }

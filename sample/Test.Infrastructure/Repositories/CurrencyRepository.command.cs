@@ -51,7 +51,7 @@ public partial class CurrencyRepository
 
         if (entity is null)
         {
-            _ = await AddMessage(response, "CurrencyNotFound", cancellationToken);
+            await AddMessage(response, "CurrencyNotFound", cancellationToken);
 
             return response;
         }

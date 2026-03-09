@@ -1,6 +1,7 @@
 using BiApp.Test.Application.Dtos;
 using BiApp.Test.Application.Repositories;
 using BiUM.Contract.Models.Api;
+using BiUM.Specialized.Common;
 using BiUM.Specialized.Common.MediatR;
 using System;
 using System.Threading;
@@ -8,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace BiApp.Test.Application.Features.Currencies.Queries.GetCurrency;
 
-public class GetCurrencyQueryHandler : IQueryHandler<GetCurrencyQuery, CurrencyDto>
+public class GetCurrencyQueryHandler : ApplicationBase, IQueryHandler<GetCurrencyQuery, CurrencyDto>
 {
     private readonly ICurrencyRepository _currencyRepository;
 
-    public GetCurrencyQueryHandler(ICurrencyRepository currencyRepository)
+    public GetCurrencyQueryHandler(IServiceProvider serviceProvider, ICurrencyRepository currencyRepository) : base(serviceProvider)
     {
         _currencyRepository = currencyRepository;
     }

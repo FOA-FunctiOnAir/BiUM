@@ -33,11 +33,11 @@ public static partial class ApplicationExtensions
 
         if (isNotProductionLike)
         {
-            app.UseSwagger();
+            _ = app.UseSwagger();
 
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwaggerUI(options =>
+                _ = app.UseSwaggerUI(options =>
                 {
                     options.DocumentTitle = $"BiApp.{appOptions?.Domain ?? "Unknown"}";
                 });
@@ -47,11 +47,11 @@ public static partial class ApplicationExtensions
         var logger = app.Services.GetRequiredService<ILogger<Application>>();
 
         // 1. Exception Handler for MagicOnion/gRPC requests
-        app.UseWhen(context => context.Request.ContentType == "application/grpc", grpcApp =>
+        _ = app.UseWhen(context => context.Request.ContentType == "application/grpc", grpcApp =>
             grpcApp.UseMiddleware<GrpcGlobalExceptionHandlerMiddleware>());
 
         // 2. Exception Handler REST/JSON requests
-        app.UseWhen(context => context.Request.ContentType != "application/grpc", restApp =>
+        _ = app.UseWhen(context => context.Request.ContentType != "application/grpc", restApp =>
             restApp.UseExceptionHandler(new ExceptionHandlerOptions
             {
                 AllowStatusCode404Response = false,
@@ -72,12 +72,13 @@ public static partial class ApplicationExtensions
 
                     if (exceptionHandlerFeature?.Error is null)
                     {
-                        response.AddMessage(
-                            code: "unknown_error",
-                            message: UnhandledExceptionOccurred,
-                            exception: UnhandledExceptionOccurredWithNoException,
-                            severity: MessageSeverity.Error
-                        );
+                        response.AddMessage(new ResponseMessage()
+                        {
+                            Code = "unknown_error",
+                            Message = UnhandledExceptionOccurred,
+                            Exception = UnhandledExceptionOccurredWithNoException,
+                            Severity = MessageSeverity.Error
+                        });
 
                         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
@@ -92,21 +93,23 @@ public static partial class ApplicationExtensions
 
                     if (isNotProductionLike)
                     {
-                        response.AddMessage(
-                            code: exception.ToErrorCode(),
-                            message: exception.Message,
-                            exception: exception.ToString(),
-                            severity: MessageSeverity.Error
-                        );
+                        response.AddMessage(new ResponseMessage()
+                        {
+                            Code = exception.ToErrorCode(),
+                            Message = exception.Message,
+                            Exception = exception.ToString(),
+                            Severity = MessageSeverity.Error
+                        });
                     }
                     else
                     {
-                        response.AddMessage(
-                            code: exception.ToErrorCode(),
-                            message: UnhandledExceptionOccurred,
-                            exception: exception.Message,
-                            severity: MessageSeverity.Error
-                        );
+                        response.AddMessage(new ResponseMessage()
+                        {
+                            Code = exception.ToErrorCode(),
+                            Message = UnhandledExceptionOccurred,
+                            Exception = exception.Message,
+                            Severity = MessageSeverity.Error
+                        });
                     }
 
                     context.Response.StatusCode = exception.ToStatusCode();
@@ -138,37 +141,37 @@ public static partial class ApplicationExtensions
                 args.SetObserved();
             };
 
-        app.UseMiddleware<CorrelationContextExtractorMiddleware>();
-        app.UseMiddleware<CorrelationContextActivityMiddleware>();
-        app.UseMiddleware<ServiceCallMetricsMiddleware>();
+        _ = app.UseMiddleware<CorrelationContextExtractorMiddleware>();
+        _ = app.UseMiddleware<CorrelationContextActivityMiddleware>();
+        _ = app.UseMiddleware<ServiceCallMetricsMiddleware>();
 
-        app.UseRouting();
+        _ = app.UseRouting();
 
         // Health API Endpoints
-        app.MapHealthChecks("/health", new HealthCheckOptions
+        _ = app.MapHealthChecks("/health", new HealthCheckOptions
         {
             Predicate = _ => true,
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         });
 
-        app.MapHealthChecks("/health/live", new HealthCheckOptions
+        _ = app.MapHealthChecks("/health/live", new HealthCheckOptions
         {
             Predicate = r => r.Tags.Contains("live"),
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         });
 
-        app.MapHealthChecks("/health/ready", new HealthCheckOptions
+        _ = app.MapHealthChecks("/health/ready", new HealthCheckOptions
         {
             Predicate = r => r.Tags.Contains("ready"),
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         });
 
-        app.MapGet("/version", () => Results.Ok(new VersionResult
+        _ = app.MapGet("/version", () => Results.Ok(new VersionResult
         {
             Version = Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown"
         }));
 
-        app.MapMagicOnionService();
+        _ = app.MapMagicOnionService();
 
         return app;
     }

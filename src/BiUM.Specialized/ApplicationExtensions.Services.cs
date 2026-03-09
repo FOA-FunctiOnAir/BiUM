@@ -27,6 +27,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddControllers()
             .AddApplicationPart(typeof(ApiControllerBase).Assembly)
             .AddControllersAsServices()
+            .AddMvcOptions(options => options.Filters.Add<ApiResponseLoggingFilter>())
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

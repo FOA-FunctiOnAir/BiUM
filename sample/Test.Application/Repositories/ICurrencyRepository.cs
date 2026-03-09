@@ -3,6 +3,7 @@ using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.MessageBroker;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -18,7 +19,7 @@ public interface ICurrencyRepository
 
     Task<ApiResponse<CurrencyDto>> GetCurrencyByCode(string code, CancellationToken cancellationToken);
 
-    Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, int? pageStart, int? pageSize, CancellationToken cancellationToken);
+    Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, IBaseQuery baseQuery, CancellationToken cancellationToken);
 
     #endregion
 

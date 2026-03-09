@@ -1,18 +1,19 @@
 using BiApp.Test2.Application.Dtos;
 using BiApp.Test2.Application.Repositories;
-using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
+using BiUM.Specialized.Common;
 using BiUM.Specialized.Common.MediatR;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiApp.Test2.Application.Features.Accounts.Queries.GetAccounts;
 
-public class GetAccountsQueryHandler : IPaginatedQueryHandler<GetAccountsQuery, AccountsDto>
+public class GetAccountsQueryHandler : ApplicationBase, IPaginatedQueryHandler<GetAccountsQuery, AccountsDto>
 {
     private readonly IAccountRepository _currencyRepository;
 
-    public GetAccountsQueryHandler(IAccountRepository currencyRepository)
+    public GetAccountsQueryHandler(IServiceProvider serviceProvider, IAccountRepository currencyRepository) : base(serviceProvider)
     {
         _currencyRepository = currencyRepository;
     }
@@ -26,13 +27,6 @@ public class GetAccountsQueryHandler : IPaginatedQueryHandler<GetAccountsQuery, 
             query.PageStart,
             query.PageSize,
             cancellationToken);
-
-        if (!repositoryResponse.Success || repositoryResponse.Value == null)
-        {
-            repositoryResponse.AddMessage("No Account found.", MessageSeverity.Error);
-
-            return repositoryResponse;
-        }
 
         return repositoryResponse;
     }

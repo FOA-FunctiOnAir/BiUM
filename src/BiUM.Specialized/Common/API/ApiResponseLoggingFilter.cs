@@ -23,14 +23,14 @@ internal sealed class ApiResponseLoggingFilter(ILogger<ApiResponseLoggingFilter>
             switch (message.Severity)
             {
                 case MessageSeverity.Warning:
-                    logger.LogWarning("[{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogWarning("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
                     break;
                 case MessageSeverity.Error:
-                    logger.LogError("[{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogError("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
                     break;
                 case MessageSeverity.Information:
                 default:
-                    logger.LogInformation("[{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogInformation("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
                     break;
             }
         }

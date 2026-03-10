@@ -94,7 +94,7 @@ public sealed partial class TranslationService : ITranslationService
             response.AddMessage(new ResponseMessage
             {
                 Code = "translation_not_found",
-                Message = $"Translation not found",
+                Message = $"Translation not found for {code}",
                 Exception = exception,
                 Severity = severity
             });

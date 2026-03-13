@@ -36,11 +36,14 @@ public class DomainTranslationController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ApiResponse<DomainTranslationDto>> GetDomainTranslationAsync(string id, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DomainTranslationDto>> GetDomainTranslationAsync([FromQuery] GetDomainTranslationQuery query, CancellationToken cancellationToken)
     {
-        Guid.TryParse(id, out var guidId);
+        var response = await _translationService.GetDomainTranslationAsync(query.Id!.Value, cancellationToken);
 
-        var response = await _translationService.GetDomainTranslationAsync(guidId, cancellationToken);
+        if (response.Value is not null)
+        {
+            response.Value.MicroserviceId = query.MicroserviceId;
+        }
 
         return response;
     }
@@ -49,7 +52,7 @@ public class DomainTranslationController : ApiControllerBase
     public async Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync([FromQuery] GetDomainTranslationsQuery query, CancellationToken cancellationToken)
     {
 
-        var response = await _translationService.GetDomainTranslationsAsync(query.Code, query.Q, query.PageStart, query.PageSize, cancellationToken);
+        var response = await _translationService.GetDomainTranslationsAsync(query.MicroserviceId, query.Code, query.Q, query.PageStart, query.PageSize, cancellationToken);
 
         return response;
     }

@@ -53,6 +53,7 @@ public interface ITranslationService
         CancellationToken cancellationToken);
 
     Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync(
+        Guid? microserviceId,
         string? code,
         string? q,
         int? pageStart,

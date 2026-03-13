@@ -9,6 +9,7 @@ namespace BiUM.Specialized.Common.Translation;
 public class DomainTranslationsDto : BaseDto, IMapFrom<DomainTranslation>
 {
     public Guid ApplicationId { get; set; }
+    public Guid MicroserviceId { get; set; }
     public string? Code { get; set; }
     public string? Text { get; set; }
 

@@ -159,6 +159,7 @@ public sealed partial class TranslationService
     }
 
     public async Task<PaginatedApiResponse<DomainTranslationsDto>> GetDomainTranslationsAsync(
+        Guid? microserviceId,
         string? code,
         string? q,
         int? pageStart,
@@ -170,6 +171,14 @@ public sealed partial class TranslationService
                 (string.IsNullOrEmpty(q) || a.DomainTranslationDetails.Any(rt => rt.LanguageId == _correlationContext.LanguageId && rt.Text.Contains(q, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
             .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(_mapper, pageStart, pageSize, cancellationToken);
+
+        if (domainTranslations.Value is not null && microserviceId.HasValue)
+        {
+            foreach (var domainTranslation in domainTranslations.Value)
+            {
+                domainTranslation.MicroserviceId = microserviceId.Value;
+            }
+        }
 
         return domainTranslations;
     }

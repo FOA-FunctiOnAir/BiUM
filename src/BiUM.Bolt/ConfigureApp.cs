@@ -1,5 +1,6 @@
 using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Constants;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ public static partial class ConfigureApp
 
         var initialiser = serviceProvider.GetRequiredService<IBoltDbContextInitialiser>();
 
-        if (biAppOptions.Value.Environment is "Development" or "Production")
+        if (biAppOptions.Value.Environment is BiAppEnvironments.Development or BiAppEnvironments.Production)
         {
             await initialiser.InitialiseAsync();
 

@@ -1,6 +1,7 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.Middlewares;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
@@ -29,7 +30,7 @@ public static partial class ApplicationExtensions
 
         var isNotProductionLike =
             app.Environment.IsDevelopment() ||
-            appOptions is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+            appOptions is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
 
         if (isNotProductionLike)
         {

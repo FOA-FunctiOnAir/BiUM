@@ -1,6 +1,7 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Constants;
 using Grpc.Core;
 using MagicOnion;
 using MagicOnion.Server;
@@ -35,7 +36,7 @@ public class GlobalApiResponseFilter : MagicOnionFilterAttribute
 
         _isNotProductionLike =
             environment.IsDevelopment() ||
-            appOptionsAccessor.Value is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+            appOptionsAccessor.Value is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
 
         Order = 0;
     }

@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Constants;
 using Microsoft.Extensions.Hosting;
 
 namespace System;
@@ -10,8 +11,8 @@ public static partial class Extensions
         return
             environment.IsProduction() ||
             environment.IsStaging() ||
-            environment.IsEnvironment("Sandbox") ||
+            environment.IsEnvironment(BiAppEnvironments.Sandbox) ||
             environment.IsEnvironment("QA") ||
-            appOptions is { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+            appOptions is { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
     }
 }

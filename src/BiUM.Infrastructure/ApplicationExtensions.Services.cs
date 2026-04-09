@@ -1,6 +1,7 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Enums;
 using BiUM.Core.File;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
@@ -58,7 +59,7 @@ public static partial class ApplicationExtensions
 
         var isNotProductionLike =
             builder.Environment.IsDevelopment() ||
-            appOptions is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+            appOptions is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
 
         builder.Services.Configure<HttpClientsOptions>(builder.Configuration.GetSection(HttpClientsOptions.Name));
         builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));

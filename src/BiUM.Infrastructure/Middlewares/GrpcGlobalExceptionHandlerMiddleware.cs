@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Common.Enums;
 using BiUM.Infrastructure.MagicOnion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
@@ -27,7 +28,7 @@ internal sealed class GrpcGlobalExceptionHandlerMiddleware
 
         _isNotProductionLike =
             environment.IsDevelopment() ||
-            appOptionsAccessor.Value is not { Environment: "Production" or "Sandbox" or "Staging" or "QA" };
+            appOptionsAccessor.Value is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
     }
 
     public async Task InvokeAsync(HttpContext context)

@@ -211,6 +211,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddRabbitMqServices(builder.Configuration);
 
         builder.Services.AddTransient<IDateTimeService, DateTimeService>();
+        builder.Services.AddTransient<IRandomGeneratorService, RandomGeneratorService>();
 
         builder.Services.AddScoped<ICorrelationContextProvider, CorrelationContextProvider>();
         builder.Services.AddSingleton<ICorrelationContextAccessor, CorrelationContextAccessor>();

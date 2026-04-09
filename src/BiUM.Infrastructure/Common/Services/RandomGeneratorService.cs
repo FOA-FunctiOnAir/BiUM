@@ -16,7 +16,7 @@ public class RandomGeneratorService : IRandomGeneratorService
         _biAppOptions = biAppOptions.Value;
     }
 
-    public string GetNewRandomPassword(string? defaultPassword)
+    public string GetNewRandomPassword(string? defaultPassword, int length = 6)
     {
         if (_biAppOptions.Environment is "Development")
         {
@@ -25,11 +25,14 @@ public class RandomGeneratorService : IRandomGeneratorService
 
         Random generator = new();
 
-        var r = generator.Next(100001, 999999).ToString("D6");
+        int min = (int)Math.Pow(10, length - 1);
+        int max = (int)Math.Pow(10, length) - 1;
+
+        var r = generator.Next(min, max).ToString();
 
         if (r.Distinct().Count() == 1)
         {
-            r = GetNewRandomPassword(string.Empty);
+            return GetNewRandomPassword(string.Empty, length);
         }
 
         return r;

@@ -1,5 +1,5 @@
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
+using BiUM.Core.Constants;
 using Microsoft.Extensions.Hosting;
 
 namespace System;

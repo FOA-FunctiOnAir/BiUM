@@ -1,6 +1,6 @@
 using BiUM.Bolt.Database;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
+using BiUM.Core.Constants;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;

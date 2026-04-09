@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace BiUM.Core.Common.Enums;
+namespace BiUM.Core.Constants;
 
 public static class BiAppEnvironments
 {

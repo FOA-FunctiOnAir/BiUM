@@ -1,5 +1,5 @@
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.MagicOnion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;

@@ -1,7 +1,7 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
+using BiUM.Core.Constants;
 using Grpc.Core;
 using MagicOnion;
 using MagicOnion.Server;

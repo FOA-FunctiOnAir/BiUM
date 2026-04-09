@@ -1,7 +1,7 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Enums;
+using BiUM.Core.Constants;
 using BiUM.Core.File;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;

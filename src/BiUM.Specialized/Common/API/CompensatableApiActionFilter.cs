@@ -83,6 +83,16 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 
         context.HttpContext.Items[LocalOrchestrationKey] = localOrchestration;
 
+        if (!localOrchestration && incomingWasEmpty && _correlationContextAccessor.CorrelationContext is { } currentForSession)
+        {
+            var sid = currentForSession.CompensationSessionId;
+
+            if (!sid.HasValue || sid.Value == Guid.Empty)
+            {
+                _correlationContextAccessor.CorrelationContext = currentForSession.WithCompensationSessionId(Guid.NewGuid());
+            }
+        }
+
         if (!localOrchestration)
         {
             await next();

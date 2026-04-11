@@ -35,13 +35,15 @@ Yerel commit/rollback yalnızca **Pending** anlık görüntü satırlarında iş
 **`CompensatableApiActionFilter`** (`BiUM.Specialized/Common/API/CompensatableApiActionFilter.cs`) `AddSpecializedServices` içinde MVC filtreleri olarak **global** eklenir (`ApplicationExtensions.Services.cs`).
 
 - **`[CompensatableApi]`** (`CompensatableApiAttribute`): Controller veya action üzerinde olmalıdır; **yalnızca** bu işaretli uçlar ana telafi API’si olarak oturum açıp sonlandırıp olayı yayınlar. İşaretsiz uçlar filtreden erken çıkar (downstream çağrılar gelen `CompensationSessionId` ile normal işler).
-- İşaretli uçta, **`CrudController`** üzerinde `SaveAsync`, `SavePartialAsync`, `DeleteAsync` ve rota `code` için `ICrudService.IsCrudMutationCompensatibleByCodeAsync` true ise ve gelen istekte **`CompensationSessionId` yoksa**, yeni oturum: `CorrelationContext.WithCompensationSessionId`.
-- Aksiyon sonrası: başarısız sonuç veya exception → **`RollbackSessionAsync`** + **`PublishAsync(..., success: false)`**; başarı → **`CommitSessionAsync`** + **`PublishAsync(..., success: true)`**.
+- İşaretli uçta, **`CrudController`** üzerinde `SaveAsync`, `SavePartialAsync`, `DeleteAsync` ve rota `code` için `ICrudService.IsCrudMutationCompensatibleByCodeAsync` true ise ve gelen istekte **`CompensationSessionId` yoksa**, yeni oturum: `CorrelationContext.WithCompensationSessionId` ve aksiyon sonunda yerel commit/rollback + olay (**`localOrchestration`**).
+- Aynı işaret altında, yukarıdaki CRUD mutasyonu koşulu sağlanmazsa ve gelen **`CompensationSessionId` boşsa**, yine yeni oturum atanır ve **`ICorrelationContextAccessor`** güncellenir; bu uçlarda aksiyon sonunda otomatik commit/rollback **yapılmaz** (sadece outbound HTTP ve EF telafi yolu güncel oturumu kullanır).
+- Aksiyon sonrası (yalnızca **`localOrchestration`** true iken): başarısız sonuç veya exception → **`RollbackSessionAsync`** + **`PublishAsync(..., success: false)`**; başarı → **`CommitSessionAsync`** + **`PublishAsync(..., success: true)`**.
 
 ## 5. Bağlam yayılımı
 
 - **`CorrelationContext.CompensationSessionId`**: zincirde taşınması için HTTP’de `x-correlation-context` (ve RabbitMQ header’ları) kullanılır.
-- Ayrıntı: [Agents.CorrelationContext.md](Agents.CorrelationContext.md).
+- **Outbound HTTP** (`HttpClientService`): accessor doluysa header her zaman accessor’dan üretilir; böylece bir MS içinde oturum güncellendikten sonraki çağrılar Gateway üzerinden geçmese bile doğru bağlamı taşır.
+- Ayrıntı: [Agents.CorrelationContext.md](Agents.CorrelationContext.md), [Agents.HttpClientService.md](Agents.HttpClientService.md) § Correlation.
 
 ## 6. İlgili kod konumları
 

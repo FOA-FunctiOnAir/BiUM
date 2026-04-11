@@ -25,6 +25,10 @@ Outbound HTTP istemcisi aynı sözleşmeyi kullanır; bkz. [Agents.HttpClientSer
 
 - **`CorrelationContextAccessor`** (`BiUM.Infrastructure/Services/Authorization/CorrelationContextAccessor.cs`): `AsyncLocal` üzerinden istek içi bağlam; setter dolaylı tutamaç ile önceki bağlamı temizler.
 
+## 4b. `ICorrelationContextProvider`
+
+- **`CorrelationContextProvider`** (`BiUM.Infrastructure/Services/Authorization/CorrelationContextProvider.cs`): `Get()` önce **`ICorrelationContextAccessor`** üzerinden döner; accessor boşsa gelen istekteki `x-correlation-context` header’ından deserialize eder. İstek içinde accessor güncellenirse (ör. yeni telafi oturumu) `Get()` ile okunan değer stale kalmaz.
+
 ## 5. RabbitMQ
 
 - **`RabbitMQClient`** yayınlarken `CorrelationContext`’i `IRabbitMQSerializer` ile serileştirir ve **`HeaderKeys.CorrelationContext`** altında binary header olarak ekler; ayrıca `CorrelationId` AMQP `CorrelationId` alanına yansır.

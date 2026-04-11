@@ -15,8 +15,6 @@ public sealed class CorrelationContextProvider : ICorrelationContextProvider
     private readonly ICorrelationContextSerializer _correlationContextSerializer;
     private readonly ILogger<CorrelationContextProvider> _logger;
 
-    private CorrelationContext? _correlationContext;
-
     public CorrelationContextProvider(
         IHttpContextAccessor httpContextAccessor,
         ICorrelationContextAccessor correlationContextAccessor,
@@ -31,16 +29,9 @@ public sealed class CorrelationContextProvider : ICorrelationContextProvider
 
     public CorrelationContext? Get()
     {
-        if (_correlationContext is not null)
-        {
-            return _correlationContext;
-        }
-
         if (_correlationContextAccessor.CorrelationContext is not null)
         {
-            _correlationContext = _correlationContextAccessor.CorrelationContext;
-
-            return _correlationContext;
+            return _correlationContextAccessor.CorrelationContext;
         }
 
         var httpContext = _httpContextAccessor.HttpContext;
@@ -61,9 +52,7 @@ public sealed class CorrelationContextProvider : ICorrelationContextProvider
         {
             var bytes = Convert.FromBase64String(headerValue);
 
-            _correlationContext = _correlationContextSerializer.Deserialize(bytes);
-
-            return _correlationContext;
+            return _correlationContextSerializer.Deserialize(bytes);
         }
         catch (Exception ex)
         {

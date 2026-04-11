@@ -36,10 +36,10 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 `TryAddCorrelationContext`:
 
-1. Gelen HTTP isteğinde `CorrelationContext` header’ı varsa aynen outbound isteğe eklenir.
-2. Yoksa `ICorrelationContextAccessor` + `ICorrelationContextSerializer` ile serileştirilip Base64 header olarak eklenir.
+1. **`ICorrelationContextAccessor.CorrelationContext` doluysa** önce bu değer serileştirilip outbound header olarak eklenir (istek içinde güncellenen `CompensationSessionId` dahil tüm alanlar downstream’e böyle gider).
+2. Accessor boşsa, gelen HTTP isteğindeki `CorrelationContext` header’ı varsa aynen outbound’a kopyalanır.
 
-Böylece zincirlenen çağrılarda tenant, kullanıcı ve telafi oturumu gibi alanlar korunur.
+Böylece zincirlenen çağrılarda tenant, kullanıcı ve telafi oturumu gibi alanlar korunur; orkestrasyon servisleri Gateway’e dönmeden doğrudan MS çağırsa bile güncel bağlam taşınır.
 
 ## 5. Telafi (compensation)
 

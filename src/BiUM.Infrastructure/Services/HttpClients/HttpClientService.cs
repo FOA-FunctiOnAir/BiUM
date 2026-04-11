@@ -695,20 +695,6 @@ public class HttpClientService : IHttpClientsService
 
     private void TryAddCorrelationContext(HttpRequestMessage request)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-
-        if (httpContext is not null)
-        {
-            var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
-
-            if (!string.IsNullOrEmpty(correlationContextHeader))
-            {
-                request.Headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
-
-                return;
-            }
-        }
-
         var correlationContext = _correlationContextAccessor.CorrelationContext;
 
         if (correlationContext is not null)
@@ -718,6 +704,20 @@ public class HttpClientService : IHttpClientsService
             var base64 = Convert.ToBase64String(bytes);
 
             request.Headers.Add(HeaderKeys.CorrelationContext, base64);
+
+            return;
+        }
+
+        var httpContext = _httpContextAccessor.HttpContext;
+
+        if (httpContext is not null)
+        {
+            var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
+
+            if (!string.IsNullOrEmpty(correlationContextHeader))
+            {
+                request.Headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
+            }
         }
     }
 

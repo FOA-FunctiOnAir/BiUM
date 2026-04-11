@@ -1,5 +1,6 @@
 using BiApp.Test.Application.Dtos;
 using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
+using BiApp.Test.Application.Features.Currencies.Commands.UpdateCurrencyCode;
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForNames;
 using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 using BiUM.Contract.Models.Api;
@@ -26,6 +27,8 @@ public interface ICurrencyRepository
     #region Command
 
     Task<ApiResponse> SaveCurrency(SaveCurrencyCommand command, CancellationToken cancellationToken);
+
+    Task<ApiResponse> UpdateCurrencyCode(UpdateCurrencyCodeCommand command, CancellationToken cancellationToken);
 
     Task<ApiResponse> DeleteCurrency(Guid id, CancellationToken cancellationToken);
 

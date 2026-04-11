@@ -71,6 +71,16 @@ public static partial class ApplicationExtensions
                     context.Response.Headers["Expires"] = "0";
                     context.Response.Headers["Pragma"] = "no-cache";
 
+                    if (exceptionHandlerFeature?.Error is ApiResponseRollbackException apiRollback)
+                    {
+                        context.Response.ContentType = "application/json";
+                        context.Response.StatusCode = apiRollback.StatusCode;
+
+                        await context.Response.WriteAsJsonAsync(apiRollback.ApiResponse, jsonSerializerOptions, context.RequestAborted);
+
+                        return;
+                    }
+
                     if (exceptionHandlerFeature?.Error is null)
                     {
                         response.AddMessage(new ResponseMessage()

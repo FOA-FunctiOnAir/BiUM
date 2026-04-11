@@ -1,4 +1,5 @@
 using BiUM.Specialized.Database;
+using BiUM.Specialized.Middlewares;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -10,6 +11,8 @@ public static partial class ApplicationExtensions
 {
     public static WebApplication UseSpecialized(this WebApplication app)
     {
+        _ = app.UseMiddleware<RequestTransactionMiddleware>();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseMigrationsEndPoint();

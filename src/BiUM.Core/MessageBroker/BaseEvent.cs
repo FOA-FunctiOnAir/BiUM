@@ -1,9 +1,11 @@
 using MediatR;
+using MemoryPack;
 using System;
 
 namespace BiUM.Core.MessageBroker;
 
-public class BaseEvent : IBaseEvent, INotification
+[MemoryPackable]
+public partial class BaseEvent : IBaseEvent, INotification
 {
     public Guid Id { get; set; }
     public bool Active { get; set; }

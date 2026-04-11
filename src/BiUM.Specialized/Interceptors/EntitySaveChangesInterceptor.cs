@@ -8,7 +8,9 @@ using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
+using BiUM.Specialized.Compensation;
 using BiUM.Specialized.Database;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -29,8 +31,9 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     private readonly IRabbitMQClient? _rabbitMQClient;
     private readonly IMapper? _mapper;
     private readonly BiAppOptions? _biAppOptions;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
 
-    private readonly List<IBaseEvent> _entityEventBuffer = [];
+    private readonly List<BaseEvent> _entityEventBuffer = [];
     private readonly List<AuditLogEvent> _auditBuffer = [];
 
     public EntitySaveChangesInterceptor(
@@ -38,20 +41,25 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         IDateTimeService dateTimeService,
         IRabbitMQClient? rabbitMQClient = null,
         IMapper? mapper = null,
-        IOptions<BiAppOptions>? biAppOptions = null)
+        IOptions<BiAppOptions>? biAppOptions = null,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
         _rabbitMQClient = rabbitMQClient;
         _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
+        EnsureNotSavingOnHttpGet(eventData.Context);
+
         UpdateEntities(eventData.Context);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
         CollectAuditEntries(eventData.Context);
 
         return base.SavingChanges(eventData, result);
@@ -62,7 +70,10 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
+        EnsureNotSavingOnHttpGet(eventData.Context);
+
         UpdateEntities(eventData.Context);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
         CollectAuditEntries(eventData.Context);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
@@ -105,6 +116,31 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         _entityEventBuffer.Clear();
 
         return base.SaveChangesFailedAsync(eventData, cancellationToken);
+    }
+
+    private void EnsureNotSavingOnHttpGet(DbContext? dbContext)
+    {
+        if (dbContext is null)
+        {
+            return;
+        }
+
+        var http = _httpContextAccessor?.HttpContext;
+
+        if (http is null)
+        {
+            return;
+        }
+
+        if (!HttpMethods.IsGet(http.Request.Method))
+        {
+            return;
+        }
+
+        if (dbContext.ChangeTracker.HasChanges())
+        {
+            throw new InvalidOperationException("Persisting changes is not allowed during an HTTP GET request.");
+        }
     }
 
     private void UpdateEntities(DbContext? dbContext)
@@ -176,9 +212,9 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             baseEvent = entry.Entity.AddDeletedEvent(_mapper, null);
         }
 
-        if (baseEvent is not null)
+        if (baseEvent is BaseEvent concreteEvent)
         {
-            _entityEventBuffer.Add(baseEvent);
+            _entityEventBuffer.Add(concreteEvent);
         }
     }
 

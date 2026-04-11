@@ -4,7 +4,6 @@ using MemoryPack.Compression;
 using System;
 using System.Buffers;
 using System.IO.Compression;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,13 +12,9 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 internal sealed class RabbitMQSerializer : IRabbitMQSerializer
 {
     private readonly MemoryPackSerializerOptions _memoryPackSerializerOptions;
-    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    public RabbitMQSerializer(
-        JsonSerializerOptions jsonSerializerOptions,
-        MemoryPackSerializerOptions memoryPackSerializerOptions)
+    public RabbitMQSerializer(MemoryPackSerializerOptions memoryPackSerializerOptions)
     {
-        _jsonSerializerOptions = jsonSerializerOptions;
         _memoryPackSerializerOptions = memoryPackSerializerOptions;
     }
 

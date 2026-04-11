@@ -16,8 +16,11 @@ public class DomainCrudDto : BaseDto, IMapFrom<DomainCrud>
     public List<BaseEntityTranslationDto>? NameTr { get; set; }
     public string? Code { get; set; }
     public string? TableName { get; set; }
+    public bool Compensatible { get; set; }
 
     public ICollection<DomainCrudColumnDto> DomainCrudColumns { get; set; } = [];
+
+    public ICollection<DomainCrudPartialUpdateDto> DomainCrudPartialUpdates { get; set; } = [];
 
     public void Mapping(Profile profile)
     {

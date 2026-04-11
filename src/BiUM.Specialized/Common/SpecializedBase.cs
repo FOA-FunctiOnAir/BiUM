@@ -3,7 +3,6 @@ using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Specialized.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

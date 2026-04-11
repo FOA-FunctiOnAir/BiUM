@@ -1,6 +1,7 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
 using BiUM.Core.File;
 using BiUM.Core.MessageBroker.RabbitMQ;
@@ -12,6 +13,7 @@ using BiUM.Infrastructure.MagicOnion.Filters.Server;
 using BiUM.Infrastructure.MagicOnion.Serialization;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Infrastructure.Services.Caching.Redis;
+using BiUM.Infrastructure.Services.Compensation;
 using BiUM.Infrastructure.Services.File;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Services.Serialization;
@@ -302,6 +304,8 @@ public static partial class ApplicationExtensions
 
         services.AddSingleton<IRabbitMQSerializer, RabbitMQSerializer>();
         services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
+
+        services.AddScoped<ICompensationSessionFinalizedPublisher, CompensationSessionFinalizedPublisher>();
 
         services.AddHostedService<RabbitMQListenerService>();
 

@@ -14,6 +14,7 @@ public sealed partial class CorrelationContext
         };
 
     public required Guid CorrelationId { get; init; }
+    public Guid? CompensationSessionId { get; init; }
     public string? ConnectionId { get; init; }
     public string? TraceId { get; init; }
     public string? IpAddress { get; init; }
@@ -25,4 +26,23 @@ public sealed partial class CorrelationContext
     public Guid? ResourceId { get; init; }
     public DateTime CreatedAt { get; } = DateTime.UtcNow;
     public UserContext? User { get; init; }
+
+    public CorrelationContext WithCompensationSessionId(Guid compensationSessionId)
+    {
+        return new CorrelationContext
+        {
+            CorrelationId = CorrelationId,
+            CompensationSessionId = compensationSessionId,
+            ConnectionId = ConnectionId,
+            TraceId = TraceId,
+            IpAddress = IpAddress,
+            ClientHost = ClientHost,
+            ApplicationId = ApplicationId,
+            TenantId = TenantId,
+            TenantName = TenantName,
+            LanguageId = LanguageId,
+            ResourceId = ResourceId,
+            User = User
+        };
+    }
 }

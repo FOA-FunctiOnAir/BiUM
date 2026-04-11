@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,11 +26,20 @@ public partial class CrudService
 
         var domainCrud = await DbContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
+            .Include(s => s.DomainCrudPartialUpdates)
+                .ThenInclude(p => p.Columns)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (domainCrud is null)
         {
             await AddMessage(response, "crud_definition_not_found", cancellationToken);
+
+            return response;
+        }
+
+        if (!CanMutateDomainCrud(domainCrud))
+        {
+            await AddMessage(response, "crud_definition_access_denied", cancellationToken);
 
             return response;
         }
@@ -162,40 +172,79 @@ public partial class CrudService
             return response;
         }
 
-        // using var transaction = await DbContext.Database.BeginTransactionAsync(cancellationToken);
+        var crudColsByIdForServices = domainCrud.DomainCrudColumns.ToDictionary(c => c.Id);
+        var partialServicesPayload = domainCrud.DomainCrudPartialUpdates
+            .Select(pu => new SaveCrudServicesPartialPayloadDto
+            {
+                PartialCode = pu.Code,
+                Columns = pu.Columns
+                    .Select(mpc =>
+                    {
+                        var ccol = crudColsByIdForServices[mpc.CrudColumnId];
+                        return new SaveCrudServicesColumnDto { Property = ccol.PropertyName, FieldId = ccol.FieldId };
+                    })
+                    .ToList()
+            })
+            .ToList();
 
-        try
+        var responseSaveCrudServices = await SaveCrudServicesAsync(
+            domainCrud.ApplicationId,
+            domainCrud.MicroserviceId,
+            domainCrud.Code,
+            newDomainCrudVersionColumns,
+            partialServicesPayload,
+            cancellationToken);
+
+        if (!responseSaveCrudServices.Success)
         {
-            var responseSaveCrudServices = await SaveCrudServicesAsync(domainCrud.MicroserviceId, domainCrud.Code, newDomainCrudVersionColumns, cancellationToken);
+            response.AddMessage(responseSaveCrudServices.Messages);
 
-            if (!responseSaveCrudServices.Success)
-            {
-                response.AddMessage(responseSaveCrudServices.Messages);
-
-                return response;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ddl))
-            {
-                _ = await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
-            }
-
-            foreach (var col in newDomainCrudVersionColumns)
-            {
-                col.CrudVersionId = newDomainCrudVersion.Id;
-            }
-
-            _ = DbContext.DomainCrudVersions.Add(newDomainCrudVersion);
-            DbContext.DomainCrudVersionColumns.AddRange(newDomainCrudVersionColumns);
-
-            _ = await DbContext.SaveChangesAsync(cancellationToken);
-
-            // await transaction.CommitAsync(cancellationToken);
+            return response;
         }
-        catch
+
+        if (!string.IsNullOrWhiteSpace(ddl))
         {
-            // await transaction.RollbackAsync(cancellationToken);
+            _ = await DbContext.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
         }
+
+        foreach (var col in newDomainCrudVersionColumns)
+        {
+            col.CrudVersionId = newDomainCrudVersion.Id;
+        }
+
+        _ = DbContext.DomainCrudVersions.Add(newDomainCrudVersion);
+        DbContext.DomainCrudVersionColumns.AddRange(newDomainCrudVersionColumns);
+
+        var colByProp = newDomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mp in domainCrud.DomainCrudPartialUpdates)
+        {
+            var vp = new DomainCrudVersionPartialUpdate
+            {
+                CorrelationId = CorrelationContext.CorrelationId,
+                TenantId = domainCrud.TenantId,
+                CrudVersionId = newDomainCrudVersion.Id,
+                Code = mp.Code,
+                Name = mp.Name
+            };
+
+            _ = DbContext.DomainCrudVersionPartialUpdates.Add(vp);
+
+            foreach (var mpc in mp.Columns)
+            {
+                var crudCol = crudColsByIdForServices[mpc.CrudColumnId];
+                var vcol = colByProp[crudCol.PropertyName];
+
+                DbContext.DomainCrudVersionPartialUpdateColumns.Add(new DomainCrudVersionPartialUpdateColumn
+                {
+                    CorrelationId = CorrelationContext.CorrelationId,
+                    VersionPartialUpdateId = vp.Id,
+                    CrudVersionColumnId = vcol.Id
+                });
+            }
+        }
+
+        _ = await DbContext.SaveChangesAsync(cancellationToken);
 
         return response;
     }
@@ -224,6 +273,13 @@ public partial class CrudService
 
         if (domainCrud is null)
         {
+            if (!CanCreateDomainCrudDefinition())
+            {
+                await AddMessage(response, "crud_definition_access_denied", cancellationToken);
+
+                return response;
+            }
+
             domainCrud = new DomainCrud
             {
                 Id = command.Id ?? GuidGenerator.New(),
@@ -233,7 +289,8 @@ public partial class CrudService
                 Name = command.NameTr!.ToTranslationString(),
                 Code = command.Code,
                 TableName = command.TableName,
-                Test = command.Test
+                Test = command.Test,
+                Compensatible = command.Compensatible
             };
 
             var domainCrudColumns = command.DomainCrudColumns.Select(p => new DomainCrudColumn
@@ -245,17 +302,31 @@ public partial class CrudService
                 DataTypeId = p.DataTypeId,
                 MaxLength = p.MaxLength,
                 SortOrder = p.SortOrder
-            });
+            }).ToList();
 
             _ = DbContext.DomainCruds.Add(domainCrud);
+
             DbContext.DomainCrudColumns.AddRange(domainCrudColumns);
+
+            var propertyToColumnId = domainCrudColumns.ToDictionary(c => c.PropertyName, c => c.Id, StringComparer.OrdinalIgnoreCase);
+            var colById = domainCrudColumns.ToDictionary(c => c.Id);
+
+            SaveNewDomainCrudPartialUpdates(domainCrud, command.DomainCrudPartialUpdates, propertyToColumnId, colById);
         }
         else
         {
+            if (!CanMutateDomainCrud(domainCrud))
+            {
+                await AddMessage(response, "crud_definition_access_denied", cancellationToken);
+
+                return response;
+            }
+
             domainCrud.Name = command.NameTr!.ToTranslationString();
             domainCrud.Code = command.Code;
             domainCrud.TableName = command.TableName;
             domainCrud.Test = command.Test;
+            domainCrud.Compensatible = command.Compensatible;
 
             foreach (var domainCrudColumn in command.DomainCrudColumns ?? [])
             {
@@ -316,6 +387,71 @@ public partial class CrudService
                 }
             }
 
+            var persistedCols = await DbContext.DomainCrudColumns
+                .Where(c => c.CrudId == domainCrud.Id)
+                .ToListAsync(cancellationToken);
+            var propToColIdUpdate = persistedCols.ToDictionary(c => c.PropertyName, c => c.Id, StringComparer.OrdinalIgnoreCase);
+            var colByIdUpdate = persistedCols.ToDictionary(c => c.Id);
+
+            foreach (var partialCmd in command.DomainCrudPartialUpdates ?? [])
+            {
+                switch (partialCmd._rowStatus)
+                {
+                    case RowStatuses.New:
+                        {
+                            var pu = new DomainCrudPartialUpdate
+                            {
+                                CorrelationId = CorrelationContext.CorrelationId,
+                                TenantId = domainCrud.TenantId,
+                                CrudId = domainCrud.Id,
+                                Code = partialCmd.Code,
+                                Name = partialCmd.Name
+                            };
+                            _ = DbContext.DomainCrudPartialUpdates.Add(pu);
+                            AddPartialUpdateJoinRows(pu.Id, partialCmd.Columns, propToColIdUpdate, colByIdUpdate);
+                            break;
+                        }
+                    case RowStatuses.Edited:
+                        {
+                            var pu = await DbContext.DomainCrudPartialUpdates
+                                .Include(p => p.Columns)
+                                .FirstOrDefaultAsync(p => p.Id == partialCmd.Id && p.CrudId == domainCrud.Id, cancellationToken);
+                            if (pu is null)
+                            {
+                                break;
+                            }
+
+                            pu.Code = partialCmd.Code;
+                            pu.Name = partialCmd.Name;
+                            foreach (var link in pu.Columns.ToList())
+                            {
+                                _ = DbContext.DomainCrudPartialUpdateColumns.Remove(link);
+                            }
+
+                            AddPartialUpdateJoinRows(pu.Id, partialCmd.Columns, propToColIdUpdate, colByIdUpdate);
+                            break;
+                        }
+                    case RowStatuses.Deleted:
+                        {
+                            var pu = await DbContext.DomainCrudPartialUpdates
+                                .Include(p => p.Columns)
+                                .FirstOrDefaultAsync(p => p.Id == partialCmd.Id && p.CrudId == domainCrud.Id, cancellationToken);
+                            if (pu is null)
+                            {
+                                break;
+                            }
+
+                            foreach (var link in pu.Columns.ToList())
+                            {
+                                _ = DbContext.DomainCrudPartialUpdateColumns.Remove(link);
+                            }
+
+                            _ = DbContext.DomainCrudPartialUpdates.Remove(pu);
+                            break;
+                        }
+                }
+            }
+
             _ = DbContext.DomainCruds.Update(domainCrud);
         }
 
@@ -334,11 +470,20 @@ public partial class CrudService
 
         var domainCrud = await DbContext.DomainCruds
             .Include(s => s.DomainCrudColumns)
+            .Include(s => s.DomainCrudPartialUpdates)
+                .ThenInclude(p => p.Columns)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (domainCrud is null)
         {
             await AddMessage(response, "crud_definition_not_found", cancellationToken);
+
+            return response;
+        }
+
+        if (!CanMutateDomainCrud(domainCrud))
+        {
+            await AddMessage(response, "crud_definition_access_denied", cancellationToken);
 
             return response;
         }
@@ -352,6 +497,16 @@ public partial class CrudService
             await AddMessage(response, "crud_definition_can_not_delete_that_published", cancellationToken);
 
             return response;
+        }
+
+        foreach (var pu in domainCrud.DomainCrudPartialUpdates.ToList())
+        {
+            foreach (var link in pu.Columns.ToList())
+            {
+                _ = DbContext.DomainCrudPartialUpdateColumns.Remove(link);
+            }
+
+            _ = DbContext.DomainCrudPartialUpdates.Remove(pu);
         }
 
         _ = DbContext.DomainCruds.Remove(domainCrud);
@@ -370,6 +525,10 @@ public partial class CrudService
         var domainCrud = await DbContext.DomainCruds
             .Include(p => p.DomainCrudTranslations)
             .Include(m => m.DomainCrudColumns)
+            .Include(m => m.DomainCrudPartialUpdates)
+                .ThenInclude(p => p.Columns)
+                    .ThenInclude(c => c.CrudColumn)
+            .Where(DomainCrudReadFilter())
             .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Id == id, Mapper, cancellationToken);
 
         returnObject.Value = domainCrud;
@@ -386,6 +545,10 @@ public partial class CrudService
         var domainCrud = await DbContext.DomainCruds
             .Include(p => p.DomainCrudTranslations)
             .Include(m => m.DomainCrudColumns)
+            .Include(m => m.DomainCrudPartialUpdates)
+                .ThenInclude(p => p.Columns)
+                    .ThenInclude(c => c.CrudColumn)
+            .Where(DomainCrudReadFilter())
             .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Code == code, Mapper, cancellationToken);
 
         returnObject.Value = domainCrud;
@@ -404,6 +567,7 @@ public partial class CrudService
     {
         var domainCruds = await DbContext.DomainCruds
             .Include(x => x.DomainCrudTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
+            .Where(DomainCrudReadFilter())
             .Where(dc =>
                 (!applicationId.HasValue || dc.ApplicationId == applicationId.Value) &&
                 (string.IsNullOrEmpty(q) || dc.DomainCrudTranslations.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
@@ -414,7 +578,126 @@ public partial class CrudService
         return domainCruds;
     }
 
-    private async Task<ApiResponse> SaveCrudServicesAsync(Guid microserviceId, string code, ICollection<DomainCrudVersionColumn> columns, CancellationToken cancellationToken)
+    private Expression<Func<DomainCrud, bool>> DomainCrudReadFilter()
+    {
+        var ctxTenant = CorrelationContext.TenantId;
+
+        return dc =>
+            dc.TenantId == Ids.Customer.System.Id ||
+            ctxTenant == null ||
+            (ctxTenant.HasValue && dc.TenantId == ctxTenant.Value);
+    }
+
+    private static bool IsSystemTenantContext(Guid? ctxTenant) =>
+        ctxTenant.HasValue && ctxTenant.Value == Ids.Customer.System.Id;
+
+    private bool CanMutateDomainCrud(DomainCrud dc)
+    {
+        var ctx = CorrelationContext.TenantId;
+
+        if (IsSystemTenantContext(ctx) || ctx is null)
+        {
+            return true;
+        }
+
+        return ctx.HasValue && dc.TenantId == ctx.Value;
+    }
+
+    private bool CanCreateDomainCrudDefinition()
+    {
+        var ctx = CorrelationContext.TenantId;
+
+        if (IsSystemTenantContext(ctx) || ctx is null)
+        {
+            return true;
+        }
+
+        return ctx.HasValue && ctx.Value != Guid.Empty;
+    }
+
+    private void SaveNewDomainCrudPartialUpdates(
+        DomainCrud domainCrud,
+        IList<SaveDomainCrudCommandPartialUpdate>? partialUpdates,
+        Dictionary<string, Guid> propertyToColumnId,
+        Dictionary<Guid, DomainCrudColumn> colById)
+    {
+        foreach (var partialCmd in partialUpdates ?? [])
+        {
+            if (partialCmd._rowStatus == RowStatuses.Deleted)
+            {
+                continue;
+            }
+
+            var pu = new DomainCrudPartialUpdate
+            {
+                CorrelationId = CorrelationContext.CorrelationId,
+                TenantId = domainCrud.TenantId,
+                CrudId = domainCrud.Id,
+                Code = partialCmd.Code,
+                Name = partialCmd.Name
+            };
+
+            _ = DbContext.DomainCrudPartialUpdates.Add(pu);
+
+            AddPartialUpdateJoinRows(pu.Id, partialCmd.Columns, propertyToColumnId, colById);
+        }
+    }
+
+    private void AddPartialUpdateJoinRows(
+        Guid partialUpdateId,
+        IList<SaveDomainCrudCommandPartialColumn>? columns,
+        Dictionary<string, Guid> propertyToColumnId,
+        Dictionary<Guid, DomainCrudColumn> colById)
+    {
+        foreach (var colCmd in columns ?? [])
+        {
+            if (!TryResolvePartialCrudColumnId(colCmd, propertyToColumnId, colById, out var crudColumnId))
+            {
+                continue;
+            }
+
+            DbContext.DomainCrudPartialUpdateColumns.Add(new DomainCrudPartialUpdateColumn
+            {
+                CorrelationId = CorrelationContext.CorrelationId,
+                PartialUpdateId = partialUpdateId,
+                CrudColumnId = crudColumnId
+            });
+        }
+    }
+
+    private static bool TryResolvePartialCrudColumnId(
+        SaveDomainCrudCommandPartialColumn colCmd,
+        Dictionary<string, Guid> propertyToColumnId,
+        Dictionary<Guid, DomainCrudColumn> colById,
+        out Guid crudColumnId)
+    {
+        if (colCmd.CrudColumnId != Guid.Empty && colById.ContainsKey(colCmd.CrudColumnId))
+        {
+            crudColumnId = colCmd.CrudColumnId;
+
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(colCmd.ColumnPropertyName) &&
+            propertyToColumnId.TryGetValue(colCmd.ColumnPropertyName, out var byProp))
+        {
+            crudColumnId = byProp;
+
+            return true;
+        }
+
+        crudColumnId = Guid.Empty;
+
+        return false;
+    }
+
+    private async Task<ApiResponse> SaveCrudServicesAsync(
+        Guid applicationId,
+        Guid microserviceId,
+        string code,
+        ICollection<DomainCrudVersionColumn> columns,
+        IReadOnlyList<SaveCrudServicesPartialPayloadDto> partials,
+        CancellationToken cancellationToken)
     {
         var response = new ApiResponse();
 
@@ -424,11 +707,19 @@ public partial class CrudService
             FieldId = c.FieldId
         });
 
+        var partialParameters = partials.Select(p => new Dictionary<string, dynamic>
+        {
+            { "PartialCode", p.PartialCode },
+            { "Columns", p.Columns }
+        }).ToList();
+
         var parameters = new Dictionary<string, dynamic>
             {
+                { "ApplicationId", applicationId },
                 { "MicroserviceId", microserviceId },
                 { "Code", code },
-                { "Columns", columnsParameters ?? [] }
+                { "Columns", columnsParameters ?? [] },
+                { "Partials", partialParameters }
             };
 
         var responseApi = await _httpClientsService.CallService<ApiResponse>(
@@ -451,4 +742,10 @@ internal class SaveCrudServicesColumnDto
 {
     public Guid FieldId { get; set; }
     public required string Property { get; set; }
+}
+
+internal sealed class SaveCrudServicesPartialPayloadDto
+{
+    public required string PartialCode { get; init; }
+    public required List<SaveCrudServicesColumnDto> Columns { get; init; }
 }

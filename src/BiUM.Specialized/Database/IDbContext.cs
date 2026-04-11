@@ -10,11 +10,16 @@ public interface IDbContext
 {
     DatabaseFacade Database { get; }
 
+    DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots { get; }
     DbSet<DomainCrud> DomainCruds { get; }
     DbSet<DomainCrudColumn> DomainCrudColumns { get; }
+    DbSet<DomainCrudPartialUpdate> DomainCrudPartialUpdates { get; }
+    DbSet<DomainCrudPartialUpdateColumn> DomainCrudPartialUpdateColumns { get; }
     DbSet<DomainCrudTranslation> DomainCrudTranslations { get; }
     DbSet<DomainCrudVersion> DomainCrudVersions { get; }
     DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns { get; }
+    DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates { get; }
+    DbSet<DomainCrudVersionPartialUpdateColumn> DomainCrudVersionPartialUpdateColumns { get; }
     DbSet<DomainDynamicApi> DomainDynamicApis { get; }
     DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters { get; }
     DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations { get; }

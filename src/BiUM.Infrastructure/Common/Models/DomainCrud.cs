@@ -23,9 +23,15 @@ public class DomainCrud : TenantBaseEntity
     [Column("TABLE_NAME")]
     public required string TableName { get; set; }
 
+    [Column("COMPENSATIBLE")]
+    public bool Compensatible { get; set; }
+
     [JsonIgnore]
     public ICollection<DomainCrudColumn> DomainCrudColumns { get; } = [];
 
     [JsonIgnore]
     public ICollection<DomainCrudTranslation> DomainCrudTranslations { get; } = [];
+
+    [JsonIgnore]
+    public ICollection<DomainCrudPartialUpdate> DomainCrudPartialUpdates { get; } = [];
 }

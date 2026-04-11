@@ -12,7 +12,9 @@ public record SaveDomainCrudCommand : BaseCommandDto
     public IReadOnlyList<BaseEntityTranslationDto>? NameTr { get; set; }
     public required string Code { get; set; }
     public required string TableName { get; set; }
+    public bool Compensatible { get; set; }
     public IList<SaveDomainCrudCommandColumn> DomainCrudColumns { get; set; } = [];
+    public IList<SaveDomainCrudCommandPartialUpdate> DomainCrudPartialUpdates { get; set; } = [];
 }
 
 public record PublishDomainCrudCommand : BaseCommandDto;
@@ -30,4 +32,19 @@ public class SaveDomainCrudCommandColumn
     public int? MaxLength { get; set; }
     public int SortOrder { get; set; }
     public int _rowStatus { get; set; }
+}
+
+public class SaveDomainCrudCommandPartialUpdate
+{
+    public Guid Id { get; set; }
+    public int _rowStatus { get; set; }
+    public required string Code { get; set; }
+    public string? Name { get; set; }
+    public IList<SaveDomainCrudCommandPartialColumn> Columns { get; set; } = [];
+}
+
+public class SaveDomainCrudCommandPartialColumn
+{
+    public Guid CrudColumnId { get; set; }
+    public string? ColumnPropertyName { get; set; }
 }

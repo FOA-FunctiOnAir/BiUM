@@ -1,4 +1,6 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Core.Compensation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,20 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
+    public async Task<bool> IsCrudMutationCompensatibleByCodeAsync(string code, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var version = await GetVersionByCodeAsync(code, cancellationToken);
+
+            return version.DomainCrud?.Compensatible == true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task<ApiResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
     {
         var version = await GetVersionByCodeAsync(code, cancellationToken);
@@ -36,20 +52,59 @@ public partial class CrudService
         return new ApiResponse();
     }
 
+    public async Task<ApiResponse> SavePartialAsync(
+        string code,
+        string partialCode,
+        Guid id,
+        Dictionary<string, object?> data,
+        CancellationToken cancellationToken)
+    {
+        var version = await GetVersionByCodeAsync(code, cancellationToken);
+
+        var partial = await DbContext.DomainCrudVersionPartialUpdates
+            .Include(p => p.Columns).ThenInclude(c => c.CrudVersionColumn)
+            .FirstOrDefaultAsync(p => p.CrudVersionId == version.Id && p.Code == partialCode, cancellationToken);
+
+        if (partial is null)
+        {
+            return new ApiResponse();
+        }
+
+        var allowed = partial.Columns.Select(c => c.CrudVersionColumn.PropertyName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var filtered = data.Where(kv => allowed.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        _ = await UpdateInternalAsync(version, id, filtered, cancellationToken);
+
+        return new ApiResponse();
+    }
+
     public async Task<ApiResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken)
     {
         var version = await GetVersionByCodeAsync(code, cancellationToken);
-        var (api2db, _) = BuildMaps(version);
+        var (api2db, _) = BuildMaps(version, version.DomainCrud?.Compensatible == true);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
+
+        var compensatible = version.DomainCrud?.Compensatible == true;
+        string? oldJson = null;
+
+        if (compensatible && CorrelationContext.CompensationSessionId is { } sx && sx != Guid.Empty)
+        {
+            oldJson = await GetCrudRowJsonUnfilteredAsync(version, id, cancellationToken);
+        }
 
         if (hardDelete)
         {
             var sqlHard = $"DELETE FROM {table} WHERE {Quote(api2db["id"])} = @p0";
 
             await ExecuteSqlAsync(sqlHard, [id], cancellationToken);
+
+            if (oldJson is not null)
+            {
+                await AppendCrudCompensationSnapshotIfNeededAsync(version, CompensationSnapshotOperationType.Delete, id, oldJson, null, cancellationToken);
+            }
 
             return new ApiResponse();
         }
@@ -59,6 +114,11 @@ public partial class CrudService
 
         await ExecuteSqlAsync(sqlSoft, [id], cancellationToken);
 
+        if (oldJson is not null)
+        {
+            await AppendCrudCompensationSnapshotIfNeededAsync(version, CompensationSnapshotOperationType.Delete, id, oldJson, null, cancellationToken);
+        }
+
         return new ApiResponse();
 
         string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
@@ -67,7 +127,8 @@ public partial class CrudService
     public async Task<IDictionary<string, object?>> GetAsync(string code, Guid id, CancellationToken cancellationToken)
     {
         var version = await GetVersionByCodeAsync(code, cancellationToken);
-        var (api2db, db2api) = BuildMaps(version);
+        var compensatible = version.DomainCrud?.Compensatible == true;
+        var (api2db, db2api) = BuildMaps(version, compensatible);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
@@ -76,20 +137,43 @@ public partial class CrudService
         var selectCols = db2api.Select(kv => $"{Quote(kv.Key)} AS {Quote(kv.Value)}").ToList();
         var select = string.Join(",", selectCols);
 
+        var snapTbl = dbType == DbTypePostgresql ? "\"dbo\".\"__COMPENSATION_SNAPSHOT\"" : "[dbo].[__COMPENSATION_SNAPSHOT]";
         var whereId = $"{Quote(api2db["id"])} = @p0 AND {Quote(api2db["deleted"])} = {(dbType == DbTypePostgresql ? "false" : "0")}";
+
+        if (compensatible)
+        {
+            var session = CorrelationContext.CompensationSessionId;
+
+            if (session.HasValue)
+            {
+                var tenantId = CorrelationContext.TenantId ?? Guid.Empty;
+                whereId += $" AND ({Quote(api2db["cStatus"])} IN ('N','{CompensationStatusCodes.UpdateReadable}','{CompensationStatusCodes.DeleteReadable}') OR EXISTS (SELECT 1 FROM {snapTbl} s WHERE s.{SnapQ("ENTITY_ID")} = @p0 AND s.{SnapQ("COMPENSATION_SESSION_ID")} = @p1 AND s.{SnapQ("STATE")} = 0 AND s.{SnapQ("TENANT_ID")} = @p2))";
+            }
+            else
+            {
+                whereId += $" AND ({Quote(api2db["cStatus"])} IN ('N','{CompensationStatusCodes.UpdateReadable}','{CompensationStatusCodes.DeleteReadable}'))";
+            }
+        }
+
         var sql = dbType == DbTypePostgresql ? $"SELECT {select} FROM {table} WHERE {whereId} LIMIT 1" : $"SELECT TOP 1 {select} FROM {table} WHERE {whereId}";
 
-        var row = await QuerySingleRowAsync(sql, [id], cancellationToken);
+        object[] prms = compensatible && CorrelationContext.CompensationSessionId.HasValue
+            ? [id, CorrelationContext.CompensationSessionId.Value, CorrelationContext.TenantId ?? Guid.Empty]
+            : [id];
+
+        var row = await QuerySingleRowAsync(sql, prms, cancellationToken);
 
         return row ?? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
         string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
+        string SnapQ(string col) => dbType == DbTypePostgresql ? QuotePg(col) : QuoteMs(col);
     }
 
     public async Task<PaginatedApiResponse<IDictionary<string, object?>>> GetListAsync(string code, Dictionary<string, string> query, CancellationToken ct)
     {
         var version = await GetVersionByCodeAsync(code, ct);
-        var (api2db, db2api) = BuildMaps(version);
+        var compensatible = version.DomainCrud?.Compensatible == true;
+        var (api2db, db2api) = BuildMaps(version, compensatible);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
@@ -98,9 +182,28 @@ public partial class CrudService
         var selectCols = db2api.Select(kv => $"{Quote(kv.Key)} AS {Quote(kv.Value)}").ToList();
         var select = string.Join(",", selectCols);
 
-        var where = new StringBuilder($"WHERE {Quote(api2db["deleted"])} = {(dbType == DbTypePostgresql ? "false" : "0")}");
+        var snapTbl = dbType == DbTypePostgresql ? "\"dbo\".\"__COMPENSATION_SNAPSHOT\"" : "[dbo].[__COMPENSATION_SNAPSHOT]";
+        var where = new StringBuilder($"WHERE {table}.{Quote(api2db["deleted"])} = {(dbType == DbTypePostgresql ? "false" : "0")}");
         var parms = new List<object?>();
         var p = 0;
+
+        if (compensatible)
+        {
+            var session = CorrelationContext.CompensationSessionId;
+
+            if (session.HasValue)
+            {
+                var tenantId = CorrelationContext.TenantId ?? Guid.Empty;
+                where.Append($" AND ({table}.{Quote(api2db["cStatus"])} IN ('N','{CompensationStatusCodes.UpdateReadable}','{CompensationStatusCodes.DeleteReadable}') OR EXISTS (SELECT 1 FROM {snapTbl} s WHERE s.{SnapQ("ENTITY_ID")} = {table}.{Quote(api2db["id"])} AND s.{SnapQ("COMPENSATION_SESSION_ID")} = @p{p} AND s.{SnapQ("STATE")} = 0 AND s.{SnapQ("TENANT_ID")} = @p{p + 1}))");
+                parms.Add(session.Value);
+                parms.Add(tenantId);
+                p += 2;
+            }
+            else
+            {
+                where.Append($" AND ({table}.{Quote(api2db["cStatus"])} IN ('N','{CompensationStatusCodes.UpdateReadable}','{CompensationStatusCodes.DeleteReadable}'))");
+            }
+        }
 
         var allowedApi = new HashSet<string>(version.DomainCrudVersionColumns.Select(x => x.PropertyName).Concat(BaseApiProperties), StringComparer.OrdinalIgnoreCase);
         var dynDict = version.DomainCrudVersionColumns.ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
@@ -129,12 +232,12 @@ public partial class CrudService
 
             if (norm is string stringNorm)
             {
-                where.Append($" AND LOWER({Quote(dbCol)}) LIKE LOWER(@p{p})");
+                where.Append($" AND LOWER({table}.{Quote(dbCol)}) LIKE LOWER(@p{p})");
                 parms.Add($"%{stringNorm}%");
             }
             else
             {
-                where.Append($" AND {Quote(dbCol)} = @p{p}");
+                where.Append($" AND {table}.{Quote(dbCol)} = @p{p}");
                 parms.Add(norm);
             }
 
@@ -146,6 +249,7 @@ public partial class CrudService
         if (query.TryGetValue("Sort", out var sortSpec) && !string.IsNullOrWhiteSpace(sortSpec))
         {
             var pieces = new List<string>();
+
             foreach (var part in sortSpec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 var col = part;
@@ -160,14 +264,14 @@ public partial class CrudService
 
                 var dbCol = api2db[col];
 
-                pieces.Add($"{Quote(dbCol)} {(asc ? "ASC" : "DESC")}");
+                pieces.Add($"{table}.{Quote(dbCol)} {(asc ? "ASC" : "DESC")}");
             }
 
             if (pieces.Count > 0) { order = " ORDER BY " + string.Join(",", pieces); }
         }
         else
         {
-            order = $" ORDER BY {Quote(api2db["created"])} DESC, {Quote(api2db["createdTime"])} DESC";
+            order = $" ORDER BY {table}.{Quote(api2db["created"])} DESC, {table}.{Quote(api2db["createdTime"])} DESC";
         }
 
         var pageSize = query.TryGetValue("PageSize", out var psStr) && int.TryParse(psStr, out var ps) && ps > 0 ? ps : 20;
@@ -185,6 +289,7 @@ public partial class CrudService
         return new PaginatedApiResponse<IDictionary<string, object?>>(items, (int)total, pageNumber, pageSize);
 
         string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
+        string SnapQ(string col) => dbType == DbTypePostgresql ? QuotePg(col) : QuoteMs(col);
     }
 
     private static bool TryNormalizeBaseFilterValue(string key, string raw, out object? value)

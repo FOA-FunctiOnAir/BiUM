@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Utils;
+using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,7 @@ public partial class CrudService
 
         sb.AppendLine($"CREATE TABLE IF NOT EXISTS {table} (");
 
-        var fixedCols = new[]
+        var fixedCols = new List<string>
         {
             $"    {Q("ID")} uuid NOT NULL DEFAULT gen_random_uuid()",
             $"    {Q("CORRELATION_ID")} uuid NOT NULL",
@@ -41,6 +42,11 @@ public partial class CrudService
             $"    {Q("UPDATED_BY")} uuid NULL",
             $"    {Q("TEST")} boolean NOT NULL DEFAULT false"
         };
+
+        if (crud.Compensatible)
+        {
+            fixedCols.Add($"    {Q("C_STATUS")} varchar(2) NOT NULL DEFAULT 'N'");
+        }
 
         foreach (var line in fixedCols)
         {
@@ -96,6 +102,11 @@ public partial class CrudService
             {
                 sb.AppendLine($"ALTER TABLE {table} ALTER COLUMN {Q(newC.ColumnName)} TYPE {ToPgSqlType(newC)};");
             }
+        }
+
+        if (crud.Compensatible)
+        {
+            sb.AppendLine($"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {Q("C_STATUS")} varchar(2) NOT NULL DEFAULT 'N';");
         }
 
         return sb.ToString();
@@ -171,7 +182,7 @@ public partial class CrudService
         sb.AppendLine("BEGIN");
         sb.AppendLine($"    CREATE TABLE {table} (");
 
-        var fixedCols = new[]
+        var fixedCols = new List<string>
         {
             "        [ID] uniqueidentifier NOT NULL CONSTRAINT [DF_" + Safe(crud.TableName) + "_ID] DEFAULT NEWID()",
             "        [CORRELATION_ID] uniqueidentifier NOT NULL",
@@ -186,6 +197,11 @@ public partial class CrudService
             "        [UPDATED_BY] uniqueidentifier NULL",
             "        [TEST] bit NOT NULL CONSTRAINT [DF_" + Safe(crud.TableName) + "_TEST] DEFAULT (0)"
         };
+
+        if (crud.Compensatible)
+        {
+            fixedCols.Add("        [C_STATUS] varchar(2) NOT NULL CONSTRAINT [DF_" + Safe(crud.TableName) + "_CSTATUS] DEFAULT ('N')");
+        }
 
         foreach (var line in fixedCols)
         {
@@ -251,6 +267,12 @@ public partial class CrudService
             }
         }
 
+        if (crud.Compensatible)
+        {
+            sb.AppendLine($"IF COL_LENGTH(N'{table}', N'C_STATUS') IS NULL");
+            sb.AppendLine($"    ALTER TABLE {table} ADD [C_STATUS] varchar(2) NOT NULL CONSTRAINT [DF_{Safe(crud.TableName)}_CSTATUS2] DEFAULT ('N');");
+        }
+
         return sb.ToString();
     }
 
@@ -309,10 +331,11 @@ public partial class CrudService
     private static readonly HashSet<string> BaseApiProperties = new(StringComparer.OrdinalIgnoreCase)
     {
         "id","correlationId","tenantId","active","deleted",
-        "created","createdTime","createdBy","updated","updatedTime","updatedBy","test"
+        "created","createdTime","createdBy","updated","updatedTime","updatedBy","test",
+        "cStatus"
     };
 
-    private static (Dictionary<string, string> api2db, Dictionary<string, string> db2api) BuildMaps(DomainCrudVersion version)
+    private static (Dictionary<string, string> api2db, Dictionary<string, string> db2api) BuildMaps(DomainCrudVersion version, bool compensatible)
     {
         var api2db = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -330,13 +353,18 @@ public partial class CrudService
             ["test"] = "TEST"
         };
 
-        var db2Api = api2db.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
+        if (compensatible)
+        {
+            api2db["cStatus"] = "C_STATUS";
+            api2db["compensationSessionId"] = "COMPENSATION_SESSION_ID";
+        }
 
         foreach (var c in version.DomainCrudVersionColumns)
         {
             api2db[c.PropertyName] = c.ColumnName;
-            db2Api[c.ColumnName] = c.PropertyName;
         }
+
+        var db2Api = api2db.ToDictionary(kv => kv.Value, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
 
         return (api2db, db2Api);
     }
@@ -525,6 +553,10 @@ END;
     {
         var version = await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
+            .Include(s => s.DomainCrud)
+            .Include(s => s.DomainCrudVersionPartialUpdates)
+                .ThenInclude(p => p.Columns)
+                .ThenInclude(c => c.CrudVersionColumn)
             .Where(x => DbContext.DomainCruds.Any(dc => dc.Id == x.CrudId && dc.Code == code))
             .OrderByDescending(x => x.Version)
             .FirstOrDefaultAsync(ct);
@@ -534,7 +566,8 @@ END;
 
     private async Task<Guid> CreateInternalAsync(DomainCrudVersion version, Guid? id, IDictionary<string, object?> data, CancellationToken ct)
     {
-        var (api2db, _) = BuildMaps(version);
+        var compensatible = version.DomainCrud?.Compensatible == true;
+        var (api2db, _) = BuildMaps(version, compensatible);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
@@ -563,6 +596,22 @@ END;
 
         valSql.Append($"{paramNames[0]},{paramNames[1]},{paramNames[2]},{paramNames[3]},{paramNames[4]},{paramNames[5]},{NowDateSql(dbType)},{NowTimeSql(dbType)},{paramNames[6]}");
 
+        if (compensatible)
+        {
+            colSql.Append($",{Quote(api2db["cStatus"])}");
+            var session = CorrelationContext.CompensationSessionId;
+            if (session.HasValue)
+            {
+                AddParam(CompensationStatusCodes.Insert);
+            }
+            else
+            {
+                AddParam(CompensationStatusCodes.Committed);
+            }
+
+            valSql.Append($",{paramNames[^1]}");
+        }
+
         foreach (var prop in includeProps)
         {
             var meta = dynDict[prop];
@@ -579,6 +628,12 @@ END;
 
         await ExecuteSqlAsync(sql, paramValues, ct);
 
+        if (compensatible && CorrelationContext.CompensationSessionId is { } sess && sess != Guid.Empty)
+        {
+            var newJson = await GetCrudRowJsonUnfilteredAsync(version, newId, ct);
+            await AppendCrudCompensationSnapshotIfNeededAsync(version, CompensationSnapshotOperationType.Insert, newId, null, newJson, ct);
+        }
+
         return newId;
 
         void AddParam(object? v) { paramNames.Add($"@p{p}"); paramValues.Add(v); p++; }
@@ -588,7 +643,14 @@ END;
 
     private async Task<int> UpdateInternalAsync(DomainCrudVersion version, Guid id, IDictionary<string, object?> data, CancellationToken ct)
     {
-        var (api2db, _) = BuildMaps(version);
+        var compensatible = version.DomainCrud?.Compensatible == true;
+        string? oldJson = null;
+        if (compensatible && CorrelationContext.CompensationSessionId is { } sx && sx != Guid.Empty)
+        {
+            oldJson = await GetCrudRowJsonUnfilteredAsync(version, id, ct);
+        }
+
+        var (api2db, _) = BuildMaps(version, compensatible);
 
         var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
@@ -624,6 +686,13 @@ END;
             p++;
         }
 
+        if (compensatible && CorrelationContext.CompensationSessionId is { } sessU && sessU != Guid.Empty)
+        {
+            set.Append($", {Quote(api2db["cStatus"])} = @p{p}");
+            parms.Add(CompensationStatusCodes.Update);
+            p++;
+        }
+
         if (p == 2 && set.Length == 2)
         {
             return 0;
@@ -632,6 +701,12 @@ END;
         var sql = $"UPDATE {table} SET {set} WHERE {Quote(api2db["id"])} = @p0 AND {Quote(api2db["deleted"])} = {(dbType == DbTypePostgresql ? "false" : "0")}";
 
         var affected = await ExecuteSqlAsync(sql, parms, ct);
+
+        if (oldJson is not null && affected > 0 && CorrelationContext.CompensationSessionId is { } sessSnap && sessSnap != Guid.Empty)
+        {
+            var newJson = await GetCrudRowJsonUnfilteredAsync(version, id, ct);
+            await AppendCrudCompensationSnapshotIfNeededAsync(version, CompensationSnapshotOperationType.Update, id, oldJson, newJson, ct);
+        }
 
         return affected;
 

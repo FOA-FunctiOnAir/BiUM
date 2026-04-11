@@ -20,6 +20,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpPost]
+    [CompensatableApi]
     public async Task<ApiResponse> PublishDomainCrudAsync([FromBody] PublishDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.PublishDomainCrudAsync(command.Id!.Value, cancellationToken);
@@ -28,6 +29,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpPost]
+    [CompensatableApi]
     public async Task<ApiResponse> SaveDomainCrudAsync([FromBody] SaveDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.SaveDomainCrudAsync(command, cancellationToken);
@@ -36,6 +38,7 @@ public class DomainCrudController : ApiControllerBase
     }
 
     [HttpDelete]
+    [CompensatableApi]
     public async Task<ApiResponse> DeleteDomainCrudAsync([FromBody] DeleteDomainCrudCommand command, CancellationToken cancellationToken)
     {
         var response = await _crudService.DeleteDomainCrudAsync(command.Id!.Value, cancellationToken);

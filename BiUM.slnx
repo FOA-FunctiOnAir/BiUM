@@ -21,4 +21,7 @@
     <Project Path="src/BiUM.Infrastructure/BiUM.Infrastructure.csproj" />
     <Project Path="src/BiUM.Specialized/BiUM.Specialized.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BiUM.Tests/BiUM.Tests.csproj" />
+  </Folder>
 </Solution>

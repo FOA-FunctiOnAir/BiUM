@@ -14,6 +14,15 @@ public interface ICrudService
         Dictionary<string, object?> data,
         CancellationToken cancellationToken);
 
+    Task<bool> IsCrudMutationCompensatibleByCodeAsync(string code, CancellationToken cancellationToken);
+
+    Task<ApiResponse> SavePartialAsync(
+        string code,
+        string partialCode,
+        Guid id,
+        Dictionary<string, object?> data,
+        CancellationToken cancellationToken);
+
     Task<ApiResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken);
 
     Task<IDictionary<string, object?>> GetAsync(string code, Guid id, CancellationToken cancellationToken);

@@ -5,7 +5,6 @@ using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Specialized.Database;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;

@@ -5,6 +5,7 @@ using BiUM.Infrastructure.Services.HttpClients;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
+using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
@@ -24,10 +25,17 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddRazorPages();
 
+        builder.Services.AddScoped<CompensatableApiActionFilter>();
+
         builder.Services.AddControllers()
             .AddApplicationPart(typeof(ApiControllerBase).Assembly)
             .AddControllersAsServices()
-            .AddMvcOptions(options => options.Filters.Add<ApiResponseLoggingFilter>())
+            .AddMvcOptions(options =>
+            {
+                options.Filters.Add<ApiResponseTransactionRollbackFilter>();
+                options.Filters.Add<ApiResponseLoggingFilter>();
+                options.Filters.Add<CompensatableApiActionFilter>();
+            })
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -45,8 +53,11 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 
-        builder.Services.AddTransient<ICrudService, CrudService>();
-        builder.Services.AddTransient<IHttpClientsService, HttpClientService>();
+        builder.Services.AddHttpClient();
+
+        builder.Services.AddScoped<ICrudService, CrudService>();
+        builder.Services.AddScoped<ICompensationService, CompensationService>();
+        builder.Services.AddScoped<IHttpClientsService, HttpClientService>();
         builder.Services.AddTransient<ITranslationService, TranslationService>();
 
         return builder;

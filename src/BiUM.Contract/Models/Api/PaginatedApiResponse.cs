@@ -2,7 +2,6 @@ using BiUM.Contract.Models.MessageBroker;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Security.Principal;
 
 namespace BiUM.Contract.Models.Api;
 

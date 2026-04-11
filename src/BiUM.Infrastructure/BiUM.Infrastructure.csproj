@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
     <PackageReference Include="AutoMapper" />
@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
     <ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -26,4 +26,7 @@ public class DomainCrudVersion : TenantBaseEntity
 
     [JsonIgnore]
     public ICollection<DomainCrudVersionColumn> DomainCrudVersionColumns { get; } = [];
+
+    [JsonIgnore]
+    public ICollection<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates { get; } = [];
 }

@@ -3,6 +3,7 @@
     <File Path="docs/BiDynamic_Topology.md" />
     <File Path="docs/BiDynamic_Topology.mmd" />
     <File Path="docs/BiDynamic_Topology.png" />
+    <File Path="docs/BiDynamic_Topology.v2.png" />
   </Folder>
   <Folder Name="/sample/">
     <File Path="sample/Directory.Build.props" />
@@ -26,6 +27,8 @@
     <File Path="AGENTS.md" />
     <File Path="CODE_OF_CONDUCT.md" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="format-and-build.ps1" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Solution Items/.github/" />
@@ -40,5 +43,8 @@
     <Project Path="src/BiUM.Core/BiUM.Core.csproj" />
     <Project Path="src/BiUM.Infrastructure/BiUM.Infrastructure.csproj" />
     <Project Path="src/BiUM.Specialized/BiUM.Specialized.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BiUM.Tests/BiUM.Tests.csproj" />
   </Folder>
 </Solution>

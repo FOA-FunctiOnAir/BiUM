@@ -2,6 +2,7 @@ using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Common.Services;
+using BiUM.Specialized.Compensation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
@@ -24,6 +25,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         UpdateEntities(eventData.Context);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
 
         return base.SavingChanges(eventData, result);
     }
@@ -31,6 +33,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         UpdateEntities(eventData.Context);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }

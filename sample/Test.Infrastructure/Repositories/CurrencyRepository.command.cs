@@ -1,4 +1,5 @@
 using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
+using BiApp.Test.Application.Features.Currencies.Commands.UpdateCurrencyCode;
 using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,26 @@ public partial class CurrencyRepository
         await SaveTranslations(_context.CurrencyTranslations, currency.Id, nameof(currency.Name), command.NameTr, cancellationToken);
 
         _ = await SaveChangesAsync(cancellationToken);
+
+        return response;
+    }
+
+    public async Task<ApiResponse> UpdateCurrencyCode(UpdateCurrencyCodeCommand command, CancellationToken cancellationToken)
+    {
+        var response = new ApiResponse();
+
+        var currency = await _context.Currencies.FirstOrDefaultAsync(t => t.Id == command.Id, cancellationToken);
+
+        if (currency is not null)
+        {
+            currency.Code = command.Code;
+
+            _ = _context.Currencies.Update(currency);
+        }
+
+        _ = await SaveChangesAsync(cancellationToken);
+
+        await AddMessage(response, "currency_not_found", cancellationToken);
 
         return response;
     }

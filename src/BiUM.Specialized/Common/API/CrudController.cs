@@ -1,3 +1,4 @@
+using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Services.Crud;
@@ -28,6 +29,54 @@ public class CrudController : ApiControllerBase
         CancellationToken cancellationToken)
     {
         return _crudService.SaveAsync(code, body.ToDictionary(), cancellationToken);
+    }
+
+    [HttpPost("{code}/{partialCode}")]
+    public async Task<ApiResponse> SavePartialAsync(
+        string code,
+        string partialCode,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        var dict = body.ToDictionary();
+
+        if (!dict.TryGetValue("Id", out var idObj) || idObj is null)
+        {
+            var r = new ApiResponse();
+
+            r.AddMessage(new ResponseMessage
+            {
+                Code = "id_required",
+                Message = "Body must include Id.",
+                Severity = MessageSeverity.Error
+            });
+
+            return r;
+        }
+
+        Guid id;
+
+        if (idObj is Guid g)
+        {
+            id = g;
+        }
+        else if (!Guid.TryParse(idObj.ToString(), out id) || id == Guid.Empty)
+        {
+            var r = new ApiResponse();
+
+            r.AddMessage(new ResponseMessage
+            {
+                Code = "id_invalid",
+                Message = "Id must be a valid GUID.",
+                Severity = MessageSeverity.Error
+            });
+
+            return r;
+        }
+
+        _ = dict.Remove("Id");
+
+        return await _crudService.SavePartialAsync(code, partialCode, id, dict, cancellationToken);
     }
 
     [HttpDelete("{code}")]

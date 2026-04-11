@@ -40,11 +40,16 @@ public class BaseDbContext : DbContext, IDbContext
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
 
+    public DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots => Set<DomainCompensationSnapshot>();
     public DbSet<DomainCrud> DomainCruds => Set<DomainCrud>();
     public DbSet<DomainCrudColumn> DomainCrudColumns => Set<DomainCrudColumn>();
+    public DbSet<DomainCrudPartialUpdate> DomainCrudPartialUpdates => Set<DomainCrudPartialUpdate>();
+    public DbSet<DomainCrudPartialUpdateColumn> DomainCrudPartialUpdateColumns => Set<DomainCrudPartialUpdateColumn>();
     public DbSet<DomainCrudTranslation> DomainCrudTranslations => Set<DomainCrudTranslation>();
     public DbSet<DomainCrudVersion> DomainCrudVersions => Set<DomainCrudVersion>();
     public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
+    public DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates => Set<DomainCrudVersionPartialUpdate>();
+    public DbSet<DomainCrudVersionPartialUpdateColumn> DomainCrudVersionPartialUpdateColumns => Set<DomainCrudVersionPartialUpdateColumn>();
     public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
     public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
     public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
@@ -67,8 +72,12 @@ public class BaseDbContext : DbContext, IDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<DomainCompensationSnapshot>().HasIndex(c => c.CompensationSessionId);
+        modelBuilder.Entity<DomainCompensationSnapshot>().HasIndex(c => new { c.EntityId, c.CompensationSessionId });
         modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainCrudPartialUpdate>().HasIndex(c => new { c.CrudId, c.Code }).IsUnique();
+        modelBuilder.Entity<DomainCrudVersionPartialUpdate>().HasIndex(c => new { c.CrudVersionId, c.Code }).IsUnique();
         modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);

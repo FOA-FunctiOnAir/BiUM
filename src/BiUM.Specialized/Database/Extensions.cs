@@ -26,8 +26,16 @@ public static partial class Extensions
         else if (configuration.GetValue<string>("DatabaseType") == "MSSQL")
         {
             services.AddDbContext<TDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("MSSQL"),
-                    builder => builder.MigrationsAssembly(typeof(TDbContext).Assembly.FullName)));
+                options.UseSqlServer(
+                    configuration.GetConnectionString("MSSQL"),
+                    sql =>
+                    {
+                        _ = sql.MigrationsAssembly(typeof(TDbContext).Assembly.FullName);
+                        _ = sql.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(10),
+                            errorNumbersToAdd: null);
+                    }));
         }
         else if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {

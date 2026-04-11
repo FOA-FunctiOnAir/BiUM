@@ -4,6 +4,7 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
 using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,6 +91,13 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         var eventAttribute = type.GetCustomAttribute<EventAttribute>();
 
         var correlationContext = _correlationContextAccessor.CorrelationContext ?? CorrelationContext.Empty;
+
+        if (message is CompensationSessionFinalizedEvent compensationSessionFinalized)
+        {
+            await PublishCompensationSessionFinalizedFanoutAsync(compensationSessionFinalized, correlationContext, cancellationToken);
+
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange)) // Commands: Multiple publishers to single consumer
         {
@@ -556,6 +564,60 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     {
         properties.Headers ??= new Dictionary<string, object?>();
         properties.Headers[RetryCountHeader] = count;
+    }
+
+    private async Task PublishCompensationSessionFinalizedFanoutAsync(
+        CompensationSessionFinalizedEvent message,
+        CorrelationContext correlationContext,
+        CancellationToken cancellationToken)
+    {
+        var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
+
+        var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
+
+        var properties = new BasicProperties
+        {
+            AppId = _appOptions.Domain,
+            Type = nameof(CompensationSessionFinalizedEvent),
+            ContentType = DefaultContentType,
+            ContentEncoding = DefaultContentEncoding,
+            Persistent = true,
+            MessageId = GuidGenerator.New().ToString("N"),
+            CorrelationId = correlationContext.CorrelationId.ToString("N"),
+            Timestamp = new AmqpTimestamp(_dateTimeService.OffsetNow.ToUnixTimeSeconds()),
+            Headers = new Dictionary<string, object?>()
+        };
+
+        properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+        properties.Headers[HeaderKeys.BiUMVersion] = Encoding.UTF8.GetBytes(VersionHelper.Version);
+        properties.Headers[HeaderKeys.BiAppDomain] = Encoding.UTF8.GetBytes(_appOptions.Domain);
+
+        var messageKey = nameof(CompensationSessionFinalizedEvent).ToSnakeCase();
+        var exchange = PrefixIfNecessary($"compensation.{messageKey}");
+
+        using var channel = await _publisherChannelPool.GetChannelAsync();
+
+        await channel.Channel.ExchangeDeclareAsync(
+            exchange: exchange,
+            type: ExchangeType.Fanout,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: cancellationToken);
+
+        await channel.Channel.BasicPublishAsync(
+            exchange: exchange,
+            routingKey: string.Empty,
+            mandatory: false,
+            basicProperties: properties,
+            body: body,
+            cancellationToken: cancellationToken);
+
+        if (!EventsExcludedFromPublishLog.Contains(nameof(CompensationSessionFinalizedEvent)))
+        {
+            _logger.LogInformation("{MessageType} message broadcasted to fanout exchange {Exchange}",
+                nameof(CompensationSessionFinalizedEvent),
+                exchange);
+        }
     }
 
     private void EnsureEventTimestamps<T>(T message) where T : IBaseEvent

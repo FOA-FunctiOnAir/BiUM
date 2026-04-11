@@ -172,15 +172,6 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
-        //finally
-        //{
-        //    await PublishServiceCalledEventAsync(
-        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-        //        endpoint: finalUrl ?? originalUrl,
-        //        httpMethod: httpMethod,
-        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-        //        isSuccess: isSuccessful);
-        //}
     }
 
     public async Task<ApiResponse> Post(
@@ -242,15 +233,6 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
-        //finally
-        //{
-        //    await PublishServiceCalledEventAsync(
-        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-        //        endpoint: finalUrl ?? originalUrl,
-        //        httpMethod: httpMethod,
-        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-        //        isSuccess: isSuccessful);
-        //}
     }
 
     public async Task<ApiResponse<TResponse>> Post<TResponse>(
@@ -312,15 +294,6 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
-        //finally
-        //{
-        //    await PublishServiceCalledEventAsync(
-        //        serviceName: ExtractServiceName(finalUrl ?? originalUrl),
-        //        endpoint: finalUrl ?? originalUrl,
-        //        httpMethod: httpMethod,
-        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-        //        isSuccess: isSuccessful);
-        //}
     }
 
 
@@ -419,17 +392,6 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
-        //finally
-        //{
-        //    var url = finalUrl ?? serviceUrl ?? serviceId.ToString();
-
-        //    await PublishServiceCalledEventAsync(
-        //        serviceName: ExtractServiceName(url),
-        //        endpoint: url,
-        //        httpMethod: httpMethod ?? HttpMethod.Get,
-        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-        //        isSuccess: isSuccessful);
-        //}
     }
 
     private async Task<(string, HttpMethod, HttpResponseMessage)> ExecuteInternalCallAsync(
@@ -654,15 +616,6 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
-        //finally
-        //{
-        //    await PublishServiceCalledEventAsync(
-        //        serviceName: ExtractServiceName(finalUrl ?? getServiceUrl),
-        //        endpoint: finalUrl ?? getServiceUrl,
-        //        httpMethod: httpMethod,
-        //        executionTimeMs: elapsed?.TotalMilliseconds is > 0 ? (long)elapsed.Value.TotalMilliseconds : 0,
-        //        isSuccess: isSuccessful);
-        //}
     }
 
     private static string AppendParametersAsQueryString(string url, Dictionary<string, dynamic>? parameters = null)

@@ -20,7 +20,7 @@ public static class CompensationStatusCodes
     public const string Insert = "I";
     public const string Update = "U";
     public const string UpdateReadable = "UR";
-    public const string Committed = "N";
+    public const string Committed = "C";
     public const string Delete = "D";
     public const string DeleteReadable = "DR";
 

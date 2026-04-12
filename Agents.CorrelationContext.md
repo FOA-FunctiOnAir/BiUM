@@ -13,6 +13,12 @@ Bu belge, **`CorrelationContext`** modelinin alanları, HTTP ve mesajlaşma üze
 - Anahtar: **`HeaderKeys.CorrelationContext`** → `x-correlation-context` (`BiUM.Core/Constants/HeaderKeys.cs`).
 - **`CorrelationContextExtractorMiddleware`** (`BiUM.Infrastructure/Middlewares/CorrelationContextExtractorMiddleware.cs`): Base64 gövde → `ICorrelationContextSerializer.Deserialize` → `ICorrelationContextAccessor.CorrelationContext`. Bozuk header’da log + bağlam atlanır.
 
+### 2b. Gateway → istemci yanıt header’ları
+
+- **`x-correlation-id`**: `CorrelationContextMiddleware` (BiApp.Gateway) yanıtta set eder; değer, gateway’de üretilen **`CorrelationId`** (Guid) ile aynıdır.
+- **`HeaderKeys.TraceId`** (`x-trace-id`): Aynı middleware’de, OpenTelemetry **`Activity.TraceId`** (yoksa `HttpContext.TraceIdentifier`) ile set edilir; log/APM ile hizalama içindir. Gateway projesi şu an paket sürümü ile uyum için header adında bu sabite denk gelen sabit dizeyi kullanır; BiUM paketi güncellendiğinde doğrudan **`HeaderKeys.TraceId`** referansına geçirilebilir.
+- **`CorrelationId` yaşam döngüsü**: İlk atama gateway’de yapılır (`Activity.TraceId`’den Guid türetme veya yeni `Guid`). Değer, downstream isteklere **`x-correlation-context`** blob’u içinde taşınır. Mikroservisler bağlamı yalnızca **deserialize** eder; **`CorrelationId` yeniden üretilmez**. **`CompensatableApiActionFilter`** yalnızca **`CompensationSessionId`** ekler (`WithCompensationSessionId`); **`CorrelationId` değişmez**. Servisler arası HTTP’de **`HttpClientService`** mevcut accessor bağlamını aynı header ile iletir.
+
 ## 3. Serileştirme
 
 - Arayüz: `ICorrelationContextSerializer` (`BiUM.Core/Serialization`).

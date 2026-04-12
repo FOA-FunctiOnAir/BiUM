@@ -340,7 +340,12 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                     rawCorrelationContext is not null
                         ? await _serializer.DeserializeAsync<CorrelationContext>(rawCorrelationContext, scopeCancellationToken)
                         : (message is IBaseEvent baseEvent && baseEvent.CorrelationId != Guid.Empty
-                            ? new CorrelationContext { CorrelationId = baseEvent.CorrelationId }
+                            ? new CorrelationContext
+                            {
+                                CorrelationId = baseEvent.CorrelationId,
+                                ApplicationId = Guid.Empty,
+                                LanguageId = CorrelationContext.DefaultLanguageId,
+                            }
                             : CorrelationContext.Empty);
 
                 correlationContextAccessor?.CorrelationContext = correlationContext;

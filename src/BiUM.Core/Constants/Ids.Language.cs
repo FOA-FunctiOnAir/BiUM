@@ -1,3 +1,4 @@
+using BiUM.Contract.Models;
 using BiUM.Core.Common.Utils;
 using System;
 
@@ -9,7 +10,7 @@ public partial class Ids
     {
         public static class Turkish
         {
-            public static Guid Id = GuidGenerator.NewGuid("Language-Turkish");
+            public static Guid Id = CorrelationContext.DefaultLanguageId;
         }
 
         public static class English

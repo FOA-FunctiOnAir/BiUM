@@ -40,7 +40,7 @@ public sealed class CrudDefinitionInMemoryTests
             {
                 new()
                 {
-                    LanguageId = correlation.Context.LanguageId!.Value,
+                    LanguageId = correlation.Context.LanguageId,
                     Translation = "Memory crud"
                 }
             },
@@ -91,7 +91,7 @@ public sealed class CrudDefinitionInMemoryTests
                 {
                     new()
                     {
-                        LanguageId = correlation.Context.LanguageId!.Value,
+                        LanguageId = correlation.Context.LanguageId,
                         Translation = "Memory crud renamed"
                     }
                 }

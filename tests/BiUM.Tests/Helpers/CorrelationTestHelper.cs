@@ -17,7 +17,7 @@ public static class CorrelationTestHelper
             CorrelationId = correlationId,
             TenantId = tenantId,
             ApplicationId = applicationId,
-            LanguageId = languageId ?? Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            LanguageId = languageId ?? CorrelationContext.DefaultLanguageId,
             CompensationSessionId = compensationSessionId,
             TraceId = "bpmn-test-trace",
             ConnectionId = "bpmn-signalr",

@@ -26,7 +26,12 @@ public sealed class CompensationSessionFinalizedPublisherTests
 
         var accessor = new TestCorrelationContextAccessor
         {
-            CorrelationContext = new CorrelationContext { CorrelationId = correlationId }
+            CorrelationContext = new CorrelationContext
+            {
+                CorrelationId = correlationId,
+                ApplicationId = Guid.Empty,
+                LanguageId = CorrelationContext.DefaultLanguageId,
+            }
         };
 
         var publisher = new CompensationSessionFinalizedPublisher(rabbit.Object, accessor);

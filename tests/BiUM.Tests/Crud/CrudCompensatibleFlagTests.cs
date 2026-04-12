@@ -51,7 +51,7 @@ public sealed class CrudCompensatibleFlagTests
                 [
                     new BaseEntityTranslationDto
                     {
-                        LanguageId = correlation.Context.LanguageId!.Value,
+                        LanguageId = correlation.Context.LanguageId,
                         Translation = "t"
                     }
                 ],

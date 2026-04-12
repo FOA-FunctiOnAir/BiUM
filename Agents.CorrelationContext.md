@@ -5,8 +5,10 @@ Bu belge, **`CorrelationContext`** modelinin alanları, HTTP ve mesajlaşma üze
 ## 1. Model
 
 - **`BiUM.Contract/Models/CorrelationContext.cs`** — MemoryPack ile serileştirilebilir (`[MemoryPackable]`).
-- Önemli alanlar: `CorrelationId` (zorunlu), `CompensationSessionId`, `ConnectionId`, `TraceId`, `IpAddress`, `ClientHost`, `ApplicationId`, `TenantId`, `TenantName`, `LanguageId`, `ResourceId`, `User` (`UserContext`), `CreatedAt`.
+- Önemli alanlar: `CorrelationId` (zorunlu), `CompensationSessionId`, `ConnectionId`, `TraceId`, `IpAddress`, `ClientHost`, **`ApplicationId` (`Guid`, eksik bağlamda `Guid.Empty`)**, `TenantId`, `TenantName`, **`LanguageId` (`Guid`, platform varsayılanı `CorrelationContext.DefaultLanguageId` — `BiUM.Core` içindeki `Ids.Language.Turkish.Id` ile aynı değer)**, `ResourceId`, `User` (`UserContext`), `CreatedAt`.
+- **`CorrelationContext.Empty`**: `CorrelationId` ve `ApplicationId` `Guid.Empty`, `LanguageId` = `DefaultLanguageId` (Türkçe); `SpecializedBase` istek bağlamı yoksa bunu kullanır.
 - **`WithCompensationSessionId(Guid)`**: değişmez kopya üretir; telafi filtresi bunu kullanır.
+- **Uyumluluk**: `ApplicationId` / `LanguageId` alanları `Guid?` iken üretilmiş **eski** `x-correlation-context` (MemoryPack) blob’ları yeni sürümle **deserialize edilemez**; tüm üreticilerin yeni pakete geçmesi gerekir.
 
 ## 2. HTTP header
 
@@ -16,7 +18,7 @@ Bu belge, **`CorrelationContext`** modelinin alanları, HTTP ve mesajlaşma üze
 ### 2b. Gateway → istemci yanıt header’ları
 
 - **`x-correlation-id`**: `CorrelationContextMiddleware` (BiApp.Gateway) yanıtta set eder; değer, gateway’de üretilen **`CorrelationId`** (Guid) ile aynıdır.
-- **`HeaderKeys.TraceId`** (`x-trace-id`): Aynı middleware’de, OpenTelemetry **`Activity.TraceId`** (yoksa `HttpContext.TraceIdentifier`) ile set edilir; log/APM ile hizalama içindir. Gateway projesi şu an paket sürümü ile uyum için header adında bu sabite denk gelen sabit dizeyi kullanır; BiUM paketi güncellendiğinde doğrudan **`HeaderKeys.TraceId`** referansına geçirilebilir.
+- **`HeaderKeys.TraceId`** (`x-trace-id`): Aynı middleware’de, OpenTelemetry **`Activity.TraceId`** (yoksa `HttpContext.TraceIdentifier`) ile set edilir; log/APM ile hizalama içindir.
 - **`CorrelationId` yaşam döngüsü**: İlk atama gateway’de yapılır (`Activity.TraceId`’den Guid türetme veya yeni `Guid`). Değer, downstream isteklere **`x-correlation-context`** blob’u içinde taşınır. Mikroservisler bağlamı yalnızca **deserialize** eder; **`CorrelationId` yeniden üretilmez**. **`CompensatableApiActionFilter`** yalnızca **`CompensationSessionId`** ekler (`WithCompensationSessionId`); **`CorrelationId` değişmez**. Servisler arası HTTP’de **`HttpClientService`** mevcut accessor bağlamını aynı header ile iletir.
 
 ## 3. Serileştirme

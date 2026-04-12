@@ -45,7 +45,7 @@ public sealed class TranslationServiceTests
         };
 
         var appId = Guid.NewGuid();
-        var langId = correlation.Context.LanguageId!.Value;
+        var langId = correlation.Context.LanguageId;
 
         await using var sp = BiUMServiceFactory.BuildInMemory(
             correlation,

@@ -78,11 +78,11 @@ public sealed class RequestTransactionMiddlewarePoliciesTests
         public DbSet<DomainCrudTranslation> DomainCrudTranslations => Set<DomainCrudTranslation>();
         public DbSet<DomainCrudVersion> DomainCrudVersions => Set<DomainCrudVersion>();
         public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
-        public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
-        public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
-        public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
-        public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
-        public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
+        // public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
+        // public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
+        // public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
+        // public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
+        // public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
         public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
         public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
         public DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots => Set<DomainCompensationSnapshot>();

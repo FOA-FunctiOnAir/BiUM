@@ -50,11 +50,11 @@ public class BaseDbContext : DbContext, IDbContext
     public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
     public DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates => Set<DomainCrudVersionPartialUpdate>();
     public DbSet<DomainCrudVersionPartialUpdateColumn> DomainCrudVersionPartialUpdateColumns => Set<DomainCrudVersionPartialUpdateColumn>();
-    public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
-    public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
-    public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
-    public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
-    public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
+    //public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
+    //public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
+    //public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
+    //public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
+    //public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
@@ -82,6 +82,13 @@ public class BaseDbContext : DbContext, IDbContext
         modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
+
+        // DomainDynamicApi* CLR types remain in Infrastructure; excluded from migrations until DbSets + IDbContext are re-enabled above.
+        //modelBuilder.Ignore<DomainDynamicApi>();
+        //modelBuilder.Ignore<DomainDynamicApiParameter>();
+        //modelBuilder.Ignore<DomainDynamicApiTranslation>();
+        //modelBuilder.Ignore<DomainDynamicApiVersion>();
+        //modelBuilder.Ignore<DomainDynamicApiVersionParameter>();
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

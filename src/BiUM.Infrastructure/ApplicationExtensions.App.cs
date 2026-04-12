@@ -73,6 +73,11 @@ public static partial class ApplicationExtensions
 
                     if (exceptionHandlerFeature?.Error is ApiResponseRollbackException apiRollback)
                     {
+                        logger.LogError(
+                            "API transaction rollback returning status {StatusCode}: {Details}",
+                            apiRollback.StatusCode,
+                            ApiResponseLogSummary.Format(apiRollback.ApiResponse));
+
                         context.Response.ContentType = "application/json";
                         context.Response.StatusCode = apiRollback.StatusCode;
 

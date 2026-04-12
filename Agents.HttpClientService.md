@@ -15,7 +15,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 - Bölüm adı: `HttpClientsOptions` (`BiUM.Core/Common/Configs/HttpClientsOptions.cs`).
 - **`BaseUrl`**, **`Environment`**, isteğe bağlı **`Domains`**: `/api/{servisAnahtarı}/...` biçimindeki iç URL’ler, `Domains` sözlüğüyle gerçek taban adreslere çözülür.
-- İç servis tipleri **Crud** / **DynamicApi** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir.
+- İç servis tipi **Crud** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. **`DynamicApi`** aynı kuralı paylaşacak şekilde tasarlanmıştır; `DomainDynamicApi` modeli hazır olana kadar `HttpClientService` iç çağrılarında bu dal kapalıdır (yalnızca **Crud** kök yol kullanır).
 - Eşleşmeyen servis anahtarı: `InvalidOperationException`.
 
 ## 3. API yüzeyi
@@ -51,10 +51,18 @@ HTTP istemcisi outbound çağrı listesi tutmaz. Telafi oturumu sonlandırması 
 - Ağ/serileştirme hataları → `ApiResponse` içinde mesaj; üretim benzeri ortamda exception metni kısaltılır (`BiAppOptions` + host ortamı).
 - Bilinen kodlar (kaynak): `deserialization_failed`, `unexpected_success_response`.
 
-## 7. Gözlemlenebilirlik
+## 7. Loglama (ILogger)
 
-- `IRabbitMQClient` varsa `ServiceCalledEvent` yayını için altyapı mevcut; ilgili `PublishServiceCalledEventAsync` çağrıları kaynakta çoğunlukla yorum satırıdır — etkinleştirme durumu kodu güncelleyin.
+- **`HttpClientService`** `ILogger<HttpClientService>` kullanır.
+- Outbound çağrıda **yakalanan exception** → **`LogError`** (istisna + operasyon, URL, isteğe bağlı `ServiceId`).
+- HTTP yanıtı başarısız (`!IsSuccessStatusCode`) ve/veya dönen **`ApiResponse.Success == false`** (ör. downstream `MessageSeverity.Error` mesajları) → tek bir **`LogError`** satırı; ayrıntı metni `ApiResponseLogSummary.Format` ile üretilir.
+- Operasyon adları: `Get`, `Post`, `CallService`, `GetServiceInfoAsync` (Configuration servis çözümlemesi sırasında yalnızca gerçek exception’larda `LogError`).
 
-## 8. AI ajanları için
+## 8. Gözlemlenebilirlik
+
+- Önceki `ServiceCalledEvent` / `PublishServiceCalledEventAsync` yolu kaldırıldı; servisler arası çağrı izi için **`ILogger`** ve OpenTelemetry exporter’ları kullanılır.
+
+## 9. AI ajanları için
 
 `HttpClientService` veya `HttpClientsOptions` davranışı değiştiğinde bu dosya ve gerekirse `AGENTS.md` güncellenmelidir. Yeni servis anahtarı / domain eşlemesi eklerken `appsettings` içindeki `HttpClientsOptions:Domains` ile Configuration’daki servis URL’lerinin tutarlı olduğundan emin olun.
+

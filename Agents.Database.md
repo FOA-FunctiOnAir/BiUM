@@ -8,7 +8,7 @@ Bu belge, **`BiUM.Specialized.Database.Extensions.AddDatabase`** ile tipik bir m
 services.AddDatabase<TDbContext, TDbContextInitialiser>(configuration);
 ```
 
-- **`TDbContext`**: `DbContext` + **`IDbContext`**
+- **`TDbContext`**: `DbContext` + **`IDbContext`** (`DomainDynamicApi*` şu an `IDbContext` / `BaseDbContext` modelinde yok; ayrıntı: [Agents.Crud.md](Agents.Crud.md))
 - **`TDbContextInitialiser`**: `IDbContextInitialiser` uygulayan seed/migration yardımcısı
 
 Kaynak: `BiUM.Specialized/Database/Extensions.cs` (partial sınıfın bu dosyadaki bölümü).

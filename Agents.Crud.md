@@ -9,6 +9,8 @@ Bu belge, BiUM içindeki **DomainCrud** (tanım/metadata) ile **runtime CRUD** (
 | **Tanım (metadata)** | `DomainCrud` oluşturma, kolonlar, çeviri, yayın (`PublishDomainCrud`), DDL ile tablo üretimi | `SaveDomainCrudAsync`, `DeleteDomainCrudAsync`, `GetDomainCrud*`, `GetDomainCrudsAsync`, `PublishDomainCrudAsync` |
 | **Çalışma zamanı (data)** | Yayınlanmış `code` ile satır insert/update/delete/list | `CrudController` → `SaveAsync`, `SavePartialAsync`, `DeleteAsync`, `Get` (`ICrudService`) |
 
+**`DomainDynamicApi*` (planlı):** `BiUM.Infrastructure` içindeki varlık sınıfları duruyor; `BaseDbContext` / `IDbContext` üzerindeki `DbSet`’ler ve `IDbContext` üyeleri yorum satırı, modelde `Ignore` ile tamamen kapalı. Kalıcı tablolar ve katalog/HTTP yüzeyi bu model netleşene kadar oluşturulmaz. Açılınca: `IDbContext` + `BaseDbContext` DbSet yorumlarını kaldır, `OnModelCreating` içindeki `Ignore` satırlarını sil, `HttpClientService` iç çağrılarında `DynamicApi` servis tipini Crud ile aynı URL kuralına tekrar bağla.
+
 **Kısmi güncelleme (HTTP):** `CrudController` — `POST {code}/{partialCode}` (gövdede `Id`). Telafi: `AddSpecializedServices` ile eklenen global `CompensatableApiActionFilter` (telafiye uygun `code` ve gelen istekte boş oturumda yerel `CompensationSessionId`). Ayrıntı: [Agents.Compensation.md](Agents.Compensation.md).
 
 ## 2. Şema ve tablo (tanımdan)

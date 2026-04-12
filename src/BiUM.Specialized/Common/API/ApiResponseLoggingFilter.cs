@@ -18,19 +18,21 @@ internal sealed class ApiResponseLoggingFilter(ILogger<ApiResponseLoggingFilter>
             return;
         }
 
+        var path = context.HttpContext.Request.Path.Value ?? string.Empty;
+
         foreach (var message in response.Messages)
         {
             switch (message.Severity)
             {
                 case MessageSeverity.Warning:
-                    logger.LogWarning("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogWarning("{Path} API response message [{Code}] {Message}, {Exception}", path, message.Code, message.Message, message.Exception);
                     break;
                 case MessageSeverity.Error:
-                    logger.LogError("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogError("{Path} API response message [{Code}] {Message}, {Exception}", path, message.Code, message.Message, message.Exception);
                     break;
                 case MessageSeverity.Information:
                 default:
-                    logger.LogInformation("API Response Messages: [{Code}] {Message}, {Exception}", message.Code, message.Message, message.Exception);
+                    logger.LogInformation("{Path} API response message [{Code}] {Message}, {Exception}", path, message.Code, message.Message, message.Exception);
                     break;
             }
         }

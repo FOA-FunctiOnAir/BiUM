@@ -4,12 +4,11 @@ using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Constants;
 using BiUM.Core.HttpClients;
-using BiUM.Core.MessageBroker.Events;
-using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
@@ -43,11 +42,12 @@ public class HttpClientService : IHttpClientsService
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICorrelationContextSerializer _correlationContextSerializer;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
-    private readonly IRabbitMQClient? _rabbitMQClient;
     private readonly BiAppOptions _appOptions;
     private readonly HttpClientsOptions _httpClientOptions;
 
     private readonly bool _isProductionLike;
+
+    private readonly ILogger<HttpClientService> _logger;
 
     public HttpClientService(
         IHttpClientFactory httpClientFactory,
@@ -56,18 +56,18 @@ public class HttpClientService : IHttpClientsService
         ICorrelationContextAccessor correlationContextAccessor,
         ICorrelationContextSerializer correlationContextSerializer,
         JsonSerializerOptions jsonSerializerOptions,
-        IRabbitMQClient? rabbitMQClient,
         IOptions<BiAppOptions> appOptionsAccessor,
-        IOptions<HttpClientsOptions> httpClientOptionsAccessor)
+        IOptions<HttpClientsOptions> httpClientOptionsAccessor,
+        ILogger<HttpClientService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
         _correlationContextAccessor = correlationContextAccessor;
         _correlationContextSerializer = correlationContextSerializer;
         _jsonSerializerOptions = jsonSerializerOptions;
-        _rabbitMQClient = rabbitMQClient;
         _appOptions = appOptionsAccessor.Value;
         _httpClientOptions = httpClientOptionsAccessor.Value;
+        _logger = logger;
 
         _isProductionLike = environment.IsProductionLike(_appOptions);
     }
@@ -154,11 +154,15 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
+            LogHttpClientFailureIfNeeded(nameof(Get), httpMethod, finalUrl, response, result);
+
             return result;
         }
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(Get), ex, finalUrl ?? originalUrl, httpMethod);
 
             var result = new ApiResponse<TResponse>();
 
@@ -215,11 +219,15 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
+            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result);
+
             return result;
         }
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod);
 
             var result = new ApiResponse();
 
@@ -276,11 +284,15 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
+            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result);
+
             return result;
         }
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod);
 
             var result = new ApiResponse<TResponse>();
 
@@ -324,6 +336,8 @@ public class HttpClientService : IHttpClientsService
 
                 result.AddMessage(serviceResult);
 
+                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId);
+
                 return result;
             }
 
@@ -337,6 +351,8 @@ public class HttpClientService : IHttpClientsService
                     Message = "Unable to get service info",
                     Severity = MessageSeverity.Error
                 });
+
+                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId);
 
                 return result;
             }
@@ -373,12 +389,16 @@ public class HttpClientService : IHttpClientsService
                             isSuccessful: response.IsSuccessStatusCode,
                             cancellationToken: cancellationToken);
 
+                LogHttpClientFailureIfNeeded(nameof(CallService), httpMethod, finalUrl, response, result, serviceId);
+
                 return result;
             }
         }
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(CallService), ex, serviceUrl ?? finalUrl, httpMethod, serviceId);
 
             var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
 
@@ -405,8 +425,8 @@ public class HttpClientService : IHttpClientsService
         string? url;
         string? finalUrl;
 
-        if (service.Type == Ids.Parameter.ServiceType.Values.Crud ||
-            service.Type == Ids.Parameter.ServiceType.Values.DynamicApi)
+        // DynamicApi reuses Crud URL rules when enabled: add || service.Type == Ids.Parameter.ServiceType.Values.DynamicApi
+        if (service.Type == Ids.Parameter.ServiceType.Values.Crud)
         {
             if (string.IsNullOrEmpty(service.MicroserviceRootPath))
             {
@@ -603,6 +623,8 @@ public class HttpClientService : IHttpClientsService
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(GetServiceInfoAsync), ex, finalUrl, httpMethod);
 
             var result = new ApiResponse<ServiceDto>();
 
@@ -965,42 +987,7 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    private async Task PublishServiceCalledEventAsync(
-        string serviceName,
-        string endpoint,
-        HttpMethod httpMethod,
-        long executionTimeMs,
-        bool isSuccess,
-        Guid? microserviceId = null,
-        Guid? serviceId = null)
-    {
-        if (_rabbitMQClient is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var serviceCalledEvent = new ServiceCalledEvent
-            {
-                MicroserviceId = microserviceId,
-                ServiceId = serviceId,
-                ServiceName = serviceName,
-                Endpoint = endpoint,
-                HttpMethod = httpMethod.Method,
-                ExecutionTimeMs = executionTimeMs,
-                Success = isSuccess
-            };
-
-            await _rabbitMQClient.PublishAsync(serviceCalledEvent);
-        }
-        catch
-        {
-            // ignored
-        }
-    }
-
-    private string ExtractServiceName(string url)
+       private string ExtractServiceName(string url)
     {
         if (string.IsNullOrEmpty(url))
         {
@@ -1173,6 +1160,43 @@ public class HttpClientService : IHttpClientsService
 
             return result;
         }
+    }
+
+    private void LogHttpClientException(string operation, Exception ex, string? url, HttpMethod? method, Guid? serviceId = null)
+    {
+        _logger.LogError(
+            ex,
+            "HttpClient {Operation} {Method} {Url} ServiceId={ServiceId}",
+            operation,
+            method?.Method ?? "-",
+            url ?? "-",
+            serviceId);
+    }
+
+    private void LogHttpClientFailureIfNeeded(
+        string operation,
+        HttpMethod? method,
+        string? url,
+        HttpResponseMessage? httpResponse,
+        ApiResponse result,
+        Guid? serviceId = null)
+    {
+        var httpFail = httpResponse is not null && !httpResponse.IsSuccessStatusCode;
+        var apiFail = !result.Success;
+        if (!httpFail && !apiFail)
+        {
+            return;
+        }
+
+        _logger.LogError(
+            "HttpClient {Operation} {Method} {Url} HTTP={HttpStatus} ServiceId={ServiceId} ApiSuccess={ApiSuccess} Details={Details}",
+            operation,
+            method?.Method ?? "-",
+            url ?? "-",
+            httpResponse is not null ? (int)httpResponse.StatusCode : 0,
+            serviceId,
+            result.Success,
+            ApiResponseLogSummary.Format(result));
     }
 
     private struct Void;

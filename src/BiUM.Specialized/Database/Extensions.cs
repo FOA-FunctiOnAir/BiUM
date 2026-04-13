@@ -35,6 +35,7 @@ public static partial class Extensions
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
                             errorNumbersToAdd: null);
+                        _ = sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     }));
         }
         else if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
@@ -56,6 +57,7 @@ public static partial class Extensions
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
                             errorCodesToAdd: null);
+                        npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     }));
         }
 

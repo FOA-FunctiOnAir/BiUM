@@ -18,8 +18,10 @@ Kaynak: `BiUM.Specialized/Database/Extensions.cs` (partial sınıfın bu dosyada
 | `configuration["DatabaseType"]` | Davranış |
 |-----------------------------------|----------|
 | `InMemory` | `UseInMemoryDatabase("InMemoryDb")` — retry yok |
-| `MSSQL` | `UseSqlServer` + migrations assembly + **`EnableRetryOnFailure(5, 10s)`** |
-| `PostgreSQL` (veya diğer) | `NpgsqlConnectionStringBuilder` ile pooling (`MaxPoolSize` 100, `KeepAlive` 30) + **`EnableRetryOnFailure(5, 10s)`** |
+| `MSSQL` | `UseSqlServer` + migrations assembly + **`EnableRetryOnFailure(5, 10s)`** + **`UseQuerySplittingBehavior(SplitQuery)`** |
+| `PostgreSQL` (veya diğer) | `NpgsqlConnectionStringBuilder` ile pooling (`MaxPoolSize` 100, `KeepAlive` 30) + **`EnableRetryOnFailure(5, 10s)`** + **`UseQuerySplittingBehavior(SplitQuery)`** |
+
+**Çoklu koleksiyon `Include`:** İlişkisel sağlayıcılarda varsayılan **bölünmüş sorgu** (`SplitQuery`), EF’nin “multiple collection include” uyarısını giderir ve tek sorguda kartesyen çoğalmayı azaltır; ek round-trip maliyeti vardır. Tek sorgu şart olan yerde `IQueryable` üzerinde **`.AsSingleQuery()`** ile geçersizlenebilir.
 
 ## 3. DI ve sağlık
 

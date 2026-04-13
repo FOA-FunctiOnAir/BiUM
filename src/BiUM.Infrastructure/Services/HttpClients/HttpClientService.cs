@@ -29,6 +29,14 @@ public class HttpClientService : IHttpClientsService
 {
     private const int UrlMaxLength = 2048;
 
+    private const int SuccessLogUrlMaxChars = 512;
+
+    private const int FailureLogRequestMaxChars = 2048;
+
+    private const int FailureLogUrlMaxChars = 1024;
+
+    private const int FailureLogJsonMaxChars = 1536;
+
     private const string JsonContentType = "application/json";
 
     private const string DeserializationFailedErrorCode = "deserialization_failed";
@@ -120,7 +128,6 @@ public class HttpClientService : IHttpClientsService
         var originalUrl = url;
         string? finalUrl = null;
         var httpMethod = HttpMethod.Get;
-        var isSuccessful = false;
 
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
@@ -145,8 +152,6 @@ public class HttpClientService : IHttpClientsService
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
-            isSuccessful = response.IsSuccessStatusCode;
-
             var result =
                 await TryDeserializeApiResponse<TResponse>(
                     response,
@@ -154,7 +159,9 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
-            LogHttpClientFailureIfNeeded(nameof(Get), httpMethod, finalUrl, response, result);
+            LogHttpClientFailureIfNeeded(nameof(Get), httpMethod, finalUrl, response, result, null, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters));
+
+            LogHttpClientSuccessIfEnabled(nameof(Get), httpMethod, finalUrl, elapsed, response, result);
 
             return result;
         }
@@ -162,7 +169,7 @@ public class HttpClientService : IHttpClientsService
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
 
-            LogHttpClientException(nameof(Get), ex, finalUrl ?? originalUrl, httpMethod);
+            LogHttpClientException(nameof(Get), ex, finalUrl ?? originalUrl, httpMethod, null, FormatOutboundRequestForLog(httpMethod, finalUrl ?? originalUrl, parameters));
 
             var result = new ApiResponse<TResponse>();
 
@@ -187,7 +194,6 @@ public class HttpClientService : IHttpClientsService
         var originalUrl = url;
         string? finalUrl = null;
         var httpMethod = HttpMethod.Post;
-        var isSuccessful = false;
 
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
@@ -210,8 +216,6 @@ public class HttpClientService : IHttpClientsService
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
-            isSuccessful = response.IsSuccessStatusCode;
-
             var result =
                 await TryDeserializeApiResponse(
                     response,
@@ -219,7 +223,9 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
-            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result);
+            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result, null, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters));
+
+            LogHttpClientSuccessIfEnabled(nameof(Post), httpMethod, finalUrl, elapsed, response, result);
 
             return result;
         }
@@ -227,7 +233,7 @@ public class HttpClientService : IHttpClientsService
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
 
-            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod);
+            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod, null, FormatOutboundRequestForLog(httpMethod, finalUrl ?? originalUrl, parameters));
 
             var result = new ApiResponse();
 
@@ -252,7 +258,6 @@ public class HttpClientService : IHttpClientsService
         var originalUrl = url;
         string? finalUrl = null;
         var httpMethod = HttpMethod.Post;
-        var isSuccessful = false;
 
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
@@ -275,8 +280,6 @@ public class HttpClientService : IHttpClientsService
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
-            isSuccessful = response.IsSuccessStatusCode;
-
             var result =
                 await TryDeserializeApiResponse<TResponse>(
                     response,
@@ -284,7 +287,9 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
-            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result);
+            LogHttpClientFailureIfNeeded(nameof(Post), httpMethod, finalUrl, response, result, null, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters));
+
+            LogHttpClientSuccessIfEnabled(nameof(Post), httpMethod, finalUrl, elapsed, response, result);
 
             return result;
         }
@@ -292,7 +297,7 @@ public class HttpClientService : IHttpClientsService
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
 
-            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod);
+            LogHttpClientException(nameof(Post), ex, finalUrl ?? originalUrl, httpMethod, null, FormatOutboundRequestForLog(httpMethod, finalUrl ?? originalUrl, parameters));
 
             var result = new ApiResponse<TResponse>();
 
@@ -321,7 +326,6 @@ public class HttpClientService : IHttpClientsService
         string? serviceUrl = null;
         string? finalUrl = null;
         HttpMethod? httpMethod = null;
-        var isSuccessful = false;
 
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
@@ -336,7 +340,7 @@ public class HttpClientService : IHttpClientsService
 
                 result.AddMessage(serviceResult);
 
-                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId);
+                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId, FormatOutboundRequestForLog(null, null, parameters, serviceId));
 
                 return result;
             }
@@ -352,7 +356,7 @@ public class HttpClientService : IHttpClientsService
                     Severity = MessageSeverity.Error
                 });
 
-                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId);
+                LogHttpClientFailureIfNeeded(nameof(CallService), null, null, null, result, serviceId, FormatOutboundRequestForLog(null, null, parameters, serviceId));
 
                 return result;
             }
@@ -369,8 +373,6 @@ public class HttpClientService : IHttpClientsService
                     : await ExecuteInternalCallAsync(service, parameters, q, pageStart, pageSize, cancellationToken);
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
-
-            isSuccessful = response.IsSuccessStatusCode;
 
             finalUrl = rFinalUrl;
             httpMethod = rHttpMethod;
@@ -389,7 +391,9 @@ public class HttpClientService : IHttpClientsService
                             isSuccessful: response.IsSuccessStatusCode,
                             cancellationToken: cancellationToken);
 
-                LogHttpClientFailureIfNeeded(nameof(CallService), httpMethod, finalUrl, response, result, serviceId);
+                LogHttpClientFailureIfNeeded(nameof(CallService), httpMethod, finalUrl, response, result, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, serviceId));
+
+                LogHttpClientSuccessIfEnabled(nameof(CallService), httpMethod, finalUrl, elapsed, response, result, serviceId);
 
                 return result;
             }
@@ -398,7 +402,7 @@ public class HttpClientService : IHttpClientsService
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
 
-            LogHttpClientException(nameof(CallService), ex, serviceUrl ?? finalUrl, httpMethod, serviceId);
+            LogHttpClientException(nameof(CallService), ex, serviceUrl ?? finalUrl, httpMethod, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl ?? serviceUrl, parameters, serviceId));
 
             var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
 
@@ -590,14 +594,14 @@ public class HttpClientService : IHttpClientsService
 
         string? finalUrl = null;
         var httpMethod = HttpMethod.Get;
-        var isSuccessful = false;
+        Dictionary<string, dynamic>? parameters = null;
 
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
 
         try
         {
-            var parameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
+            parameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
 
             finalUrl = AppendParametersAsQueryString(_httpClientOptions.GetFullUrl(getServiceUrl), parameters);
 
@@ -609,8 +613,6 @@ public class HttpClientService : IHttpClientsService
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
-            isSuccessful = response.IsSuccessStatusCode;
-
             var result =
                 await TryDeserializeApiResponse<ServiceDto>(
                     response,
@@ -618,13 +620,19 @@ public class HttpClientService : IHttpClientsService
                     isSuccessful: response.IsSuccessStatusCode,
                     cancellationToken: cancellationToken);
 
+            LogHttpClientFailureIfNeeded(nameof(GetServiceInfoAsync), httpMethod, finalUrl, response, result, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
+
+            LogHttpClientSuccessIfEnabled(nameof(GetServiceInfoAsync), httpMethod, finalUrl, elapsed, response, result, serviceId);
+
             return result;
         }
         catch (Exception ex)
         {
             elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
 
-            LogHttpClientException(nameof(GetServiceInfoAsync), ex, finalUrl, httpMethod);
+            parameters ??= new Dictionary<string, dynamic> { ["Id"] = serviceId.ToString() };
+
+            LogHttpClientException(nameof(GetServiceInfoAsync), ex, finalUrl, httpMethod, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
 
             var result = new ApiResponse<ServiceDto>();
 
@@ -1162,14 +1170,53 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    private void LogHttpClientException(string operation, Exception ex, string? url, HttpMethod? method, Guid? serviceId = null)
+    private void LogHttpClientException(string operation, Exception ex, string? url, HttpMethod? method, Guid? serviceId = null, string? requestSummary = null)
     {
         _logger.LogError(
             ex,
-            "HttpClient {Operation} {Method} {Url} ServiceId={ServiceId}",
+            "HttpClient {Operation} {Method} {Url} ServiceId={ServiceId} Request={Request}",
             operation,
             method?.Method ?? "-",
-            url ?? "-",
+            TruncateUrlForLog(url),
+            serviceId,
+            requestSummary ?? "-");
+    }
+
+    private static string TruncateUrlForLog(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return "-";
+        }
+
+        if (url.Length <= SuccessLogUrlMaxChars)
+        {
+            return url;
+        }
+
+        return string.Concat(url.AsSpan(0, SuccessLogUrlMaxChars), "...");
+    }
+
+    private void LogHttpClientSuccessIfEnabled(
+        string operation,
+        HttpMethod? method,
+        string? url,
+        TimeSpan? elapsed,
+        HttpResponseMessage? httpResponse,
+        ApiResponse result,
+        Guid? serviceId = null)
+    {
+        if (!elapsed.HasValue || httpResponse is null || !httpResponse.IsSuccessStatusCode || !result.Success)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "HttpClient {Operation} {Method} {Url} completed in {ElapsedMs}ms ServiceId={ServiceId}",
+            operation,
+            method?.Method ?? "-",
+            TruncateUrlForLog(url),
+            (int)elapsed.Value.TotalMilliseconds,
             serviceId);
     }
 
@@ -1179,7 +1226,8 @@ public class HttpClientService : IHttpClientsService
         string? url,
         HttpResponseMessage? httpResponse,
         ApiResponse result,
-        Guid? serviceId = null)
+        Guid? serviceId = null,
+        string? requestSummary = null)
     {
         var httpFail = httpResponse is not null && !httpResponse.IsSuccessStatusCode;
         var apiFail = !result.Success;
@@ -1189,14 +1237,83 @@ public class HttpClientService : IHttpClientsService
         }
 
         _logger.LogError(
-            "HttpClient {Operation} {Method} {Url} HTTP={HttpStatus} ServiceId={ServiceId} ApiSuccess={ApiSuccess} Details={Details}",
+            "HttpClient {Operation} {Method} {Url} HTTP={HttpStatus} ServiceId={ServiceId} ApiSuccess={ApiSuccess} Details={Details} Request={Request}",
             operation,
             method?.Method ?? "-",
-            url ?? "-",
+            TruncateUrlForLog(url),
             httpResponse is not null ? (int)httpResponse.StatusCode : 0,
             serviceId,
             result.Success,
-            ApiResponseLogSummary.Format(result));
+            ApiResponseLogSummary.Format(result),
+            requestSummary ?? "-");
+    }
+
+    private string FormatOutboundRequestForLog(
+        HttpMethod? method,
+        string? effectiveUrl,
+        Dictionary<string, dynamic>? parameters,
+        Guid? callServiceId = null,
+        Guid? catalogServiceIdForGetService = null)
+    {
+        var sb = new StringBuilder();
+
+        if (callServiceId.HasValue)
+        {
+            sb.Append("callServiceId=");
+            sb.Append(callServiceId.Value);
+            sb.Append(' ');
+        }
+
+        if (catalogServiceIdForGetService.HasValue)
+        {
+            sb.Append("catalogServiceId=");
+            sb.Append(catalogServiceIdForGetService.Value);
+            sb.Append(' ');
+        }
+
+        if (method is not null)
+        {
+            sb.Append(method.Method);
+            sb.Append(' ');
+        }
+
+        if (!string.IsNullOrEmpty(effectiveUrl))
+        {
+            sb.Append(TruncateForFailureLog(effectiveUrl, FailureLogUrlMaxChars));
+        }
+
+        if (parameters is { Count: > 0 })
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(' ');
+            }
+
+            try
+            {
+                var json = JsonSerializer.Serialize(parameters, _jsonSerializerOptions);
+                sb.Append("body=");
+                sb.Append(TruncateForFailureLog(json, FailureLogJsonMaxChars));
+            }
+            catch
+            {
+                sb.Append("body=<unserializable>");
+            }
+        }
+
+        var s = sb.Length == 0 ? "-" : sb.ToString();
+
+        return TruncateForFailureLog(s, FailureLogRequestMaxChars);
+    }
+
+    private static string TruncateForFailureLog(string s, int maxChars)
+    {
+        if (string.IsNullOrEmpty(s) || s.Length <= maxChars)
+        {
+            return s;
+        }
+
+        return string.Concat(s.AsSpan(0, maxChars), "...");
     }
 
     private struct Void;

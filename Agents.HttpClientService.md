@@ -15,6 +15,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 - Bölüm adı: `HttpClientsOptions` (`BiUM.Core/Common/Configs/HttpClientsOptions.cs`).
 - **`BaseUrl`**, **`Environment`**, isteğe bağlı **`Domains`**: `/api/{servisAnahtarı}/...` biçimindeki iç URL’ler, `Domains` sözlüğüyle gerçek taban adreslere çözülür.
+- **`LogSuccessfulHttpRequests`** (varsayılan `false`): `true` iken başarılı outbound çağrılarda `LogInformation` ile operasyon adı, HTTP metodu, URL (512 karaktere kadar, sonra kısaltılır) ve süre (ms) yazılır (`Get`, `Post`, `CallService`, `GetServiceInfoAsync`).
 - İç servis tipi **Crud** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. **`DynamicApi`** aynı kuralı paylaşacak şekilde tasarlanmıştır; `DomainDynamicApi` modeli hazır olana kadar `HttpClientService` iç çağrılarında bu dal kapalıdır (yalnızca **Crud** kök yol kullanır).
 - Eşleşmeyen servis anahtarı: `InvalidOperationException`.
 
@@ -54,9 +55,12 @@ HTTP istemcisi outbound çağrı listesi tutmaz. Telafi oturumu sonlandırması 
 ## 7. Loglama (ILogger)
 
 - **`HttpClientService`** `ILogger<HttpClientService>` kullanır.
-- Outbound çağrıda **yakalanan exception** → **`LogError`** (istisna + operasyon, URL, isteğe bağlı `ServiceId`).
-- HTTP yanıtı başarısız (`!IsSuccessStatusCode`) ve/veya dönen **`ApiResponse.Success == false`** (ör. downstream `MessageSeverity.Error` mesajları) → tek bir **`LogError`** satırı; ayrıntı metni `ApiResponseLogSummary.Format` ile üretilir.
-- Operasyon adları: `Get`, `Post`, `CallService`, `GetServiceInfoAsync` (Configuration servis çözümlemesi sırasında yalnızca gerçek exception’larda `LogError`).
+- Outbound çağrıda **yakalanan exception** → **`LogError`** (istisna + operasyon, URL kısaltılmış, isteğe bağlı `ServiceId`, **`Request=`** ile istek özeti — aşağıda).
+- HTTP yanıtı başarısız (`!IsSuccessStatusCode`) ve/veya dönen **`ApiResponse.Success == false`** (ör. downstream `MessageSeverity.Error` mesajları) → tek bir **`LogError`** satırı; ayrıntı metni `ApiResponseLogSummary.Format` ile üretilir; URL logda kısaltılır; **`Request=`** ile istek özeti eklenir.
+- **Başarısızlık loglarındaki `Request=`**: HTTP metodu, kısaltılmış URL ve varsa parametre sözlüğünün JSON serileştirmesi (`body=...`); toplam metin ve parçalar sabit üst sınırlarla kısaltılır (ör. gövde ~1536, URL ~1024, toplam özet ~2048 karakter — kod içi sabitler). Hassas veri içerebileceği için log erişimini ve retention’ı buna göre yönetin.
+- **`GetServiceInfoAsync`** (`CallService` öncesi Configuration `GetService`) için de aynı **`LogError`** kuralı geçerlidir (HTTP veya `ApiResponse` başarısızlığında); istisna yine **`LogError`** ile; `Request=` içinde katalog `serviceId` bağlamı da yer alabilir.
+- **`LogSuccessfulHttpRequests: true`** ise başarılı tamamlanan istekler için **`LogInformation`** (süre + kısaltılmış URL; istek gövdesi burada loglanmaz).
+- Operasyon adları: `Get`, `Post`, `CallService`, `GetServiceInfoAsync`.
 
 ## 8. Gözlemlenebilirlik
 

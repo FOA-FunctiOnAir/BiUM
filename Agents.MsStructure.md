@@ -48,6 +48,23 @@ Exact names may vary (`AddDomain*` vs `Add*ApplicationServices`); the **idea** i
 
 ## 3. API surface
 
+### 3.1 Service identity (compound / multi-segment names)
+
+When a microservice name has **more than one logical segment** (e.g. bounded context + feature, as in `Education.Coach` or `HumanResources.Absence`), align these consistently:
+
+| Artifact | Convention | Example (`Education.Coach`) |
+|----------|------------|-------------------------------|
+| **`BiAppOptions.Domain`** | PascalCase segments separated by **`.`** | `Education.Coach` |
+| **`HttpClientsOptions.Domains` / `BiGrpcOptions.Domains` keys** | Same spelling as domain, **`ToLowerInvariant()`** for lookup (dots preserved; see `HttpClientService`) | `education.coach` |
+| **`[BiUMRoute("...")]`** (`BiUM.Specialized`) | Lowercase segments separated by **`/`** (URL segment under `/api/`). Resolves to `/api/{segments}/[controller]/[action]`. | `[BiUMRoute("education/coach")]` |
+| **PostgreSQL database name** (and similar identifiers) | Segments joined with **underscore `_`**, lowercase | `education_coach` |
+
+Single-segment services keep the same rules without dots (e.g. `BiAppOptions.Domain`: `Accounts`, route: `[BiUMRoute("accounts")]`, domain map key: `accounts`).
+
+In **`appsettings.Local.json`**, list entries under `BiGrpcOptions.Domains` and `HttpClientsOptions.Domains` **in alphabetical order by key** so diffs stay predictable.
+
+### 3.2 Controllers and responses
+
 - Controllers often inherit **`ApiControllerBase`** (BiUM.Specialized) and use **`IMediator`** for CQRS.
 - Route prefix may be set with **`[BiUMRoute("...")]`** so the service is grouped under a stable API segment (e.g. gateway routing).
 - Responses commonly use **`ApiResponse<T>`** / **`ApiResponse`** from BiUM.Contract.
@@ -61,9 +78,15 @@ See [Agents.RequestPipeline.md](Agents.RequestPipeline.md) for request transacti
 - **AutoMapper** profiles often inherit BiUM’s **`MappingProfile<TApplicationMarker, TDomainMarker>`** pattern.
 - **FluentValidation** may validate commands/queries where configured.
 
-## 5. Persistence- **`AddDatabase<TDbContext, TInitialiser>(configuration)`** registers the main EF Core context (see [Agents.Database.md](Agents.Database.md)).
+## 5. Persistence
+
+- **`AddDatabase<TDbContext, TInitialiser>(configuration)`** registers the main EF Core context (see [Agents.Database.md](Agents.Database.md)).
 - The context usually inherits **`BaseDbContext`** (encryption, interceptors, tenant/correlation awareness as configured).
 - Repositories are **`Scoped`**, depend on **`IDbContext`** / a typed context interface, and implement interfaces declared in Application.
+
+### Domain naming and translations
+
+When adding or changing **entities**, **EF column mappings**, **DTOs**, and **translation tables**, follow **[Agents.DomainModelConventions.md](Agents.DomainModelConventions.md)** (`BaseEntity.Active` without a duplicate `IsActive`, boolean/`DateTime` naming, translation rows addressed by `Column`, Flow-style EF mapping). This applies to all BiApp services, not only BiUM library code.
 
 ## 6. Optional: Bolt
 
@@ -95,9 +118,10 @@ Secrets must not be committed; local overrides use `appsettings.Local.json` or e
 ## 10. Agent workflow
 
 1. Read **this file** for **where code belongs** and **how the host is wired**.
-2. Read **BiUM** `AGENTS.md` and the relevant **`Agents.*.md`** deep dives for the feature you touch.
-3. Read the **target service’s** `AGENTS.md` for **business context** and domain vocabulary.
+2. If you change **entities, migrations, DTOs, or localisation tables**, read **[Agents.DomainModelConventions.md](Agents.DomainModelConventions.md)** first.
+3. Read **BiUM** `AGENTS.md` and the relevant **`Agents.*.md`** deep dives for the feature you touch.
+4. Read the **target service’s** `AGENTS.md` for **business context** and domain vocabulary.
 
-**Stable URLs (clone layout–agnostic):** [Agents.MsStructure.md](https://github.com/FOA-FunctiOnAir/BiUM/blob/master/Agents.MsStructure.md), [AGENTS.md](https://github.com/FOA-FunctiOnAir/BiUM/blob/master/AGENTS.md). Microservice repos should link here with these GitHub paths, not `../BiUM/...`, so links work for every developer machine.
+**Stable URLs (clone layout–agnostic):** [Agents.MsStructure.md](https://github.com/FOA-FunctiOnAir/BiUM/blob/master/Agents.MsStructure.md), [Agents.DomainModelConventions.md](https://github.com/FOA-FunctiOnAir/BiUM/blob/master/Agents.DomainModelConventions.md), [AGENTS.md](https://github.com/FOA-FunctiOnAir/BiUM/blob/master/AGENTS.md). Microservice repos should link here with these GitHub paths, not `../BiUM/...`, so links work for every developer machine.
 
 When you change cross-cutting startup or persistence behavior in BiUM, update this file if the **documented contract** for microservices changes.

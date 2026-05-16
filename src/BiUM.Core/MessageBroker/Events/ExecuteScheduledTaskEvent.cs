@@ -2,7 +2,7 @@ using MemoryPack;
 
 namespace BiUM.Core.MessageBroker.Events;
 
-[Event(Exchange = "scheduler")]
+[Event]
 [MemoryPackable]
 public partial class ExecuteScheduledTaskEvent : BaseEvent
 {

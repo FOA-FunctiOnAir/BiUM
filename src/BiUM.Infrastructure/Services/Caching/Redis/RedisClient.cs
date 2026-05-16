@@ -16,7 +16,8 @@ namespace BiUM.Infrastructure.Services.Caching.Redis;
 
 public class RedisClient : IRedisClient
 {
-    private readonly RedisClientOptions _redisClientOptions;
+    private readonly string _optionsName;
+    private readonly RedisOptions _redisClientOptions;
     private readonly IDateTimeService _dateTimeService;
     private readonly ILogger<RedisClient> _logger;
 
@@ -31,9 +32,14 @@ public class RedisClient : IRedisClient
     private LoadedLuaScript? _removeIfEqual;
     private LoadedLuaScript? _replaceIfEqual;
 
-    public RedisClient(IOptions<RedisClientOptions> redisClientOptions, IDateTimeService dateTimeService, ILogger<RedisClient> logger)
+    public RedisClient(
+        IOptionsMonitor<RedisOptions> redisClientOptionsMonitor,
+        string optionsName,
+        IDateTimeService dateTimeService,
+        ILogger<RedisClient> logger)
     {
-        _redisClientOptions = redisClientOptions.Value;
+        _optionsName = optionsName ?? throw new ArgumentNullException(nameof(optionsName));
+        _redisClientOptions = redisClientOptionsMonitor.Get(_optionsName);
         _dateTimeService = dateTimeService;
         _logger = logger;
 

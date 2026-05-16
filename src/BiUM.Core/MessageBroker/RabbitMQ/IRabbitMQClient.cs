@@ -7,5 +7,8 @@ namespace BiUM.Core.MessageBroker.RabbitMQ;
 public interface IRabbitMQClient
 {
     Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : IBaseEvent;
+
+    Task PublishToDomainAsync<T>(string domain, T message, CancellationToken cancellationToken = default) where T : IBaseEvent;
+
     Task StartConsumingAsync(Type eventType, Type handlerType, CancellationToken cancellationToken = default);
 }

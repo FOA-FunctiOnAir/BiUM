@@ -1,8 +1,10 @@
 namespace BiUM.Core.Common.Configs;
 
-public class RabbitMQOptions
+public class RabbitMqOptions
 {
     public const string Name = "RabbitMQOptions";
+
+    public const string DefaultClientKey = "Default";
 
     public bool Enable { get; set; }
     public string? Hostname { get; set; }

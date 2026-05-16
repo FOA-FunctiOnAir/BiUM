@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\BiUM.Infrastructure\BiUM.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\BiUM.Specialized\BiUM.Specialized.csproj" />
   </ItemGroup>
 </Project>

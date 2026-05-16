@@ -106,7 +106,7 @@ Common sections (presence depends on service):
 - **`ConnectionStrings`** — main database (PostgreSQL and/or MSSQL per deployment).
 - **`DatabaseType`** — provider selection where used.
 - **`BoltOptions`** — when Bolt is enabled.
-- **`RabbitMQOptions`**, **`RedisClientOptions`**, **`HttpClientsOptions`**, **`BiGrpcOptions`**.
+- **`RabbitMQOptions`**, **`RedisOptions`** (`RedisOptions:Default` for the primary `IRedisClient`; additional child keys require explicit `AddBiUMRedisClients` per key from the microservice host), **`HttpClientsOptions`**, **`BiGrpcOptions`**.
 
 Secrets must not be committed; local overrides use `appsettings.Local.json` or environment variables per team practice.
 

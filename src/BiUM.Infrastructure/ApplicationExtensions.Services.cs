@@ -1,10 +1,7 @@
 using BiUM.Core.Authorization;
-using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
 using BiUM.Core.File;
-using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.MagicOnion.Client;
@@ -12,10 +9,7 @@ using BiUM.Infrastructure.MagicOnion.Filters.Client;
 using BiUM.Infrastructure.MagicOnion.Filters.Server;
 using BiUM.Infrastructure.MagicOnion.Serialization;
 using BiUM.Infrastructure.Services.Authorization;
-using BiUM.Infrastructure.Services.Caching.Redis;
-using BiUM.Infrastructure.Services.Compensation;
 using BiUM.Infrastructure.Services.File;
-using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Services.Serialization;
 using Grpc.Net.Client;
 using MagicOnion;
@@ -36,7 +30,6 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using RabbitMQ.Client;
 using SimpleHtmlToPdf;
 using SimpleHtmlToPdf.Interfaces;
 using SimpleHtmlToPdf.UnmanagedHandler;
@@ -206,11 +199,9 @@ public static partial class ApplicationExtensions
             options.GlobalFilters.Add<GlobalApiResponseFilter>();
         });
 
-        // Configure Redis
-        builder.Services.AddRedisServices(builder.Configuration);
+        builder.Services.AddBiUMRedisClients(builder.Configuration);
 
-        // Configure RabbitMQ
-        builder.Services.AddRabbitMqServices(builder.Configuration);
+        builder.Services.AddBiUMRabbitMqClients(builder.Configuration);
 
         builder.Services.AddTransient<IDateTimeService, DateTimeService>();
         builder.Services.AddTransient<IRandomGeneratorService, RandomGeneratorService>();
@@ -276,53 +267,6 @@ public static partial class ApplicationExtensions
 
             return client;
         });
-
-        return services;
-    }
-
-    private static IServiceCollection AddRabbitMqServices(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.Configure<RabbitMQOptions>(configuration.GetSection(RabbitMQOptions.Name));
-
-        services.AddSingleton<IConnectionFactory>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
-
-            var factory = new ConnectionFactory
-            {
-                Uri = new Uri($"amqp://{options.UserName}:{options.Password}@{options.Hostname}:{options.Port}/{options.VirtualHost}"),
-                AutomaticRecoveryEnabled = true,
-                NetworkRecoveryInterval = TimeSpan.FromSeconds(options.NetworkRecoveryIntervalSeconds),
-                TopologyRecoveryEnabled = true
-            };
-
-            return factory;
-        });
-
-        services.AddSingleton<RabbitMQConnectionProvider>();
-        services.AddSingleton<RabbitMQPublisherChannelPool>();
-
-        services.AddSingleton<IRabbitMQSerializer, RabbitMQSerializer>();
-        services.AddSingleton<IRabbitMQClient, RabbitMQClient>();
-
-        services.AddScoped<ICompensationSessionFinalizedPublisher, CompensationSessionFinalizedPublisher>();
-
-        services.AddHostedService<RabbitMQListenerService>();
-
-        services.AddRabbitMQEventHandlers();
-
-        // Add RabbitMQ Health Check
-        services.AddHealthChecks()
-            .AddCheck<RabbitMQHealthCheck>("rabbitmq", tags: ["ready"]);
-
-        return services;
-    }
-
-    private static IServiceCollection AddRedisServices(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.Configure<RedisClientOptions>(configuration.GetSection(RedisClientOptions.Name));
-
-        services.AddSingleton<IRedisClient, RedisClient>();
 
         return services;
     }

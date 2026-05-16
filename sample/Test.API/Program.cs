@@ -13,6 +13,8 @@ builder.ConfigureCoreServices();
 builder.ConfigureInfrastructureServices();
 builder.ConfigureSpecializedServices();
 
+builder.Services.AddBiUMRedisClients(builder.Configuration, "Gateway");
+
 builder.Services.AddDomainApplicationServices(builder.Configuration);
 builder.Services.AddDomainInfrastructureServices(builder.Configuration);
 

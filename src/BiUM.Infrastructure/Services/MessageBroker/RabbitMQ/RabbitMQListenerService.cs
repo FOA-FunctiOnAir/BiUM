@@ -11,23 +11,23 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 internal sealed class RabbitMQListenerService : BackgroundService
 {
-    private readonly RabbitMQOptions _rabbitMQOptions;
+    private readonly IOptionsMonitor<RabbitMqOptions> _rabbitMqOptionsMonitor;
     private readonly IRabbitMQClient _rabbitMqClient;
     private readonly ILogger<RabbitMQListenerService> _logger;
 
     public RabbitMQListenerService(
         IRabbitMQClient rabbitMqClient,
-        IOptions<RabbitMQOptions> rabbitMQOptions,
+        IOptionsMonitor<RabbitMqOptions> rabbitMqOptionsMonitor,
         ILogger<RabbitMQListenerService> logger)
     {
         _rabbitMqClient = rabbitMqClient;
-        _rabbitMQOptions = rabbitMQOptions.Value;
+        _rabbitMqOptionsMonitor = rabbitMqOptionsMonitor;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (!_rabbitMQOptions.Enable)
+        if (!_rabbitMqOptionsMonitor.Get(RabbitMqOptions.DefaultClientKey).Enable)
         {
             return;
         }

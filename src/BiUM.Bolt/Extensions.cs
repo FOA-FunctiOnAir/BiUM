@@ -20,9 +20,14 @@ public static partial class ConfigureApp
     {
         var section = configuration.GetSection(BoltOptions.Name);
 
-        services.Configure<BoltOptions>(section);
-
         var boltOptions = section.Get<BoltOptions>() ?? throw new ApplicationStartupException(nameof(BoltOptions));
+
+        if (!boltOptions.Enable)
+        {
+            return services;
+        }
+
+        services.Configure<BoltOptions>(section);
 
         if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {

@@ -48,7 +48,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly IDateTimeService _dateTimeService;
     private readonly BiAppOptions _appOptions;
-    private readonly RabbitMQOptions _rabbitMQOptions;
+    private readonly RabbitMqOptions _rabbitMqOptions;
     private readonly ILogger<RabbitMQClient> _logger;
 
     private readonly ConcurrentBag<IChannel> _consumerChannels = [];
@@ -62,7 +62,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         IServiceScopeFactory serviceScopeFactory,
         IDateTimeService dateTimeService,
         IOptions<BiAppOptions> appOptionsAccessor,
-        IOptions<RabbitMQOptions> rabbitMQOptionsAccessor,
+        IOptionsMonitor<RabbitMqOptions> rabbitMqClientOptionsMonitor,
+        string rabbitMqClientKey,
         ILogger<RabbitMQClient> logger)
     {
         _connectionProvider = connectionProvider;
@@ -72,21 +73,21 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         _serviceScopeFactory = serviceScopeFactory;
         _dateTimeService = dateTimeService;
         _appOptions = appOptionsAccessor.Value;
-        _rabbitMQOptions = rabbitMQOptionsAccessor.Value;
+        _rabbitMqOptions = rabbitMqClientOptionsMonitor.Get(rabbitMqClientKey);
         _logger = logger;
     }
 
     public async Task PublishAsync<T>(T message, CancellationToken cancellationToken)
         where T : IBaseEvent
     {
-        if (!_rabbitMQOptions.Enable)
+        if (!_rabbitMqOptions.Enable)
         {
             return;
         }
 
         EnsureEventTimestamps(message);
 
-        var type = typeof(T);
+        var type = message.GetType();
 
         var eventAttribute = type.GetCustomAttribute<EventAttribute>();
 
@@ -153,59 +154,53 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         }
         else // Events: Single publisher to multiple consumers (broadcast)
         {
-            var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
-
-            var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
-
-            var properties = new BasicProperties
-            {
-                AppId = _appOptions.Domain,
-                Type = type.Name,
-                ContentType = DefaultContentType,
-                ContentEncoding = DefaultContentEncoding,
-                Persistent = true,
-                MessageId = GuidGenerator.New().ToString("N"),
-                CorrelationId = correlationContext.CorrelationId.ToString("N"),
-                Timestamp = new AmqpTimestamp(_dateTimeService.OffsetNow.ToUnixTimeSeconds()),
-                Headers = new Dictionary<string, object?>()
-            };
-
-            properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
-            properties.Headers[HeaderKeys.BiUMVersion] = Encoding.UTF8.GetBytes(VersionHelper.Version);
-            properties.Headers[HeaderKeys.BiAppDomain] = Encoding.UTF8.GetBytes(_appOptions.Domain);
-
-            var messageKey = type.Name.ToSnakeCase();
-            var exchange = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
-
-            using var channel = await _publisherChannelPool.GetChannelAsync();
-
-            await channel.Channel.ExchangeDeclareAsync(
-                exchange: exchange,
-                type: ExchangeType.Fanout,
-                durable: true,
-                autoDelete: false,
-                cancellationToken: cancellationToken);
-
-            await channel.Channel.BasicPublishAsync(
-                exchange: exchange,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: properties,
-                body: body,
-                cancellationToken: cancellationToken);
-
-            if (!EventsExcludedFromPublishLog.Contains(type.Name))
-            {
-                _logger.LogInformation("{MessageType} message broadcasted to fanout exchange {Exchange}",
-                    type.Name,
-                    exchange);
-            }
+            await PublishBroadcastFanoutAsync(
+                message,
+                _appOptions.Domain.ToLowerInvariant(),
+                correlationContext,
+                cancellationToken);
         }
+    }
+
+    public async Task PublishToDomainAsync<T>(string domain, T message, CancellationToken cancellationToken)
+        where T : IBaseEvent
+    {
+        if (!_rabbitMqOptions.Enable)
+        {
+            return;
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(domain);
+
+        EnsureEventTimestamps(message);
+
+        var type = message.GetType();
+
+        var correlationContext = _correlationContextAccessor.CorrelationContext ?? CorrelationContext.Empty;
+
+        if (message is CompensationSessionFinalizedEvent compensationSessionFinalized)
+        {
+            await PublishCompensationSessionFinalizedFanoutAsync(compensationSessionFinalized, correlationContext, cancellationToken);
+
+            return;
+        }
+
+        var eventAttribute = type.GetCustomAttribute<EventAttribute>();
+
+        if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange))
+        {
+            throw new InvalidOperationException(
+                $"PublishToDomainAsync is for broadcast events (empty [Event] Exchange). Type {type.Name} uses Exchange '{eventAttribute!.Exchange}'. Use PublishAsync instead.");
+        }
+
+        var normalizedDomain = domain.Trim().ToLowerInvariant();
+
+        await PublishBroadcastFanoutAsync(message, normalizedDomain, correlationContext, cancellationToken);
     }
 
     public async Task StartConsumingAsync(Type eventType, Type handlerType, CancellationToken cancellationToken)
     {
-        if (!_rabbitMQOptions.Enable)
+        if (!_rabbitMqOptions.Enable)
         {
             return;
         }
@@ -218,12 +213,57 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         string queueName;
 
-        if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange) && eventAttribute.Exchange != _appOptions.Domain.ToLowerInvariant()) // Events: Single publisher to multiple consumers (broadcast)
+        var localDomain = _appOptions.Domain.ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(eventAttribute?.Exchange)) // Broadcast from this microservice identity (publish path uses fanout localDomain.{event})
         {
             var messageKey = eventType.Name.ToSnakeCase();
-            var exchange = PrefixIfNecessary($"{eventAttribute.Exchange}.{messageKey}");
+            var broadcastExchange = PrefixIfNecessary($"{localDomain}.{messageKey}");
 
-            queueName = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{eventAttribute.Exchange}.{messageKey}");
+            queueName = PrefixIfNecessary($"{localDomain}.{localDomain}.{messageKey}");
+
+            await channel.ExchangeDeclareAsync(
+                exchange: broadcastExchange,
+                type: ExchangeType.Fanout,
+                durable: true,
+                autoDelete: false,
+                cancellationToken: cancellationToken);
+
+            if (_rabbitMqOptions.DeadLetterQueueEnabled)
+            {
+                queueArguments = new()
+                {
+                    ["x-dead-letter-exchange"] = DeadLetterExchange,
+                    ["x-dead-letter-routing-key"] = queueName
+                };
+            }
+
+            await channel.QueueDeclareAsync(
+                queue: queueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: queueArguments,
+                cancellationToken: cancellationToken);
+
+            await channel.QueueBindAsync(
+                queue: queueName,
+                exchange: broadcastExchange,
+                routingKey: string.Empty,
+                cancellationToken: cancellationToken);
+
+            _logger.LogInformation("Broadcast event queue {Queue} created and bound to fanout exchange {Exchange}",
+                queueName,
+                broadcastExchange);
+        }
+        else if (!string.Equals(eventAttribute.Exchange, localDomain, StringComparison.OrdinalIgnoreCase)) // Subscribe to another domain's broadcast (fanout publisherDomain.{event})
+        {
+            var messageKey = eventType.Name.ToSnakeCase();
+            var publisherDomainSegment = eventAttribute.Exchange.ToLowerInvariant();
+
+            var exchange = PrefixIfNecessary($"{publisherDomainSegment}.{messageKey}");
+
+            queueName = PrefixIfNecessary($"{localDomain}.{publisherDomainSegment}.{messageKey}");
 
             await channel.ExchangeDeclareAsync(
                 exchange: exchange,
@@ -232,7 +272,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 autoDelete: false,
                 cancellationToken: cancellationToken);
 
-            if (_rabbitMQOptions.DeadLetterQueueEnabled)
+            if (_rabbitMqOptions.DeadLetterQueueEnabled)
             {
                 queueArguments = new()
                 {
@@ -255,17 +295,17 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 routingKey: string.Empty,
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("Event queue {Queue} created and bound to fanout exchange {Exchange}",
+            _logger.LogInformation("Event queue {Queue} created and bound to foreign fanout exchange {Exchange}",
                 queueName,
                 exchange);
         }
-        else // Commands: Multiple publishers to single consumer
+        else // Hub: Multiple publishers → single logical consumer cluster (same exchange name string as Domain)
         {
-            var exchange = PrefixIfNecessary(_appOptions.Domain.ToLowerInvariant());
+            var exchange = PrefixIfNecessary(localDomain);
             var messageKey = eventType.Name.ToSnakeCase();
-            var routingKey = $"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}";
+            var routingKey = $"{localDomain}.{messageKey}";
 
-            queueName = PrefixIfNecessary($"{_appOptions.Domain.ToLowerInvariant()}.{messageKey}");
+            queueName = PrefixIfNecessary($"{localDomain}.{messageKey}");
 
             await channel.ExchangeDeclareAsync(
                 exchange: exchange,
@@ -274,7 +314,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 autoDelete: false,
                 cancellationToken: cancellationToken);
 
-            if (_rabbitMQOptions.DeadLetterQueueEnabled)
+            if (_rabbitMqOptions.DeadLetterQueueEnabled)
             {
                 queueArguments = new()
                 {
@@ -297,7 +337,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 routingKey: routingKey,
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("Owned message queue {Queue} created and bound to owned exchange {Exchange} with routing key {RoutingKey}",
+            _logger.LogInformation("Hub-direct message queue {Queue} created and bound to exchange {Exchange} with routing key {RoutingKey}",
                 queueName,
                 exchange,
                 routingKey);
@@ -377,7 +417,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             }
         };
 
-        if (_rabbitMQOptions.DeadLetterQueueEnabled)
+        if (_rabbitMqOptions.DeadLetterQueueEnabled)
         {
             var deadLetterQueueName = $"{queueName}.dlq";
 
@@ -421,9 +461,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     {
         var retryCount = GetRetryCount(args.BasicProperties);
 
-        if (retryCount >= _rabbitMQOptions.MaxRetryCount)
+        if (retryCount >= _rabbitMqOptions.MaxRetryCount)
         {
-            if (_rabbitMQOptions.DeadLetterQueueEnabled)
+            if (_rabbitMqOptions.DeadLetterQueueEnabled)
             {
                 try
                 {
@@ -498,7 +538,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
             _logger.LogInformation("Message requeued (retry {RetryCount}/{MaxRetryCount}). Queue: {Queue}",
                 retryCount + 1,
-                _rabbitMQOptions.MaxRetryCount,
+                _rabbitMqOptions.MaxRetryCount,
                 queueName);
         }
     }
@@ -546,9 +586,9 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     }
 
     private string PrefixIfNecessary(string name) =>
-        string.IsNullOrWhiteSpace(_rabbitMQOptions.Prefix)
+        string.IsNullOrWhiteSpace(_rabbitMqOptions.Prefix)
             ? name
-            : $"{_rabbitMQOptions.Prefix}.{name}";
+            : $"{_rabbitMqOptions.Prefix}.{name}";
 
     private static int GetRetryCount(IReadOnlyBasicProperties properties)
     {
@@ -569,6 +609,64 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     {
         properties.Headers ??= new Dictionary<string, object?>();
         properties.Headers[RetryCountHeader] = count;
+    }
+
+    private async Task PublishBroadcastFanoutAsync<T>(
+        T message,
+        string fanoutPublisherDomainLower,
+        CorrelationContext correlationContext,
+        CancellationToken cancellationToken)
+        where T : IBaseEvent
+    {
+        var type = message.GetType();
+
+        var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
+
+        var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
+
+        var properties = new BasicProperties
+        {
+            AppId = _appOptions.Domain,
+            Type = type.Name,
+            ContentType = DefaultContentType,
+            ContentEncoding = DefaultContentEncoding,
+            Persistent = true,
+            MessageId = GuidGenerator.New().ToString("N"),
+            CorrelationId = correlationContext.CorrelationId.ToString("N"),
+            Timestamp = new AmqpTimestamp(_dateTimeService.OffsetNow.ToUnixTimeSeconds()),
+            Headers = new Dictionary<string, object?>()
+        };
+
+        properties.Headers[HeaderKeys.CorrelationContext] = correlationContextData.ToArray();
+        properties.Headers[HeaderKeys.BiUMVersion] = Encoding.UTF8.GetBytes(VersionHelper.Version);
+        properties.Headers[HeaderKeys.BiAppDomain] = Encoding.UTF8.GetBytes(_appOptions.Domain);
+
+        var messageKey = type.Name.ToSnakeCase();
+        var exchange = PrefixIfNecessary($"{fanoutPublisherDomainLower}.{messageKey}");
+
+        using var channel = await _publisherChannelPool.GetChannelAsync();
+
+        await channel.Channel.ExchangeDeclareAsync(
+            exchange: exchange,
+            type: ExchangeType.Fanout,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: cancellationToken);
+
+        await channel.Channel.BasicPublishAsync(
+            exchange: exchange,
+            routingKey: string.Empty,
+            mandatory: false,
+            basicProperties: properties,
+            body: body,
+            cancellationToken: cancellationToken);
+
+        if (!EventsExcludedFromPublishLog.Contains(type.Name))
+        {
+            _logger.LogInformation("{MessageType} message broadcasted to fanout exchange {Exchange}",
+                type.Name,
+                exchange);
+        }
     }
 
     private async Task PublishCompensationSessionFinalizedFanoutAsync(

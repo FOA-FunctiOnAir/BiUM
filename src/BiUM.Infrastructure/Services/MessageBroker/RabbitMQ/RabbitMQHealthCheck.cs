@@ -11,16 +11,16 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 internal class RabbitMQHealthCheck : IHealthCheck
 {
-    private readonly RabbitMQOptions _options;
+    private readonly IOptionsMonitor<RabbitMqOptions> _optionsMonitor;
     private readonly RabbitMQConnectionProvider _connectionProvider;
     private readonly IRabbitMQClient? _client;
 
     public RabbitMQHealthCheck(
         RabbitMQConnectionProvider connectionProvider,
-        IOptions<RabbitMQOptions> optionsAccessor,
+        IOptionsMonitor<RabbitMqOptions> optionsMonitor,
         IRabbitMQClient? client = null)
     {
-        _options = optionsAccessor.Value;
+        _optionsMonitor = optionsMonitor;
         _connectionProvider = connectionProvider;
         _client = client;
     }
@@ -29,7 +29,9 @@ internal class RabbitMQHealthCheck : IHealthCheck
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        if (!_options.Enable)
+        var options = _optionsMonitor.Get(RabbitMqOptions.DefaultClientKey);
+
+        if (!options.Enable)
         {
             return HealthCheckResult.Healthy("RabbitMQ is disabled");
         }
@@ -55,9 +57,9 @@ internal class RabbitMQHealthCheck : IHealthCheck
                 ex,
                 new Dictionary<string, object>
                 {
-                    ["hostname"] = _options.Hostname ?? "unknown",
-                    ["port"] = _options.Port ?? 5672,
-                    ["virtualHost"] = _options.VirtualHost ?? "/"
+                    ["hostname"] = options.Hostname ?? "unknown",
+                    ["port"] = options.Port ?? 5672,
+                    ["virtualHost"] = options.VirtualHost ?? "/"
                 });
         }
     }

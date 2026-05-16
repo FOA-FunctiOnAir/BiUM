@@ -2,7 +2,6 @@ using BiUM.Specialized.Middlewares;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

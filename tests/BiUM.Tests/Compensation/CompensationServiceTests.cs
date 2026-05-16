@@ -1,4 +1,3 @@
-using BiUM.Core.Compensation;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Tests.Helpers;
 using FluentAssertions;

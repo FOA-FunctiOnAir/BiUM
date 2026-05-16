@@ -12,7 +12,6 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
     private const int DefaultCapacity = 100;
 
     private readonly RabbitMQConnectionProvider _connectionProvider;
-    private readonly RabbitMQOptions _rabbitMqOptions;
 
     private readonly int _capacity;
 
@@ -23,11 +22,13 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
 
     public RabbitMQPublisherChannelPool(
         RabbitMQConnectionProvider connectionProvider,
-        IOptions<RabbitMQOptions> rabbitMQOptionsAccessor)
+        IOptionsMonitor<RabbitMqOptions> clientOptionsMonitor,
+        string clientKey)
     {
-        _rabbitMqOptions = rabbitMQOptionsAccessor.Value;
         _connectionProvider = connectionProvider;
-        _capacity = _rabbitMqOptions.ChannelPoolCapacity <= 0 ? DefaultCapacity : _rabbitMqOptions.ChannelPoolCapacity;
+
+        var o = clientOptionsMonitor.Get(clientKey);
+        _capacity = o.ChannelPoolCapacity <= 0 ? DefaultCapacity : o.ChannelPoolCapacity;
     }
 
     public async ValueTask<RabbitMQPoolChannel> GetChannelAsync()

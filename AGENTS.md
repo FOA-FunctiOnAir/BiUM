@@ -50,12 +50,13 @@ graph TD
 - [Agents.EncryptedData.md](Agents.EncryptedData.md) — `[EncryptedData]`, EF value converter, `BaseDbContext` + `BiAppOptions.EncryptionKey`.
 - [Agents.Database.md](Agents.Database.md) — `AddDatabase`, providers, retry, health checks, `IDbContext` registration.
 - [Agents.RequestPipeline.md](Agents.RequestPipeline.md) — `UseInfrastructure`, `UseSpecialized`, request transaction, exception and rollback behavior.
-- [Agents.MessageBroker.md](Agents.MessageBroker.md) — `RabbitMQClient` publish path, headers, correlation on messages.
+- [Agents.MessageBroker.md](Agents.MessageBroker.md) — `AddBiUMRabbitMqClients`, `RabbitMQOptions:Default` + optional named brokers, `IRabbitMQClient` publish path, headers, correlation on messages.
+- [Agents.Redis.md](Agents.Redis.md) — `AddBiUMRedisClients`, `RedisOptions:Default` + optional keyed clients, `IRedisClient` / `RedisClient`, `Enable` davranışı.
 
 ### `src/` Modules
 
 - **`BiUM.Core`**: Base abstractions and interfaces.
-    - `Common/`: Utilities, Config Options (`BoltOptions`, `RabbitMQOptions`); `BiAppOptions` includes `EncryptionKey` for `[EncryptedData]` conversion.
+    - `Common/`: Utilities, Config Options (`BoltOptions`, `RedisOptions` for Redis, root `RabbitMQOptions` with per-broker sections under `Default` mapped to `RabbitMqOptions`); `BiAppOptions` includes `EncryptionKey` for `[EncryptedData]` conversion.
     - `Common/Attributes/`: `EncryptedDataAttribute` for marking properties as encrypted/hashed at persistence (with `Reversible` flag).
     - `Common/Utils/`: `EncryptionHelper` for Encrypt/Decrypt (byte[] or string), Hash/Verify (non-reversible), Protect/Unprotect (reversible flag); used by the value converter and by application code (e.g. login, export).
     - `Database/`: `IRepository`, `IUnitOfWork`.
@@ -64,7 +65,7 @@ graph TD
 
 - **`BiUM.Infrastructure`**: Concrete implementations of Core.
     - `Persistence/`: EF Core base implementations, `ValueConverters/EncryptedDataValueConverter`, `Extensions/ModelBuilderEncryptedDataExtensions` (apply `[EncryptedData]` conversion from model with encryption key).
-    - `Services/`: FileService (`SimpleHtmlToPdf`), Redis, RabbitMQ. Inter-service HTTP client: see [Agents.HttpClientService.md](Agents.HttpClientService.md). `Services/Compensation/`: `CompensationSessionFinalizedPublisher`.
+    - `Services/`: FileService (`SimpleHtmlToPdf`), Redis: `ConfigureInfrastructureServices` registers the default client only (`AddBiUMRedisClients(configuration)` bound to `RedisOptions:Default`). Extra clients (`RedisOptions:<ChildKey>`): call `services.AddBiUMRedisClients(configuration, "<ChildKey>")` from the consuming microservice—repeat per additional client; duplicate keys are ignored. Details: [Agents.Redis.md](Agents.Redis.md). Extensions live in `Microsoft.Extensions.DependencyInjection` (same namespace as `IServiceCollection`). RabbitMQ: `AddBiUMRabbitMqClients(configuration)` registers the default broker (`RabbitMQOptions:Default`, required: section present, `Enable` true, non-empty `Hostname`), unkeyed `IRabbitMQClient`, shared listener/health check/event handlers; optional named brokers via `AddBiUMRabbitMqClients(configuration, "<ChildKey>")` with `[FromKeyedServices("<ChildKey>")] IRabbitMQClient` where needed. Inter-service HTTP client: see [Agents.HttpClientService.md](Agents.HttpClientService.md). `Services/Compensation/`: `CompensationSessionFinalizedPublisher`.
 
 - **`BiUM.Contract`**: Shared resources.
     - `Models/Api/`: `ApiResponse`, `ApiResponseRollbackException` (internal rollback signal for failed `ApiResponse` in request transactions), `ApiResponseLogSummary` (log metni için mesaj özeti).

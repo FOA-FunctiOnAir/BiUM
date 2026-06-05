@@ -66,7 +66,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
-                entry.Entity.CreatedBy = correlationContext.User?.Id;
+                entry.Entity.CreatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Created = _dateTimeService.Today;
                 entry.Entity.CreatedTime = _dateTimeService.TimeNow;
             }
@@ -77,7 +77,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
-                entry.Entity.UpdatedBy = correlationContext.User?.Id;
+                entry.Entity.UpdatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Updated = _dateTimeService.Today;
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }

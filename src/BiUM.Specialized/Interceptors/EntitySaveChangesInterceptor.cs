@@ -161,7 +161,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
-                entry.Entity.CreatedBy = correlationContext.User?.Id;
+                entry.Entity.CreatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Created = _dateTimeService.Today;
                 entry.Entity.CreatedTime = _dateTimeService.TimeNow;
             }
@@ -172,7 +172,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
-                entry.Entity.UpdatedBy = correlationContext.User?.Id;
+                entry.Entity.UpdatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Updated = _dateTimeService.Today;
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
@@ -186,7 +186,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
-                entry.Entity.UpdatedBy = correlationContext.User?.Id;
+                entry.Entity.UpdatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Updated = _dateTimeService.Today;
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
@@ -226,7 +226,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
 
         var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
-        var userId = correlationContext.User?.Id ?? Guid.Empty;
+        var userId = correlationContext.User?.Id ?? correlationContext.ClientId ?? Guid.Empty;
 
         foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {

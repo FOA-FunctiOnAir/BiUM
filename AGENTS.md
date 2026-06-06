@@ -41,6 +41,7 @@ graph TD
 
 ### Deep-dive agent docs
 
+- [Agents.Coding.md](Agents.Coding.md) — **C# format and layout**
 - [Agents.MsStructure.md](Agents.MsStructure.md) — **Shared FOA microservice technical layout** (layers, `Program.cs`, BiUM pipeline, persistence/messaging patterns), including **§3.1 service identity**: dotted `BiAppOptions.Domain`, `BiUMRoute` slash segments, `Domains` map keys (`ToLowerInvariant()`), DB names `snake_case`, ordered local domain maps. Business domain per service stays in that service’s `AGENTS.md`.
 - [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md) — **Entity / column / DTO naming**: `BaseEntity.Active` only (no duplicate `IsActive`), boolean and `DateTime` naming (no `IS_` / `Utc` suffixes), translation tables with `Column` (no `TranslationCode` on parent). **Read this before adding or refactoring domain models.**
 - [Agents.Crud.md](Agents.Crud.md) — `DomainCrud` metadata vs runtime CRUD, tenant rules, `CrudController`.
@@ -86,7 +87,7 @@ graph TD
 ## 4. AI Agent Guidelines
 
 > [!IMPORTANT]
-> **Documentation Sync**: Any changes to the code must be immediately reflected in this `AGENTS.md`, the relevant `Agents.*.md` deep-dive (e.g. [Agents.MsStructure.md](Agents.MsStructure.md), [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md), [Agents.Crud.md](Agents.Crud.md), [Agents.HttpClientService.md](Agents.HttpClientService.md), [Agents.Compensation.md](Agents.Compensation.md), [Agents.CorrelationContext.md](Agents.CorrelationContext.md), [Agents.EncryptedData.md](Agents.EncryptedData.md), [Agents.Database.md](Agents.Database.md), [Agents.RequestPipeline.md](Agents.RequestPipeline.md), [Agents.MessageBroker.md](Agents.MessageBroker.md)), or the respective module's `README.md`.
+> **Documentation Sync**: Any changes to the code must be immediately reflected in this `AGENTS.md`, the relevant `Agents.*.md` deep-dive (e.g. [Agents.Coding.md](Agents.Coding.md), [Agents.MsStructure.md](Agents.MsStructure.md), [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md), [Agents.Crud.md](Agents.Crud.md), [Agents.HttpClientService.md](Agents.HttpClientService.md), [Agents.Compensation.md](Agents.Compensation.md), [Agents.CorrelationContext.md](Agents.CorrelationContext.md), [Agents.EncryptedData.md](Agents.EncryptedData.md), [Agents.Database.md](Agents.Database.md), [Agents.RequestPipeline.md](Agents.RequestPipeline.md), [Agents.MessageBroker.md](Agents.MessageBroker.md)), or the respective module's `README.md`.
 
 ### Critical Rules
 1. **Dependency Direction**: Respect the hierarchy. `Core` should never depend on `Infrastructure`.

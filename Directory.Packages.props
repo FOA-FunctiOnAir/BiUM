@@ -11,6 +11,7 @@
     <PackageVersion Include="MagicOnion" Version="7.0.9" />
     <PackageVersion Include="MagicOnion.Abstractions" Version="7.0.9" />
     <PackageVersion Include="MagicOnion.Serialization.MemoryPack" Version="7.0.9-preview" />
+    <PackageVersion Include="MessagePack" Version="3.1.7" />
     <PackageVersion Include="MediatR" Version="12.5.0" />
     <PackageVersion Include="MemoryPack" Version="1.21.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.2" />

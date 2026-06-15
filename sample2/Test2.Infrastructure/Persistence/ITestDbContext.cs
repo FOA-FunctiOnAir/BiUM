@@ -8,4 +8,5 @@ public interface ITestDbContext : IDbContext, IBaseBoltDomainDbContext
 {
     DbSet<Account> Accounts { get; }
     DbSet<AccountTranslation> AccountTranslations { get; }
+    DbSet<CompensationItem> CompensationItems { get; }
 }

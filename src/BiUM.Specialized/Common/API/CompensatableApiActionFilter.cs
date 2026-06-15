@@ -81,17 +81,16 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             }
         }
 
-        context.HttpContext.Items[LocalOrchestrationKey] = localOrchestration;
-
-        if (!localOrchestration && incomingWasEmpty && _correlationContextAccessor.CorrelationContext is { } currentForSession)
+        // Custom endpoint [CompensatableApi] varsa ve dışarıdan session gelmemişse
+        // API kendi session'ını başlatır ve finalizer olur.
+        if (!isCrudMutation && incomingWasEmpty && ctx is not null)
         {
-            var sid = currentForSession.CompensationSessionId;
-
-            if (!sid.HasValue || sid.Value == Guid.Empty)
-            {
-                _correlationContextAccessor.CorrelationContext = currentForSession.WithCompensationSessionId(Guid.NewGuid());
-            }
+            var newSession = Guid.NewGuid();
+            _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+            localOrchestration = true;
         }
+
+        context.HttpContext.Items[LocalOrchestrationKey] = localOrchestration;
 
         if (!localOrchestration)
         {
@@ -100,9 +99,11 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             return;
         }
 
+        Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext? executedContext = null;
+
         try
         {
-            await next();
+            executedContext = await next();
         }
         catch
         {
@@ -111,7 +112,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             throw;
         }
 
-        await TryFinalizeAsync(rollback: IsFailureResult(context.Result), context.HttpContext.RequestAborted);
+        await TryFinalizeAsync(rollback: IsFailureResult(executedContext?.Result), context.HttpContext.RequestAborted);
     }
 
     private static bool IsFailureResult(IActionResult? result)

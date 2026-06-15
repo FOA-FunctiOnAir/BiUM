@@ -55,6 +55,7 @@ public sealed class CompensationService : ICompensationService
                 if (entity is ICompensatableEntity c)
                 {
                     c.CStatus = CompensationStatusCodes.Committed;
+                    c.CompensationSessionId = null;
                 }
             }
             else if (snap.ApplicationId.HasValue && !string.IsNullOrEmpty(snap.SnapshotTableName))
@@ -104,8 +105,9 @@ public sealed class CompensationService : ICompensationService
 
         var idCol = dbType == DbTypePostgresql ? QuotePg("ID") : QuoteMs("ID");
         var cStatusCol = dbType == DbTypePostgresql ? QuotePg("C_STATUS") : QuoteMs("C_STATUS");
+        var sessionCol = dbType == DbTypePostgresql ? QuotePg("COMPENSATION_SESSION_ID") : QuoteMs("COMPENSATION_SESSION_ID");
 
-        var sql = $"UPDATE {table} SET {cStatusCol} = {{1}} WHERE {idCol} = {{0}}";
+        var sql = $"UPDATE {table} SET {cStatusCol} = {{1}}, {sessionCol} = NULL WHERE {idCol} = {{0}}";
 
         _ = await _dbContext.Database.ExecuteSqlRawAsync(sql, [snap.EntityId, CompensationStatusCodes.Committed], cancellationToken);
     }
@@ -293,6 +295,7 @@ public sealed class CompensationService : ICompensationService
                     if (entity is ICompensatableEntity c)
                     {
                         c.CStatus = CompensationStatusCodes.Committed;
+                        c.CompensationSessionId = null;
                     }
 
                     break;

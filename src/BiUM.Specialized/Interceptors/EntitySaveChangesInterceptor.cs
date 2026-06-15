@@ -132,6 +132,11 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
+        if (http.WebSockets.IsWebSocketRequest)
+        {
+            return;
+        }
+
         if (!HttpMethods.IsGet(http.Request.Method))
         {
             return;

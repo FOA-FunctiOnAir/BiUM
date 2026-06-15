@@ -30,6 +30,7 @@ public static class CompensationEntityProcessor
             if (sessionId is null || sessionId == Guid.Empty)
             {
                 entity.CStatus = CompensationStatusCodes.Committed;
+                entity.CompensationSessionId = null;
 
                 continue;
             }
@@ -56,6 +57,7 @@ public static class CompensationEntityProcessor
             {
                 case EntityState.Added:
                     entity.CStatus = CompensationStatusCodes.Insert;
+                    entity.CompensationSessionId = currentSession;
 
                     AddSnapshot(context, entity, correlation, currentSession, CompensationSnapshotOperationType.Insert, entry);
 
@@ -77,6 +79,8 @@ public static class CompensationEntityProcessor
                                 ? CompensationStatusCodes.UpdateReadable
                                 : CompensationStatusCodes.Update;
                         }
+
+                        entity.CompensationSessionId = currentSession;
 
                         AddSnapshot(context, entity, correlation, currentSession, isSoftDelete ? CompensationSnapshotOperationType.Delete : CompensationSnapshotOperationType.Update, entry);
 

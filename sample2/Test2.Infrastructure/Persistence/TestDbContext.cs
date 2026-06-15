@@ -31,6 +31,7 @@ public class TestDbContext : BaseDbContext, ITestDbContext
 
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<AccountTranslation> AccountTranslations => Set<AccountTranslation>();
+    public DbSet<CompensationItem> CompensationItems => Set<CompensationItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

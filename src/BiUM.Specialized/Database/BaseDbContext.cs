@@ -1,4 +1,6 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Compensation;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Persistence.Extensions;
 using BiUM.Specialized.Interceptors;
@@ -7,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace BiUM.Specialized.Database;
 
@@ -14,6 +17,7 @@ public class BaseDbContext : DbContext, IDbContext
 {
     private bool _hardDeleteEnabled;
 
+    private readonly IServiceProvider _serviceProvider;
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
     protected BiAppOptions BiAppOptions { get; }
@@ -24,6 +28,7 @@ public class BaseDbContext : DbContext, IDbContext
         EntitySaveChangesInterceptor entitySaveChangesInterceptor
     ) : base(options)
     {
+        _serviceProvider = serviceProvider;
         _entitySaveChangesInterceptor = entitySaveChangesInterceptor;
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
@@ -35,6 +40,7 @@ public class BaseDbContext : DbContext, IDbContext
         BoltEntitySaveChangesInterceptor boltEntitySaveChangesInterceptor
     ) : base(options)
     {
+        _serviceProvider = serviceProvider;
         _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
@@ -70,6 +76,12 @@ public class BaseDbContext : DbContext, IDbContext
         _hardDeleteEnabled = false;
     }
 
+    // Çağrıldığı anda AsyncLocal'dan aktif session ID'yi okur.
+    // Global query filter expression'larında 'this.GetCurrentCompensationSessionId()' olarak
+    // referans edilir; EF Core her sorgu çevrimiyle DbContext instance'ına karşı değerlendirir.
+    private Guid? GetCurrentCompensationSessionId()
+        => _serviceProvider.GetService<ICorrelationContextAccessor>()?.CorrelationContext?.CompensationSessionId;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<DomainCompensationSnapshot>().HasIndex(c => c.CompensationSessionId);
@@ -90,15 +102,34 @@ public class BaseDbContext : DbContext, IDbContext
         //modelBuilder.Ignore<DomainDynamicApiVersion>();
         //modelBuilder.Ignore<DomainDynamicApiVersionParameter>();
 
+        var applyCompensation = GetType()
+            .GetMethod(nameof(ApplyCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        var applyReadable = GetType()
+            .GetMethod(nameof(ApplyReadableCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(IBaseEntity).IsAssignableFrom(entityType.ClrType))
+            if (!typeof(IBaseEntity).IsAssignableFrom(entityType.ClrType))
             {
-                var parameter = Expression.Parameter(entityType.ClrType, "e");
-                var prop = Expression.Property(parameter, nameof(BaseEntity.Deleted));
-                var filter = Expression.Lambda(Expression.Equal(prop, Expression.Constant(false)), parameter);
+                continue;
+            }
 
-                modelBuilder.Entity(entityType.ClrType).HasIndex(prop.Member.Name);
+            var parameter = Expression.Parameter(entityType.ClrType, "e");
+            var deletedProp = Expression.Property(parameter, nameof(BaseEntity.Deleted));
+            modelBuilder.Entity(entityType.ClrType).HasIndex(deletedProp.Member.Name);
+
+            if (typeof(ICompensation).IsAssignableFrom(entityType.ClrType))
+            {
+                applyCompensation.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+            }
+            else if (typeof(IReadableCompensation).IsAssignableFrom(entityType.ClrType))
+            {
+                applyReadable.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+            }
+            else
+            {
+                var filter = Expression.Lambda(Expression.Equal(deletedProp, Expression.Constant(false)), parameter);
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
         }
@@ -109,6 +140,30 @@ public class BaseDbContext : DbContext, IDbContext
         }
 
         base.OnModelCreating(modelBuilder);
+    }
+
+    // ICompensation: sadece commit edilmiş veya kendi session'ına ait pending kayıtlar görünür.
+    private void ApplyCompensationFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, IBaseEntity, ICompensation
+    {
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e =>
+            !e.Deleted &&
+            (e.CStatus == null ||
+             e.CStatus == CompensationStatusCodes.Committed ||
+             e.CompensationSessionId == GetCurrentCompensationSessionId()));
+    }
+
+    // IReadableCompensation: commit edilmiş + UR/DR (herkese açık pending) + kendi session'ının pending kayıtları görünür.
+    private void ApplyReadableCompensationFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, IBaseEntity, IReadableCompensation
+    {
+        modelBuilder.Entity<TEntity>().HasQueryFilter(e =>
+            !e.Deleted &&
+            (e.CStatus == null ||
+             e.CStatus == CompensationStatusCodes.Committed ||
+             e.CStatus == CompensationStatusCodes.UpdateReadable ||
+             e.CStatus == CompensationStatusCodes.DeleteReadable ||
+             e.CompensationSessionId == GetCurrentCompensationSessionId()));
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -22,6 +22,7 @@ public static class ConfigureServices
         _ = services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
 
         _ = services.AddScoped<IAccountRepository, AccountRepository>();
+        _ = services.AddScoped<ICompensationTestRepository, CompensationTestRepository>();
 
         _ = services.AddRpcClient<ITestRpcService, RpcServicesClientFactoryProviderWrapper>("test");
 

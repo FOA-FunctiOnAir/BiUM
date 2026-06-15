@@ -1,3 +1,4 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Specialized.Services.Compensation;
 using Moq;
@@ -7,12 +8,19 @@ namespace BiUM.Tests.Compensation;
 
 public sealed class CompensationSessionFinalizedHandlerTests
 {
+    private static CompensationSessionFinalizedHandler CreateHandler(ICompensationService compensation)
+    {
+        var accessor = new Mock<ICorrelationContextAccessor>();
+        accessor.SetupProperty(a => a.CorrelationContext);
+        return new CompensationSessionFinalizedHandler(compensation, accessor.Object);
+    }
+
     [Fact]
     public async Task Success_true_calls_CommitSessionAsync()
     {
         var id = Guid.NewGuid();
         var compensation = new Mock<ICompensationService>();
-        var handler = new CompensationSessionFinalizedHandler(compensation.Object);
+        var handler = CreateHandler(compensation.Object);
 
         await handler.HandleAsync(
             new CompensationSessionFinalizedEvent
@@ -31,7 +39,7 @@ public sealed class CompensationSessionFinalizedHandlerTests
     {
         var id = Guid.NewGuid();
         var compensation = new Mock<ICompensationService>();
-        var handler = new CompensationSessionFinalizedHandler(compensation.Object);
+        var handler = CreateHandler(compensation.Object);
 
         await handler.HandleAsync(
             new CompensationSessionFinalizedEvent

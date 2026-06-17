@@ -102,10 +102,10 @@ public class BaseDbContext : DbContext, IDbContext
         //modelBuilder.Ignore<DomainDynamicApiVersion>();
         //modelBuilder.Ignore<DomainDynamicApiVersionParameter>();
 
-        var applyCompensation = GetType()
+        var applyCompensation = typeof(BaseDbContext)
             .GetMethod(nameof(ApplyCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-        var applyReadable = GetType()
+        var applyReadable = typeof(BaseDbContext)
             .GetMethod(nameof(ApplyReadableCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

@@ -20,7 +20,6 @@ public static partial class ApplicationExtensions
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
 
-
         builder.Services.AddSingleton(jsonSerializerOptions);
 
         var memoryPackSerializerOptions = MemoryPackSerializerOptions.Default;

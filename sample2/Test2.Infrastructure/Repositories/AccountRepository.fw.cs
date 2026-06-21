@@ -15,21 +15,25 @@ namespace BiApp.Test2.Infrastructure.Repositories;
 public partial class AccountRepository
 {
     public async Task<PaginatedApiResponse<GetFwAccountsForParameterDto>> GetFwAccountsForParameter(
+        IReadOnlyList<Guid>? selectedIds,
         string? q,
         int? pageStart,
         int? pageSize,
         CancellationToken cancellationToken)
     {
-        var currencies = await _context.Accounts
+        var query = _context.Accounts
             .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(c =>
                 string.IsNullOrEmpty(q) ||
                 string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
-            )
-            .ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+            );
 
-        return currencies;
+        var result = await query.ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+
+        await result.MergeSelectedIdsAsync(selectedIds, query, Mapper, cancellationToken);
+
+        return result;
     }
 
     public async Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> GetFwAccountsForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)

@@ -83,6 +83,7 @@ public class HttpClientService : IHttpClientsService
     public async Task<ApiResponse> CallService(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -91,6 +92,7 @@ public class HttpClientService : IHttpClientsService
         return await CallServiceBase<Void>(
             serviceId: serviceId,
             parameters: parameters,
+            selectedIds: selectedIds,
             q: q,
             pageStart: pageStart,
             pageSize: pageSize,
@@ -101,6 +103,7 @@ public class HttpClientService : IHttpClientsService
     public async Task<ApiResponse<TResponse>> CallService<TResponse>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -109,6 +112,7 @@ public class HttpClientService : IHttpClientsService
         return (ApiResponse<TResponse>)await CallServiceBase<TResponse>(
             serviceId: serviceId,
             parameters: parameters,
+            selectedIds: selectedIds,
             q: q,
             pageStart: pageStart,
             pageSize: pageSize,
@@ -317,6 +321,7 @@ public class HttpClientService : IHttpClientsService
     private async Task<ApiResponse> CallServiceBase<TResponse>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -367,10 +372,12 @@ public class HttpClientService : IHttpClientsService
 
             var isExternal = service.Type == Ids.Parameter.ServiceType.Values.External;
 
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize, selectedIds);
+
             var (rFinalUrl, rHttpMethod, response) =
                 isExternal
                     ? await ExecuteExternalCallAsync(service, parameters, cancellationToken)
-                    : await ExecuteInternalCallAsync(service, parameters, q, pageStart, pageSize, cancellationToken);
+                    : await ExecuteInternalCallAsync(service, parameters, cancellationToken);
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
@@ -421,9 +428,6 @@ public class HttpClientService : IHttpClientsService
     private async Task<(string, HttpMethod, HttpResponseMessage)> ExecuteInternalCallAsync(
         ServiceDto service,
         Dictionary<string, dynamic>? parameters,
-        string? q = null,
-        int? pageStart = null,
-        int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
         string? url;
@@ -450,8 +454,6 @@ public class HttpClientService : IHttpClientsService
 
         if (httpMethod == HttpMethod.Get)
         {
-            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
-
             finalUrl = AppendParametersAsQueryString(url, parameters);
 
             request = CreateRequestMessage(HttpMethod.Get, finalUrl);
@@ -474,8 +476,6 @@ public class HttpClientService : IHttpClientsService
         }
         else if (httpMethod == HttpMethod.Delete)
         {
-            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
-
             finalUrl = AppendParametersAsQueryString(url, parameters);
 
             request = CreateRequestMessage(HttpMethod.Delete, finalUrl);
@@ -698,7 +698,12 @@ public class HttpClientService : IHttpClientsService
         return sb.ToString().TrimEnd('&');
     }
 
-    private static Dictionary<string, dynamic> AddSearchAndPagination(Dictionary<string, dynamic>? parameters, string? q = null, int? pageStart = null, int? pageSize = null)
+    private static Dictionary<string, dynamic> AddSearchAndPagination(
+        Dictionary<string, dynamic>? parameters,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        IReadOnlyList<Guid>? selectedIds = null)
     {
         parameters ??= [];
 
@@ -715,6 +720,11 @@ public class HttpClientService : IHttpClientsService
         if (pageSize.HasValue)
         {
             parameters.Add("PageSize", pageSize.Value.ToString());
+        }
+
+        if (selectedIds?.Count > 0)
+        {
+            parameters.Add("SelectedIds", selectedIds);
         }
 
         return parameters;

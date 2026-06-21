@@ -122,6 +122,7 @@ public static class BiUMServiceFactory
             .Setup(h => h.CallService<ApiResponse>(
                 It.IsAny<Guid>(),
                 It.IsAny<Dictionary<string, dynamic>?>(),
+                It.IsAny<IReadOnlyList<Guid>?>(),
                 It.IsAny<string?>(),
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),

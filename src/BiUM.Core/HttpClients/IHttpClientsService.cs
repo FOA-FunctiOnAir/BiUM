@@ -11,6 +11,7 @@ public interface IHttpClientsService
     Task<ApiResponse> CallService(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -19,6 +20,7 @@ public interface IHttpClientsService
     Task<ApiResponse<TResponse>> CallService<TResponse>(
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,

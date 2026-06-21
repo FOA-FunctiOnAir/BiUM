@@ -34,7 +34,7 @@ public interface IAccountRepository
 
     #region Fw
 
-    Task<PaginatedApiResponse<GetFwAccountsForParameterDto>> GetFwAccountsForParameter(string? q, int? pageStart, int? pageSize, CancellationToken cancellationToken);
+    Task<PaginatedApiResponse<GetFwAccountsForParameterDto>> GetFwAccountsForParameter(IReadOnlyList<Guid>? selectedIds, string? q, int? pageStart, int? pageSize, CancellationToken cancellationToken);
 
     Task<ApiResponse<IList<GetFwAccountsForNamesDto>>> GetFwAccountsForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
 

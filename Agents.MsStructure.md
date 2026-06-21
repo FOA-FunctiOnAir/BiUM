@@ -78,6 +78,36 @@ See [Agents.RequestPipeline.md](Agents.RequestPipeline.md) for request transacti
 - **AutoMapper** profiles often inherit BiUM’s **`MappingProfile<TApplicationMarker, TDomainMarker>`** pattern.
 - **FluentValidation** may validate commands/queries where configured.
 
+### GetFw*ForParameter (parameter select)
+
+Endpoint-backed parameters (`BiParameterSelect` / `GetFwParameterValues`) call **`GetFw{Entity}ForParameter`** on the owning microservice. All such endpoints share one CQRS shape:
+
+| Layer | Standard |
+|-------|----------|
+| **Query** | `record GetFwXForParameterQuery : BasePaginatedForValuesQueryDto<GetFwXForParameterDto>` plus optional domain filters (`CountryId`, `StateId`, `EntryId`, …). Inherits **`Q`**, **`PageStart`**, **`PageSize`**, **`SelectedIds`** from `BaseQuery`. |
+| **Handler** | `IPaginatedForValuesQueryHandler<GetFwXForParameterQuery, GetFwXForParameterDto>` — forwards `query.SelectedIds`, `query.Q`, `query.PageStart`, `query.PageSize` (and domain props) to the repository. |
+| **DTO** | `GetFwXForParameterDto : BaseForValuesDto<GetFwXForParameterDto>` (`Id`, `Name`). |
+| **Repository** | `Task<PaginatedApiResponse<GetFwXForParameterDto>> GetFwXForParameter(IReadOnlyList<Guid>? selectedIds, string? q, int? pageStart, int? pageSize, …)` — **`selectedIds` before `q`** when no extra filters; domain filters come first when present. |
+| **Repository impl** | Build filtered `IQueryable` → `ToPaginatedListAsync` → **`MergeSelectedIdsAsync`** (`BiUM.Specialized.Database`) so rows referenced by `selectedIds` but outside the current page are prepended once (no second HTTP round-trip from the client). |
+
+Static parameter values (`BiApp.Parameters` / `GetParameterValueByParameterId`) use the same merge helper. Outbound calls from Parameters or other services must pass **`selectedIds`** through `IHttpClientsService` query building (see [Agents.HttpClientService.md](Agents.HttpClientService.md)).
+
+**BiUM.Generator** emits this pattern for entities with the ForParameter feature; new services should not hand-roll a different handler or return type (`ApiResponse<List<>>` is not valid for ForParameter).
+
+### GetFw*ForNames (display names by id)
+
+Framework and dynamic UI resolve stored **Guids** to human-readable labels via **`GetFw{Entity}ForNames`** on the owning microservice. All such endpoints share one CQRS shape (reference: **BiApp.Accounting** `GetFwLedgersForNames`, **BiUM** sample2 `GetFwAccountsForNames`):
+
+| Layer | Standard |
+|-------|----------|
+| **Query** | `record GetFwXForNamesQuery : BaseForValuesQueryDto<GetFwXForNamesDto>`. Inherits **`Ids`** from `BaseQuery`. Optional extra props only when required (e.g. **BiApp.Parameters** `GetFwParameterValuesForNames` uses **`Id`** from `BaseQuery` for the parameter definition id). |
+| **Handler** | `IForValuesQueryHandler<GetFwXForNamesQuery, GetFwXForNamesDto>` — `ValidationHelper.CheckNull(query?.Ids)` → `ApiResponse.EmptyArray<Dto>()` before the repository call; then forward `query.Ids` (and domain props such as `query.Id` when present). |
+| **Controller** | `Task<ApiResponse<IList<Dto>>> GetFwXForNames([FromQuery] GetFwXForNamesQuery query)` |
+| **DTO** | `GetFwXForNamesDto : BaseForValuesDto<TEntity>` (`Id`, `Name`). Custom `Mapping` when the display key is not entity `Id` (e.g. **BiApp.EnergyTracking** `GetFwAssetIdForNames` maps `AssetId` → `Id`, `AssetName` → `Name`). |
+| **Repository** | `Task<ApiResponse<IList<GetFwXForNamesDto>>> GetFwXForNames(IReadOnlyList<Guid>? ids, CancellationToken cancellationToken)` — filter with `(ids == null \|\| ids.Contains(…))` on the stored id (or domain-specific column); **`ToListAsync`** / entity mapper extensions, **not** `ToPaginatedListAsync`; return `new ApiResponse<IList<Dto>> { Value = items }`. |
+
+Do not use `BaseQueryDto<List<>>`, `IQueryHandler`, or `PaginatedApiResponse` for ForNames endpoints. Cross-service enrichment (e.g. **BiApp.Stocks** composed stock labels) still applies the ids filter on the local entity **before** outbound calls.
+
 ## 5. Persistence
 
 - **`AddDatabase<TDbContext, TInitialiser>(configuration)`** registers the main EF Core context (see [Agents.Database.md](Agents.Database.md)).

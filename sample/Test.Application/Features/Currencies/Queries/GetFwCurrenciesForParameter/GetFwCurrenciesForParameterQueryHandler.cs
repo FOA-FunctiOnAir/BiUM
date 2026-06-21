@@ -17,7 +17,7 @@ public class GetFwCurrenciesForParameterQueryHandler : IPaginatedForValuesQueryH
 
     public async Task<PaginatedApiResponse<GetFwCurrenciesForParameterDto>> Handle(GetFwCurrenciesForParameterQuery query, CancellationToken cancellationToken)
     {
-        var repositoryResponse = await _currencyRepository.GetFwCurrenciesForParameter(query.Q, query.PageStart, query.PageSize, cancellationToken);
+        var repositoryResponse = await _currencyRepository.GetFwCurrenciesForParameter(query.SelectedIds, query.Q, query.PageStart, query.PageSize, cancellationToken);
 
         return repositoryResponse;
     }

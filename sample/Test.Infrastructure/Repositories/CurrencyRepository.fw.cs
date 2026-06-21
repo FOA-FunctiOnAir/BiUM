@@ -15,21 +15,25 @@ namespace BiApp.Test.Infrastructure.Repositories;
 public partial class CurrencyRepository
 {
     public async Task<PaginatedApiResponse<GetFwCurrenciesForParameterDto>> GetFwCurrenciesForParameter(
+        IReadOnlyList<Guid>? selectedIds,
         string? q,
         int? pageStart,
         int? pageSize,
         CancellationToken cancellationToken)
     {
-        var currencies = await _context.Currencies
+        var query = _context.Currencies
             .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(c =>
                 string.IsNullOrEmpty(q) ||
                 string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
-            )
-            .ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+            );
 
-        return currencies;
+        var result = await query.ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+
+        await result.MergeSelectedIdsAsync(selectedIds, query, Mapper, cancellationToken);
+
+        return result;
     }
 
     public async Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> GetFwCurrenciesForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)

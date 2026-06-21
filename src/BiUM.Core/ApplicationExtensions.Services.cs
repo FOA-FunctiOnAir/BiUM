@@ -1,9 +1,9 @@
+using BiUM.Core.Serialization;
 using MemoryPack;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -12,13 +12,9 @@ public static partial class ApplicationExtensions
 {
     public static WebApplicationBuilder ConfigureCoreServices(this WebApplicationBuilder builder)
     {
-        var jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-        };
+        var jsonSerializerOptions = new JsonSerializerOptions();
+
+        BiJsonOptions.Configure(jsonSerializerOptions);
 
         builder.Services.AddSingleton(jsonSerializerOptions);
 

@@ -1,6 +1,7 @@
 using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.HttpClients;
+using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Services.HttpClients;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Interceptors;
@@ -12,8 +13,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OpenTelemetry.Trace;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -36,13 +35,7 @@ public static partial class ApplicationExtensions
                 options.Filters.Add<ApiResponseLoggingFilter>();
                 options.Filters.Add<CompensatableApiActionFilter>();
             })
-            .AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-            });
+            .AddJsonOptions(options => BiJsonOptions.Configure(options.JsonSerializerOptions));
 
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing

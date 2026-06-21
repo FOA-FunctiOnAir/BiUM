@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParameter;
 
-public class GetFwCurrenciesForParameterDto : BaseForValuesDto<Currency>, IMapFrom<Currency>
+public class GetFwCurrenciesForParameterDto : BaseForValuesDto<GetFwCurrenciesForParameterDto>, IMapFrom<Currency>
 {
     public string? Code { get; set; }
 

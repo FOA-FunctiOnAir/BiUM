@@ -22,7 +22,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 ## 3. API yüzeyi
 
 - **`CallService` / `CallService<TResponse>(Guid serviceId, ...)`**  
-  Önce Configuration üzerinden servis tanımı alınır: `GET .../api/configuration/Service/GetService?Id=...` (`GetServiceInfoAsync`).  Ardından **`ServiceDto`**: iç mi dış mı (`Ids.Parameter.ServiceType`), HTTP metodu (`Ids.Parameter.HttpType`), URL, kimlik doğrulama, zaman aşımı ile istek yürütülür.
+  Önce Configuration üzerinden servis tanımı alınır: `GET .../api/configuration/Service/GetService?Id=...` (`GetServiceInfoAsync`).  Ardından **`ServiceDto`**: iç mi dış mı (`Ids.Parameter.ServiceType`), HTTP metodu (`Ids.Parameter.HttpType`), URL, kimlik doğrulama, zaman aşımı ile istek yürütülür. İmza: `serviceId`, `parameters`, **`selectedIds`**, `q`, `pageStart`, `pageSize`, `cancellationToken`. Çağrı tarafında **`serviceId:`**, **`parameters:`**, **`cancellationToken:`** gibi adlandırılmış argümanlar kullanın; yeni opsiyonel parametreler eklendiğinde positional kullanım kırılmasın.
 - **`Get` / `Post` / `Post<TResponse>(string url, ...)`**  
   Doğrudan URL; `external` bayrağı yanıtın `ApiResponse` JSON’u mu yoksa ham T mi olduğunu ayırt etmek için kullanılır.
 
@@ -30,7 +30,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 - Varsayılan HTTP zaman aşımı: 5 dakika; servis kaydındaki `TimeoutMs` varsa named client için o kullanılır.
 - **`IHttpClientFactory`**: named client anahtarı iç çağrılarda çoğunlukla `service.Id`; URL tabanlı çağrılarda `host:port` veya path segmenti türetilir.
-- İstek gövdesi JSON (`application/json`); GET/DELETE tarafında parametreler sorgu string’ine dönüşür; `Q`, `PageStart`, `PageSize` desteği.
+- İstek gövdesi JSON (`application/json`); GET/DELETE tarafında parametreler sorgu string’ine dönüşür; `SelectedIds`, `Q`, `PageStart`, `PageSize` desteği.
 - Dış servis kimlik doğrulama türleri: NoAuth, Basic, BearerStatic, ApiKeyHeader, ApiKeyQuery, CustomHeader (JSON header sözlüğü), OAuth2 client credentials, OAuth2 password (token uçları ayrı HTTP çağrıları).
 
 ## 4. Correlation (bağlam) yayılımı

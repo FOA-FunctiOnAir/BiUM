@@ -52,7 +52,7 @@ public static partial class Extensions
         IReadOnlyList<Guid>? selectedIds,
         Func<IReadOnlyList<Guid>, CancellationToken, Task<List<TDestination>>> fetchMissingAsync,
         CancellationToken cancellationToken = default)
-        where TDestination : BaseForValuesDto<TDestination>
+        where TDestination : ForValuesDtoBase
     {
         return response.MergeSelectedIdsAsync(selectedIds, x => x.Id, fetchMissingAsync, cancellationToken);
     }
@@ -64,7 +64,7 @@ public static partial class Extensions
         IMapper mapper,
         CancellationToken cancellationToken = default)
         where TSource : class, IEntity
-        where TDestination : BaseForValuesDto<TDestination>
+        where TDestination : ForValuesDtoBase
     {
         return response.MergeSelectedIdsAsync(
             selectedIds,

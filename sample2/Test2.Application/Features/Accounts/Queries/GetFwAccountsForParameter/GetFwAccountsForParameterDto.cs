@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParameter;
 
-public class GetFwAccountsForParameterDto : BaseForValuesDto<GetFwAccountsForParameterDto>, IMapFrom<Account>
+public class GetFwAccountsForParameterDto : BaseForValuesDto<Account>
 {
     public string? Code { get; set; }
 

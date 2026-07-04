@@ -201,6 +201,8 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddBiUMRedisClients(builder.Configuration);
 
+        builder.Services.AddBiUMInMemoryClient();
+
         builder.Services.AddBiUMRabbitMqClients(builder.Configuration);
 
         builder.Services.AddTransient<IDateTimeService, DateTimeService>();

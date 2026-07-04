@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BiUM.Core.Caching.Redis;
+namespace BiUM.Core.Caching.InMemory;
 
-public interface IRedisClient : IDisposable
+public interface IInMemoryClient
 {
     Task<CacheItem<T>> GetAsync<T>(string key);
     Task<IDictionary<string, CacheItem<T>>> GetAllAsync<T>(IEnumerable<string> keys);
@@ -20,5 +20,4 @@ public interface IRedisClient : IDisposable
     Task<bool> SetExpirationAsync(string key, TimeSpan expiresIn);
     Task<IEnumerable<string>> ScanKeysAsync(string pattern = "*");
     Task<string?> GetRawAsync(string key);
-    Task<IDictionary<string, string>> GetServerInfoAsync();
 }

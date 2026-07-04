@@ -1,6 +1,9 @@
 using BiUM.Contract.Enums;
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
+using BiUM.Core.Caching;
+using BiUM.Core.Caching.InMemory;
+using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Constants;
 using BiUM.Core.HttpClients;
@@ -43,6 +46,8 @@ public class HttpClientService : IHttpClientsService
     private const string UnexpectedSuccessErrorCode = "unexpected_success_response";
 
     private static readonly TimeSpan Timeout = new(0, 5, 0);
+    private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromHours(2);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -52,6 +57,8 @@ public class HttpClientService : IHttpClientsService
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly BiAppOptions _appOptions;
     private readonly HttpClientsOptions _httpClientOptions;
+    private readonly IRedisClient? _redisClient;
+    private readonly IInMemoryClient? _inMemoryClient;
 
     private readonly bool _isProductionLike;
 
@@ -66,6 +73,8 @@ public class HttpClientService : IHttpClientsService
         JsonSerializerOptions jsonSerializerOptions,
         IOptions<BiAppOptions> appOptionsAccessor,
         IOptions<HttpClientsOptions> httpClientOptionsAccessor,
+        IEnumerable<IRedisClient> redisClients,
+        IEnumerable<IInMemoryClient> inMemoryClients,
         ILogger<HttpClientService> logger)
     {
         _httpClientFactory = httpClientFactory;
@@ -75,6 +84,8 @@ public class HttpClientService : IHttpClientsService
         _jsonSerializerOptions = jsonSerializerOptions;
         _appOptions = appOptionsAccessor.Value;
         _httpClientOptions = httpClientOptionsAccessor.Value;
+        _redisClient = redisClients.FirstOrDefault();
+        _inMemoryClient = inMemoryClients.FirstOrDefault();
         _logger = logger;
 
         _isProductionLike = environment.IsProductionLike(_appOptions);
@@ -599,6 +610,48 @@ public class HttpClientService : IHttpClientsService
         var startTimestamp = Stopwatch.GetTimestamp();
         TimeSpan? elapsed = null;
 
+        var cacheKey = CacheKeys.HttpClientService.Configuration.Service(serviceId);
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var l1 = await _inMemoryClient.GetAsync<ServiceDto>(cacheKey);
+
+                if (l1.Value is not null)
+                {
+                    return new ApiResponse<ServiceDto>(l1.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "InMemory cache read failed for service info ServiceId={ServiceId}", serviceId);
+            }
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var l2 = await _redisClient.GetAsync<ServiceDto>(cacheKey);
+
+                if (l2.Value is not null)
+                {
+                    if (_inMemoryClient is not null)
+                    {
+                        try { await _inMemoryClient.AddAsync(cacheKey, l2.Value, ServiceInfoL1CacheTtl); }
+                        catch { /* non-critical */ }
+                    }
+
+                    return new ApiResponse<ServiceDto>(l2.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Redis cache read failed for service info ServiceId={ServiceId}", serviceId);
+            }
+        }
+
         try
         {
             parameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
@@ -623,6 +676,21 @@ public class HttpClientService : IHttpClientsService
             LogHttpClientFailureIfNeeded(nameof(GetServiceInfoAsync), httpMethod, finalUrl, response, result, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
 
             LogHttpClientSuccessIfEnabled(nameof(GetServiceInfoAsync), httpMethod, finalUrl, elapsed, response, result, serviceId);
+
+            if (result.Success && result.Value is not null)
+            {
+                if (_redisClient is not null)
+                {
+                    try { await _redisClient.AddAsync(cacheKey, result.Value, ServiceInfoL2CacheTtl); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Redis cache write failed for service info ServiceId={ServiceId}", serviceId); }
+                }
+
+                if (_inMemoryClient is not null)
+                {
+                    try { await _inMemoryClient.AddAsync(cacheKey, result.Value, ServiceInfoL1CacheTtl); }
+                    catch { /* non-critical */ }
+                }
+            }
 
             return result;
         }

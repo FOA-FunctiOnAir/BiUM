@@ -364,6 +364,75 @@ public class RedisClient : IRedisClient
         return _database.KeyExpireAsync(key, expiresIn);
     }
 
+    public async Task<string?> GetRawAsync(string key)
+    {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
+        var value = await _database.StringGetAsync(key, CommandFlags.PreferReplica);
+
+        return value.HasValue ? value.ToString() : null;
+    }
+
+    public async Task<IDictionary<string, string>> GetServerInfoAsync()
+    {
+        _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");
+
+        var result = new Dictionary<string, string>();
+        var endpoints = _connectionMultiplexer.GetEndPoints();
+
+        foreach (var endpoint in endpoints)
+        {
+            var server = _connectionMultiplexer.GetServer(endpoint);
+
+            if (server.IsReplica)
+            {
+                continue;
+            }
+
+            var sections = await server.InfoAsync();
+
+            foreach (var section in sections)
+            {
+                foreach (var entry in section)
+                {
+                    result[entry.Key] = entry.Value;
+                }
+            }
+
+            break;
+        }
+
+        return result;
+    }
+
+    public async Task<IEnumerable<string>> ScanKeysAsync(string pattern = "*")
+    {
+        _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
+        var keys = new List<string>();
+        var endpoints = _connectionMultiplexer.GetEndPoints();
+
+        foreach (var endpoint in endpoints)
+        {
+            var server = _connectionMultiplexer.GetServer(endpoint);
+
+            if (server.IsReplica)
+            {
+                continue;
+            }
+
+            await foreach (var key in server.KeysAsync(pattern: pattern, pageSize: 250))
+            {
+                keys.Add(key.ToString());
+            }
+
+            break;
+        }
+
+        return keys;
+    }
+
     private async Task LoadScriptsAsync()
     {
         _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");

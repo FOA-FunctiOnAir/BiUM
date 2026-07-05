@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
@@ -18,7 +19,6 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
     private readonly ConcurrentQueue<IChannel> _channels = new();
 
     private int _channelCount;
-    private object _channelCountLock = new();
 
     public RabbitMQPublisherChannelPool(
         RabbitMQConnectionProvider connectionProvider,
@@ -33,16 +33,12 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
 
     public async ValueTask<RabbitMQPoolChannel> GetChannelAsync()
     {
-        lock (_channelCountLock)
+        var count = Interlocked.Increment(ref _channelCount);
+
+        if (count > _capacity)
         {
-            if (_channelCount < _capacity)
-            {
-                _channelCount++;
-            }
-            else
-            {
-                throw new InvalidOperationException("RabbitMQ channel pool capacity exceeded");
-            }
+            Interlocked.Decrement(ref _channelCount);
+            throw new InvalidOperationException("RabbitMQ channel pool capacity exceeded");
         }
 
         if (_channels.TryDequeue(out var channel))
@@ -85,18 +81,12 @@ internal sealed class RabbitMQPublisherChannelPool : IAsyncDisposable
             }
         }
 
-        lock (_channelCountLock)
-        {
-            _channelCount = 0;
-        }
+        Interlocked.Exchange(ref _channelCount, 0);
     }
 
     private void ReturnChannel(IChannel channel)
     {
-        lock (_channelCountLock)
-        {
-            _channelCount--;
-        }
+        Interlocked.Decrement(ref _channelCount);
 
         if (channel.IsOpen)
         {

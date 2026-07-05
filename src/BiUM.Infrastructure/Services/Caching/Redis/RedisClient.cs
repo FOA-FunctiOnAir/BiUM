@@ -27,7 +27,7 @@ public class RedisClient : IRedisClient
     private readonly IDatabase? _database;
     private readonly TimeSpan? _defaultCacheTimeout;
 
-    private bool _scriptsLoaded;
+    private volatile bool _scriptsLoaded;
 
     private LoadedLuaScript? _removeIfEqual;
     private LoadedLuaScript? _replaceIfEqual;

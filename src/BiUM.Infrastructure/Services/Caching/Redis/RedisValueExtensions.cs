@@ -7,6 +7,12 @@ internal static class RedisValueExtensions
 {
     private static readonly RedisValue NullValue = "@@NULL";
 
+    private static readonly JsonSerializerOptions DeserializeOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        IncludeFields = true
+    };
+
     public static RedisValue ToRedisValue<T>(this T value)
     {
         var redisValue = NullValue;
@@ -96,7 +102,7 @@ internal static class RedisValueExtensions
             return redisValue.IsNull ? default! : (T)Convert.ChangeType(redisValue, Nullable.GetUnderlyingType(type)!);
         }
 
-        return JsonSerializer.Deserialize<T>((byte[])redisValue!, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, IncludeFields = true })!;
+        return JsonSerializer.Deserialize<T>((byte[])redisValue!, DeserializeOptions)!;
     }
 
     public static bool IsNumericType(this object o)

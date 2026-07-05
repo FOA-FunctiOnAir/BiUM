@@ -17,6 +17,7 @@ public class InMemoryClient : IInMemoryClient
     private readonly IMemoryCache _cache;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly ConcurrentDictionary<string, DateTimeOffset?> _keyRegistry = new();
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _keyLocks = new();
     private readonly SemaphoreSlim _atomicLock = new(1, 1);
 
     public InMemoryClient(IMemoryCache cache, JsonSerializerOptions jsonOptions)
@@ -41,7 +42,7 @@ public class InMemoryClient : IInMemoryClient
 
         foreach (var key in keys)
         {
-            result[key] = await GetAsync<T>(key);
+            result[key] = await GetAsync<T>(key).ConfigureAwait(false);
         }
 
         return result;
@@ -80,7 +81,7 @@ public class InMemoryClient : IInMemoryClient
 
     public async Task<bool> RemoveIfEqualsAsync<T>(string key, T expected)
     {
-        await _atomicLock.WaitAsync();
+        await _atomicLock.WaitAsync().ConfigureAwait(false);
 
         try
         {
@@ -94,7 +95,7 @@ public class InMemoryClient : IInMemoryClient
                 return false;
             }
 
-            await RemoveAsync(key);
+            await RemoveAsync(key).ConfigureAwait(false);
 
             return true;
         }
@@ -137,7 +138,7 @@ public class InMemoryClient : IInMemoryClient
 
     public async Task<bool> ReplaceIfEqualsAsync<T>(string key, T value, T expected, TimeSpan? expiresIn = null)
     {
-        await _atomicLock.WaitAsync();
+        await _atomicLock.WaitAsync().ConfigureAwait(false);
 
         try
         {
@@ -151,7 +152,7 @@ public class InMemoryClient : IInMemoryClient
                 return false;
             }
 
-            await AddAsync(key, value, expiresIn);
+            await AddAsync(key, value, expiresIn).ConfigureAwait(false);
 
             return true;
         }
@@ -207,7 +208,7 @@ public class InMemoryClient : IInMemoryClient
     {
         if (_cache.TryGetValue<object>(key, out var value) && value is not null)
         {
-            return Task.FromResult<string?>(System.Text.Json.JsonSerializer.Serialize(value, _jsonOptions));
+            return Task.FromResult<string?>(JsonSerializer.Serialize(value, _jsonOptions));
         }
 
         return Task.FromResult<string?>(null);
@@ -222,6 +223,45 @@ public class InMemoryClient : IInMemoryClient
             .ToList();
 
         return Task.FromResult<IEnumerable<string>>(matched);
+    }
+
+    public async Task<T?> GetOrCreateAsync<T>(string key, Func<Task<T?>> factory, TimeSpan? expiresIn = null)
+    {
+        var existing = await GetAsync<T>(key).ConfigureAwait(false);
+        if (existing.Value is not null) return existing.Value;
+
+        var semaphore = _keyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+
+        await semaphore.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            existing = await GetAsync<T>(key).ConfigureAwait(false);
+            if (existing.Value is not null) return existing.Value;
+
+            var value = await factory().ConfigureAwait(false);
+
+            if (value is not null)
+            {
+                await AddAsync(key, value, expiresIn).ConfigureAwait(false);
+            }
+
+            return value;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    public void Dispose()
+    {
+        _atomicLock.Dispose();
+
+        foreach (var sem in _keyLocks.Values)
+        {
+            sem.Dispose();
+        }
     }
 
     private static Regex GlobToRegex(string pattern)

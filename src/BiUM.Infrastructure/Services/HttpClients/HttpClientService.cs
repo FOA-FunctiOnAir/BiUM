@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -48,6 +49,7 @@ public class HttpClientService : IHttpClientsService
     private static readonly TimeSpan Timeout = new(0, 5, 0);
     private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromHours(2);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ServiceInfoLocks = new();
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -612,11 +614,12 @@ public class HttpClientService : IHttpClientsService
 
         var cacheKey = CacheKeys.HttpClientService.Configuration.Service(serviceId);
 
+        // L1: InMemory fast path (no lock — per-key locking happens inside GetOrCreateAsync)
         if (_inMemoryClient is not null)
         {
             try
             {
-                var l1 = await _inMemoryClient.GetAsync<ServiceDto>(cacheKey);
+                var l1 = await _inMemoryClient.GetAsync<ServiceDto>(cacheKey).ConfigureAwait(false);
 
                 if (l1.Value is not null)
                 {
@@ -629,90 +632,113 @@ public class HttpClientService : IHttpClientsService
             }
         }
 
-        if (_redisClient is not null)
-        {
-            try
-            {
-                var l2 = await _redisClient.GetAsync<ServiceDto>(cacheKey);
+        // Serialize concurrent misses for the same key to prevent stampede
+        var semaphore = ServiceInfoLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
 
-                if (l2.Value is not null)
-                {
-                    if (_inMemoryClient is not null)
-                    {
-                        try { await _inMemoryClient.AddAsync(cacheKey, l2.Value, ServiceInfoL1CacheTtl); }
-                        catch { /* non-critical */ }
-                    }
-
-                    return new ApiResponse<ServiceDto>(l2.Value);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Redis cache read failed for service info ServiceId={ServiceId}", serviceId);
-            }
-        }
+        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            parameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
-
-            finalUrl = AppendParametersAsQueryString(_httpClientOptions.GetFullUrl(getServiceUrl), parameters);
-
-            var request = CreateRequestMessage(httpMethod, finalUrl);
-
-            var httpClient = GetHttpClient(finalUrl);
-
-            var response = await httpClient.SendAsync(request, cancellationToken);
-
-            elapsed = Stopwatch.GetElapsedTime(startTimestamp);
-
-            var result =
-                await TryDeserializeApiResponse<ServiceDto>(
-                    response,
-                    external: false,
-                    isSuccessful: response.IsSuccessStatusCode,
-                    cancellationToken: cancellationToken);
-
-            LogHttpClientFailureIfNeeded(nameof(GetServiceInfoAsync), httpMethod, finalUrl, response, result, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
-
-            LogHttpClientSuccessIfEnabled(nameof(GetServiceInfoAsync), httpMethod, finalUrl, elapsed, response, result, serviceId);
-
-            if (result.Success && result.Value is not null)
+            // Double-check after acquiring semaphore
+            if (_inMemoryClient is not null)
             {
-                if (_redisClient is not null)
+                try
                 {
-                    try { await _redisClient.AddAsync(cacheKey, result.Value, ServiceInfoL2CacheTtl); }
-                    catch (Exception ex) { _logger.LogWarning(ex, "Redis cache write failed for service info ServiceId={ServiceId}", serviceId); }
+                    var l1 = await _inMemoryClient.GetAsync<ServiceDto>(cacheKey).ConfigureAwait(false);
+                    if (l1.Value is not null) return new ApiResponse<ServiceDto>(l1.Value);
                 }
+                catch { /* non-critical */ }
+            }
 
-                if (_inMemoryClient is not null)
+            if (_redisClient is not null)
+            {
+                try
                 {
-                    try { await _inMemoryClient.AddAsync(cacheKey, result.Value, ServiceInfoL1CacheTtl); }
-                    catch { /* non-critical */ }
+                    var l2 = await _redisClient.GetAsync<ServiceDto>(cacheKey).ConfigureAwait(false);
+
+                    if (l2.Value is not null)
+                    {
+                        if (_inMemoryClient is not null)
+                        {
+                            try { await _inMemoryClient.AddAsync(cacheKey, l2.Value, ServiceInfoL1CacheTtl).ConfigureAwait(false); }
+                            catch { /* non-critical */ }
+                        }
+
+                        return new ApiResponse<ServiceDto>(l2.Value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Redis cache read failed for service info ServiceId={ServiceId}", serviceId);
                 }
             }
 
-            return result;
-        }
-        catch (Exception ex)
-        {
-            elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
-
-            parameters ??= new Dictionary<string, dynamic> { ["Id"] = serviceId.ToString() };
-
-            LogHttpClientException(nameof(GetServiceInfoAsync), ex, finalUrl, httpMethod, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
-
-            var result = new ApiResponse<ServiceDto>();
-
-            result.AddMessage(new ResponseMessage()
+            try
             {
-                Code = ex.ToErrorCode(),
-                Message = ex.Message,
-                Exception = _isProductionLike ? ex.Message : ex.ToString(),
-                Severity = MessageSeverity.Error
-            });
+                parameters = AddSearchAndPagination(new([new("Id", serviceId.ToString())]));
 
-            return result;
+                finalUrl = AppendParametersAsQueryString(_httpClientOptions.GetFullUrl(getServiceUrl), parameters);
+
+                var request = CreateRequestMessage(httpMethod, finalUrl);
+
+                var httpClient = GetHttpClient(finalUrl);
+
+                var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
+                var result =
+                    await TryDeserializeApiResponse<ServiceDto>(
+                        response,
+                        external: false,
+                        isSuccessful: response.IsSuccessStatusCode,
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                LogHttpClientFailureIfNeeded(nameof(GetServiceInfoAsync), httpMethod, finalUrl, response, result, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
+
+                LogHttpClientSuccessIfEnabled(nameof(GetServiceInfoAsync), httpMethod, finalUrl, elapsed, response, result, serviceId);
+
+                if (result.Success && result.Value is not null)
+                {
+                    if (_redisClient is not null)
+                    {
+                        try { await _redisClient.AddAsync(cacheKey, result.Value, ServiceInfoL2CacheTtl).ConfigureAwait(false); }
+                        catch (Exception ex) { _logger.LogWarning(ex, "Redis cache write failed for service info ServiceId={ServiceId}", serviceId); }
+                    }
+
+                    if (_inMemoryClient is not null)
+                    {
+                        try { await _inMemoryClient.AddAsync(cacheKey, result.Value, ServiceInfoL1CacheTtl).ConfigureAwait(false); }
+                        catch { /* non-critical */ }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+                parameters ??= new Dictionary<string, dynamic> { ["Id"] = serviceId.ToString() };
+
+                LogHttpClientException(nameof(GetServiceInfoAsync), ex, finalUrl, httpMethod, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters, null, serviceId));
+
+                var result = new ApiResponse<ServiceDto>();
+
+                result.AddMessage(new ResponseMessage()
+                {
+                    Code = ex.ToErrorCode(),
+                    Message = ex.Message,
+                    Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                    Severity = MessageSeverity.Error
+                });
+
+                return result;
+            }
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 

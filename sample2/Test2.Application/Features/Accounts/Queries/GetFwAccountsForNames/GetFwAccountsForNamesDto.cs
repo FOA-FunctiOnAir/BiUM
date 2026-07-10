@@ -1,12 +1,11 @@
 using AutoMapper;
 using BiApp.Test2.Domain.Entities;
 using BiUM.Specialized.Common.Mapper;
-using BiUM.Specialized.Mapping;
 using System.Linq;
 
 namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForNames;
 
-public class GetFwAccountsForNamesDto : BaseForValuesDto<Account>, IMapFrom<Account>
+public class GetFwAccountsForNamesDto : BaseForValuesDto<Account>
 {
     public void Mapping(Profile profile)
     {

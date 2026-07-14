@@ -1,3 +1,4 @@
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
 using System.Collections.Generic;
@@ -20,6 +21,10 @@ public static class Extensions
 
     public static string ToTranslationString(this IEnumerable<BaseTranslationDto> source)
     {
-        return source.FirstOrDefault()?.Translation ?? "";
+        var list = source as IList<BaseTranslationDto> ?? [.. source];
+
+        return list.FirstOrDefault(x => x.LanguageId == Ids.Language.English.Id)?.Translation
+            ?? list.FirstOrDefault()?.Translation
+            ?? "";
     }
 }

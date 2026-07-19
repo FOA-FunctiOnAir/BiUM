@@ -91,7 +91,7 @@ public partial class AccountRepository
                 (string.IsNullOrEmpty(code) || p.Code == code)
             );
 
-        var result = await currencys.ToPaginatedListAsync<Account, AccountsDto>(Mapper, pageStart ?? 0, pageSize ?? 10, cancellationToken);
+        var result = await currencys.ToPaginatedListAsync<Account, AccountsDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
 
         return result;
     }

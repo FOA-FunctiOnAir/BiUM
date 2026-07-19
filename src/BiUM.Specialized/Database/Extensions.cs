@@ -30,7 +30,11 @@ public static partial class Extensions
                     configuration.GetConnectionString("MSSQL"),
                     sql =>
                     {
-                        _ = sql.MigrationsAssembly(typeof(TDbContext).Assembly.FullName);
+                        var mainMigrationsAssembly = EfMigrationsAssemblyResolver.GetActiveMigrationsAssemblyName(configuration, bolt: false);
+                        if (mainMigrationsAssembly is not null)
+                        {
+                            _ = sql.MigrationsAssembly(mainMigrationsAssembly);
+                        }
                         _ = sql.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
@@ -53,6 +57,11 @@ public static partial class Extensions
                     connectionStringBuilder.ConnectionString,
                     npgsqlOptions =>
                     {
+                        var mainMigrationsAssembly = EfMigrationsAssemblyResolver.GetActiveMigrationsAssemblyName(configuration, bolt: false);
+                        if (mainMigrationsAssembly is not null)
+                        {
+                            _ = npgsqlOptions.MigrationsAssembly(mainMigrationsAssembly);
+                        }
                         npgsqlOptions.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),

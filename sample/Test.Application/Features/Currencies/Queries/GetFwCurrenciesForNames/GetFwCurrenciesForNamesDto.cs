@@ -7,7 +7,7 @@ namespace BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForN
 
 public class GetFwCurrenciesForNamesDto : BaseForValuesDto<Currency>
 {
-    public void Mapping(Profile profile)
+    public static void Mapping(Profile profile)
     {
         profile.CreateMap<Currency, GetFwCurrenciesForNamesDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.CurrencyTranslations.GetColumnTranslation(nameof(res.Name))));

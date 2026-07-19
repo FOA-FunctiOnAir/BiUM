@@ -56,6 +56,8 @@ public static partial class ApplicationExtensions
             builder.Environment.IsDevelopment() ||
             appOptions is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
 
+        var isSwaggerEnabled = builder.Environment.IsSwaggerEnabled(appOptions);
+
         builder.Services.Configure<HttpClientsOptions>(builder.Configuration.GetSection(HttpClientsOptions.Name));
         builder.Services.Configure<BiGrpcOptions>(builder.Configuration.GetSection(BiGrpcOptions.Name));
 
@@ -142,9 +144,8 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddEndpointsApiExplorer();
 
-        if (isNotProductionLike)
+        if (isSwaggerEnabled)
         {
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc(

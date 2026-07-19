@@ -1,5 +1,6 @@
 using BiUM.Core.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -27,12 +28,9 @@ public abstract class DbContextInitialiser<TDbContext> : IDbContextInitialiser
     {
         try
         {
-            await DbContext.Database.EnsureCreatedAsync(cancellationToken);
+            var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
 
-            if (DbContext.Database.IsSqlServer())
-            {
-                await DbContext.Database.MigrateAsync(cancellationToken);
-            }
+            await EfDatabaseInitialiser.InitialiseSchemaAsync(DbContext, configuration, bolt: false, cancellationToken);
         }
         catch (Exception ex)
         {

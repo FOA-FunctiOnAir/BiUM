@@ -11,6 +11,27 @@ using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
+public static class PaginationQuery
+{
+    public static IBaseQuery ToPageBaseQuery(int? pageStart = 0, int? pageSize = 10) =>
+        new PageOnlyBaseQuery { PageStart = pageStart, PageSize = pageSize };
+
+    private sealed class PageOnlyBaseQuery : IBaseQuery
+    {
+        public string? Q { get; init; }
+
+        public Dictionary<string, string>? Filters { get; init; }
+
+        public string? SortBy { get; init; }
+
+        public SortDirection? SortDirection { get; init; }
+
+        public int? PageStart { get; init; }
+
+        public int? PageSize { get; init; }
+    }
+}
+
 public static partial class Extensions
 {
     public static async Task<PaginatedApiResponse<TSource>> ToPaginatedListAsync<TSource>(
@@ -196,4 +217,5 @@ public static partial class Extensions
             pageSize: _pageSize
         );
     }
+
 }

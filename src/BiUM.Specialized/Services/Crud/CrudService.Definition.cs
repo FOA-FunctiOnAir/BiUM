@@ -573,7 +573,7 @@ public partial class CrudService
                 (string.IsNullOrEmpty(q) || dc.DomainCrudTranslations.Any(rt => rt.Translation != null && rt.LanguageId == CorrelationContext.LanguageId && rt.Translation.ToLower().Contains(q.ToLower()))) &&
                 (string.IsNullOrEmpty(name) || (!string.IsNullOrEmpty(dc.Name) && dc.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(dc.Code) && dc.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
-            .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(Mapper, pageStart, pageSize, cancellationToken);
+            .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
 
         return domainCruds;
     }

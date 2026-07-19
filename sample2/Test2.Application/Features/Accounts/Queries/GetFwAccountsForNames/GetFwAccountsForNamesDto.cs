@@ -7,7 +7,7 @@ namespace BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForName
 
 public class GetFwAccountsForNamesDto : BaseForValuesDto<Account>
 {
-    public void Mapping(Profile profile)
+    public static void Mapping(Profile profile)
     {
         profile.CreateMap<Account, GetFwAccountsForNamesDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.AccountTranslations.GetColumnTranslation(nameof(res.Name))));

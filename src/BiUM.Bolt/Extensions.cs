@@ -4,8 +4,6 @@ using BiUM.Core.Common.Exceptions;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
-using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -29,51 +27,16 @@ public static partial class ConfigureApp
 
         services.Configure<BoltOptions>(section);
 
-        if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
+        var databaseName = BoltDatabaseExtensions.TryGetMainDatabaseName(configuration);
+
+        if (string.IsNullOrWhiteSpace(databaseName))
         {
-            var databaseName = string.Empty;
-            var connectionStringArray = configuration.GetConnectionString("PostgreSQL")?.Split(";");
-
-            if (connectionStringArray is null || connectionStringArray.Length == 0)
-            {
-                return services;
-            }
-
-            foreach (var connectionStringItem in connectionStringArray)
-            {
-                var connectionStringItems = connectionStringItem.Trim().Split("=");
-
-                if (connectionStringItems[0] == "Database")
-                {
-                    databaseName = connectionStringItems[1].Trim();
-
-                    break;
-                }
-            }
-
-            var boltDbName = databaseName ?? "db";
-
-            var connectionString = string.Format(boltOptions.ConnectionString, boltDbName);
-
-            var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
-            {
-                Pooling = true,
-                MinPoolSize = 0,
-                MaxPoolSize = 100,
-                KeepAlive = 30
-            };
-
-            services.AddDbContext<TDbContext>(options =>
-                options.UseNpgsql(
-                    connectionStringBuilder.ConnectionString,
-                    npgsqlOptions =>
-                    {
-                        npgsqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(10),
-                            errorCodesToAdd: null);
-                    }));
+            return services;
         }
+
+        var connectionString = string.Format(boltOptions.ConnectionString, databaseName);
+
+        services.AddBoltDbContext<TDbContext>(configuration, connectionString);
 
         services.AddScoped<IBoltDbContextInitialiser, TDbContextInitialiser>();
         services.AddScoped<BoltEntitySaveChangesInterceptor>();

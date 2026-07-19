@@ -29,7 +29,7 @@ public partial class CurrencyRepository
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
             );
 
-        var result = await query.ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+        var result = await query.ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
 
         await result.MergeSelectedIdsAsync(selectedIds, query, Mapper, cancellationToken);
 

@@ -4,7 +4,7 @@ Bu belge, ASP.NET Core pipeline’da BiUM’un eklediği middleware ve filtreler
 
 ## 1. `UseInfrastructure` (`BiUM.Infrastructure/ApplicationExtensions.App.cs`)
 
-- **Swagger / SwaggerUI**: Geliştirme veya `BiAppOptions.Environment` üretim benzeri olmayan ortamlarda.
+- **Swagger / SwaggerUI**: `BiAppOptions.Environment` üretim benzeri (`Production`, `Sandbox`, `Staging`, `QA`) ise kapalı; `Development` / `PreDevelopment` ise açık (host `ASPNETCORE_ENVIRONMENT` yalnızca `BiAppOptions` belirtilmemişse devreye girer). Ortak mantık: `IHostEnvironment.IsSwaggerEnabled` / `IsSwaggerUiEnabled` (`BiUM.Core/Extensions/HostEnvironmentExtensions.cs`). Gateway `SwaggerForOcelot` aynı kuralları kullanır.
 - **Exception handling**
   - **gRPC** (`application/grpc`): `GrpcGlobalExceptionHandlerMiddleware` — yakalanan istisnalar **`LogError`** ile yazılır.
   - **REST**: `UseExceptionHandler` — `ApiResponse` JSON (`application/problem+json`); işlenmemiş istisna **`LogError`**; **`ApiResponseRollbackException`** için `application/json`, taşınan status ve `ApiResponse` gövdesi; yanıt yazılmadan önce taşınan mesajlar **`LogError`** ile özetlenir (`ApiResponseLogSummary`).

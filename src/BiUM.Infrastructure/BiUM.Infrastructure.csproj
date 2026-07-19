@@ -23,6 +23,7 @@
     <PackageReference Include="RabbitMQ.Client.OpenTelemetry" />
     <PackageReference Include="SimpleHtmlToPdf" />
     <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 

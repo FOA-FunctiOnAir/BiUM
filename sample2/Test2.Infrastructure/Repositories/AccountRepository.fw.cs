@@ -29,7 +29,7 @@ public partial class AccountRepository
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
             );
 
-        var result = await query.ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(Mapper, pageStart, pageSize, cancellationToken);
+        var result = await query.ToPaginatedListAsync<Account, GetFwAccountsForParameterDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
 
         await result.MergeSelectedIdsAsync(selectedIds, query, Mapper, cancellationToken);
 

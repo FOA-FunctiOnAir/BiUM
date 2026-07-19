@@ -32,11 +32,11 @@ public static partial class ApplicationExtensions
             app.Environment.IsDevelopment() ||
             appOptions is not { Environment: BiAppEnvironments.Production or BiAppEnvironments.Sandbox or "Staging" or "QA" };
 
-        if (isNotProductionLike)
+        if (app.Environment.IsSwaggerEnabled(appOptions))
         {
             _ = app.UseSwagger();
 
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsSwaggerUiEnabled(appOptions))
             {
                 _ = app.UseSwaggerUI(options =>
                 {

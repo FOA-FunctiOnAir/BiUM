@@ -57,24 +57,35 @@ public class MappingProfile : Profile
                 continue;
             }
 
-            var instance = Activator.CreateInstance(type);
-
-            var methodInfo = type.GetMethod(mappingMethodName);
+            var methodInfo = type.GetMethod(
+                mappingMethodName,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
             if (methodInfo is not null)
             {
-                methodInfo.Invoke(instance, [this]);
-            }
-            else
-            {
-                var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType));
-
-                foreach (var @interface in interfaces)
+                if (methodInfo.IsStatic)
                 {
-                    var interfaceMethodInfo = @interface.GetMethod(mappingMethodName, argumentTypes);
-
-                    interfaceMethodInfo?.Invoke(instance, [this]);
+                    methodInfo.Invoke(null, [this]);
                 }
+                else
+                {
+                    var instance = Activator.CreateInstance(type);
+
+                    methodInfo.Invoke(instance, [this]);
+                }
+
+                continue;
+            }
+
+            var instanceForInterface = Activator.CreateInstance(type);
+
+            var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType));
+
+            foreach (var @interface in interfaces)
+            {
+                var interfaceMethodInfo = @interface.GetMethod(mappingMethodName, argumentTypes);
+
+                interfaceMethodInfo?.Invoke(instanceForInterface, [this]);
             }
         }
     }

@@ -4,6 +4,8 @@ using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -36,12 +38,9 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
     {
         try
         {
-            await BoltDbContext.Database.EnsureCreatedAsync(cancellationToken);
+            var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
 
-            if (BoltDbContext.Database.IsSqlServer())
-            {
-                await BoltDbContext.Database.MigrateAsync(cancellationToken);
-            }
+            await EfDatabaseInitialiser.InitialiseSchemaAsync(BoltDbContext, configuration, bolt: true, cancellationToken);
         }
         catch (Exception ex)
         {

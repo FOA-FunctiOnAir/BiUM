@@ -13,7 +13,9 @@ Most `BiApp.*` services use four main projects:
 | `{Service}.API` | ASP.NET Core host, controllers, `Program.cs`, static files if any |
 | `{Service}.Application` | Use cases, MediatR handlers, DTOs, validators, repository **interfaces**, `ConfigureServices` entry for application DI |
 | `{Service}.Domain` | Entities, domain markers, minimal logic |
-| `{Service}.Infrastructure` | EF Core `DbContext`, repository implementations, `ConfigureServices` / `ConfigureApps`, migrations |
+| `{Service}.Infrastructure` | EF Core `DbContext`, repository implementations, `ConfigureServices` / `ConfigureApps` |
+
+Optional migration projects (lazy via repo-root **`add-migration.ps1`**): solution folder **Migrations** with `{Domain}.Migrations.Postgres`, `.Mssql`, and when `AddBolt` is used `.Postgres.Bolt` / `.Mssql.Bolt`. See [Agents.Database.md](Agents.Database.md).
 
 Optional: `{Service}.Contract` for gRPC or shared DTOs consumed by other apps.
 

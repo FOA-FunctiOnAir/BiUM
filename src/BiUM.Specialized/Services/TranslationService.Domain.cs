@@ -170,7 +170,7 @@ public sealed partial class TranslationService
             .Where(a =>
                 (string.IsNullOrEmpty(q) || a.DomainTranslationDetails.Any(rt => rt.LanguageId == _correlationContext.LanguageId && rt.Text.Contains(q, StringComparison.CurrentCultureIgnoreCase))) &&
                 (string.IsNullOrEmpty(code) || (!string.IsNullOrEmpty(a.Code) && a.Code.Contains(code, StringComparison.CurrentCultureIgnoreCase))))
-            .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(_mapper, pageStart, pageSize, cancellationToken);
+            .ToPaginatedListAsync<DomainTranslation, DomainTranslationsDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), _mapper, cancellationToken);
 
         if (domainTranslations.Value is not null && microserviceId.HasValue)
         {

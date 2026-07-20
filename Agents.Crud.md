@@ -57,6 +57,7 @@ Hata kodu (yetki yok): `crud_definition_access_denied`.
 
 - İstek başına “bu `code` tanımı bu çağrı için kullanılabilir mi?” (API key, imza, ek policy) gateway veya özel middleware ile bağlanır.
 - `GetListAsync` (dinamik tablo listesi) varsayılan olarak satır `tenantId` ile otomatik kısıtlama yapmaz; çok kiracılı tek tabloda filtre **query parametresi** veya politika ile eklenmelidir.
+- `GetListAsync` sayfalama/sıralama query anahtarları (`PageStart`, `PageSize`, `Sort`) büyük/küçük harf duyarsız okunur (`pageStart`, `pageSize`, `sort` dahil).
 
 ## 7. İlgili kod konumları
 

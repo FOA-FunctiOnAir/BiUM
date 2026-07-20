@@ -246,7 +246,7 @@ public partial class CrudService
 
         var order = string.Empty;
 
-        if (query.TryGetValue("Sort", out var sortSpec) && !string.IsNullOrWhiteSpace(sortSpec))
+        if (TryGetQueryValue(query, "Sort", out var sortSpec) && !string.IsNullOrWhiteSpace(sortSpec))
         {
             var pieces = new List<string>();
 
@@ -274,8 +274,8 @@ public partial class CrudService
             order = $" ORDER BY {table}.{Quote(api2db["created"])} DESC, {table}.{Quote(api2db["createdTime"])} DESC";
         }
 
-        var pageSize = query.TryGetValue("PageSize", out var psStr) && int.TryParse(psStr, out var ps) && ps > 0 ? ps : 20;
-        var pageStart = query.TryGetValue("PageStart", out var pstStr) && int.TryParse(pstStr, out var pst) && pst >= 0 ? pst : 0;
+        var pageSize = TryGetQueryValue(query, "PageSize", out var psStr) && int.TryParse(psStr, out var ps) && ps > 0 ? ps : 20;
+        var pageStart = TryGetQueryValue(query, "PageStart", out var pstStr) && int.TryParse(pstStr, out var pst) && pst >= 0 ? pst : 0;
         var pageNumber = (pageStart / pageSize) + 1;
 
         var limit = dbType == DbTypePostgresql ? $" LIMIT {pageSize} OFFSET {pageStart}" : $" OFFSET {pageStart} ROWS FETCH NEXT {pageSize} ROWS ONLY";
@@ -290,6 +290,22 @@ public partial class CrudService
 
         string Quote(string s) => dbType == DbTypePostgresql ? QuotePg(s) : QuoteMs(s);
         string SnapQ(string col) => dbType == DbTypePostgresql ? QuotePg(col) : QuoteMs(col);
+    }
+
+    private static bool TryGetQueryValue(IReadOnlyDictionary<string, string> query, string key, out string value)
+    {
+        foreach (var kv in query)
+        {
+            if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                value = kv.Value;
+                return true;
+            }
+        }
+
+        value = string.Empty;
+
+        return false;
     }
 
     private static bool TryNormalizeBaseFilterValue(string key, string raw, out object? value)

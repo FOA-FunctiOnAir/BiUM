@@ -12,6 +12,7 @@ using BiUM.Infrastructure.Common.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
@@ -32,6 +33,10 @@ namespace BiUM.Infrastructure.Services.HttpClients;
 public class HttpClientService : IHttpClientsService
 {
     private const int UrlMaxLength = 2048;
+
+    private static readonly ObjectPool<StringBuilder> StringBuilderPool =
+        new DefaultObjectPoolProvider().Create(
+            new StringBuilderPooledObjectPolicy { InitialCapacity = UrlMaxLength, MaximumRetainedCapacity = UrlMaxLength * 4 });
 
     private const int SuccessLogUrlMaxChars = 512;
 
@@ -785,52 +790,64 @@ public class HttpClientService : IHttpClientsService
 
     private static string AppendParametersAsQueryString(string url, Dictionary<string, dynamic>? parameters = null)
     {
-        var sb = new StringBuilder(UrlMaxLength);
-
-        sb.Append(url);
-
-        if (parameters is not { Count: > 0 })
+        var sb = StringBuilderPool.Get();
+        try
         {
-            return sb.ToString();
-        }
+            sb.Append(url);
 
-        if (!url.Contains('?'))
-        {
-            sb.Append('?');
-        }
-
-        foreach (var parameter in parameters)
-        {
-            if (parameter.Value is null)
+            if (parameters is not { Count: > 0 })
             {
-                continue;
+                return sb.ToString();
             }
 
-            if (parameter.Value is IEnumerable enumerable and not string)
+            if (!url.Contains('?'))
             {
-                foreach (var item in enumerable)
-                {
-                    if (item is null)
-                    {
-                        continue;
-                    }
+                sb.Append('?');
+            }
 
+            foreach (var parameter in parameters)
+            {
+                if (parameter.Value is null)
+                {
+                    continue;
+                }
+
+                if (parameter.Value is IEnumerable enumerable and not string)
+                {
+                    foreach (var item in enumerable)
+                    {
+                        if (item is null)
+                        {
+                            continue;
+                        }
+
+                        sb.Append(parameter.Key);
+                        sb.Append('=');
+                        sb.Append(Uri.EscapeDataString(item.ToString()!));
+                        sb.Append('&');
+                    }
+                }
+                else
+                {
                     sb.Append(parameter.Key);
                     sb.Append('=');
-                    sb.Append(Uri.EscapeDataString(item.ToString()!));
+                    sb.Append(Uri.EscapeDataString(parameter.Value.ToString()!));
                     sb.Append('&');
                 }
             }
-            else
-            {
-                sb.Append(parameter.Key);
-                sb.Append('=');
-                sb.Append(Uri.EscapeDataString(Convert.ToString(parameter.Value)));
-                sb.Append('&');
-            }
-        }
 
-        return sb.ToString().TrimEnd('&');
+            if (sb.Length > 0 && sb[sb.Length - 1] == '&')
+            {
+                sb.Length--;
+            }
+
+            return sb.ToString();
+        }
+        finally
+        {
+            sb.Clear();
+            StringBuilderPool.Return(sb);
+        }
     }
 
     private static Dictionary<string, dynamic> AddSearchAndPagination(

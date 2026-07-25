@@ -98,7 +98,7 @@ Static parameter values (`BiApp.Parameters` / `GetParameterValueByParameterId`) 
 
 **`ApplyForNamesIds`**: For **`GetFw*ForNames`** only — null or empty **`ids`** yields **no rows**; otherwise restrict to the given id list. Optional **`Expression<Func<TSource, Guid>>`** selector when the lookup key is not entity **`Id`** (e.g. **BiApp.EnergyTracking** `AssetId`).
 
-**`ToForParameterPaginatedListAsync`**: single-call pipeline for ForParameter repositories (`ApplyExcludedIds` + `ToPaginatedListAsync` + `MergeSelectedIdsAsync`). Pass **`PaginationQuery.ToPageBaseQuery(pageStart, pageSize)`** or `pageStart`/`pageSize` overload.
+**`ToForParameterPaginatedListAsync`**: single-call pipeline for ForParameter repositories (`ApplyExcludedIds` + `ToPaginatedListAsync` + `MergeSelectedIdsAsync`). Pass **`PaginationQuery.ToPageBaseQuery(pageStart, pageSize)`** (or the convenience `pageStart`/`pageSize` overload on `ToForParameterPaginatedListAsync` only).
 
 **ProjectTo helpers** (`ProjectToListAsync`, `ProjectToFirstOrDefaultAsync`, `ProjectToPaginatedListAsync`, `ProjectToForParameterPaginatedListAsync`): SQL-project via AutoMapper; prefer over in-memory `ToListAsync<TSource,TDestination>` when only DTO columns are needed.
 

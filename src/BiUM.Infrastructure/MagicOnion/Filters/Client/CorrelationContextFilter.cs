@@ -34,28 +34,33 @@ internal sealed class CorrelationContextFilter : IClientFilter
             return next.Invoke(context);
         }
 
-        var httpContext = _httpContextAccessor.HttpContext;
+        // Prefer in-memory accessor: it holds the most current context for this request
+        // (set by CorrelationContextMiddleware before any gRPC call), avoiding a redundant
+        // HTTP header serialize on the hot path when cache is warm.
+        var correlationContext = _correlationContextAccessor.CorrelationContext;
 
-        if (httpContext is not null)
+        if (correlationContext is not null)
         {
-            var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
+            var bytes = _correlationContextSerializer.Serialize(correlationContext);
 
-            if (!string.IsNullOrEmpty(correlationContextHeader))
-            {
-                headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
-            }
+            var base64 = Convert.ToBase64String(bytes);
+
+            headers.Add(HeaderKeys.CorrelationContext, base64);
         }
         else
         {
-            var correlationContext = _correlationContextAccessor.CorrelationContext;
+            // Fallback: read from HTTP request header (e.g. background jobs or
+            // calls made outside a CorrelationContextMiddleware pipeline).
+            var httpContext = _httpContextAccessor.HttpContext;
 
-            if (correlationContext is not null)
+            if (httpContext is not null)
             {
-                var bytes = _correlationContextSerializer.Serialize(correlationContext);
+                var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
 
-                var base64 = Convert.ToBase64String(bytes);
-
-                headers.Add(HeaderKeys.CorrelationContext, base64);
+                if (!string.IsNullOrEmpty(correlationContextHeader))
+                {
+                    headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
+                }
             }
         }
 

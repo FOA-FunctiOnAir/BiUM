@@ -12,6 +12,7 @@ public interface IHttpClientsService
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -21,6 +22,17 @@ public interface IHttpClientsService
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PaginatedApiResponse<TResponse>> CallPaginatedService<TResponse>(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,

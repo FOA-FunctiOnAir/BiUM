@@ -2,14 +2,20 @@ using BiUM.Contract.Models.MessageBroker;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 
 namespace BiUM.Contract.Models.Api;
 
 public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
 {
-    public int PageNumber { get; }
-    public int TotalPages { get; }
-    public int TotalCount { get; }
+    [JsonInclude]
+    public int PageNumber { get; private init; }
+
+    [JsonInclude]
+    public int TotalPages { get; private init; }
+
+    [JsonInclude]
+    public int TotalCount { get; private init; }
 
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;

@@ -37,6 +37,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net;
+using System.Net.Http;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -64,6 +66,19 @@ public static partial class ApplicationExtensions
         builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddHttpClient();
+        builder.Services.ConfigureHttpClientDefaults(defaults =>
+        {
+            defaults.ConfigureHttpClient(client =>
+            {
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+            });
+            defaults.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                EnableMultipleHttp2Connections = true,
+                PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            });
+        });
 
         builder.Services.AddHealthChecks();
 

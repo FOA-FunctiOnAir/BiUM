@@ -11,6 +11,7 @@ public record BaseQuery<TType> : BaseRequestDto<TType>, IBaseQuery
     public Guid? Id { get; init; }
     public IReadOnlyList<Guid>? Ids { get; init; }
     public IReadOnlyList<Guid>? SelectedIds { get; init; }
+    public IReadOnlyList<Guid>? ExcludedIds { get; init; }
 
     public string? Q { get; init; }
     [FromQuery(Name = "Filters")]

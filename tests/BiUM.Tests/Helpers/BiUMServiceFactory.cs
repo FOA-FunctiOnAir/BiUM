@@ -123,6 +123,7 @@ public static class BiUMServiceFactory
                 It.IsAny<Guid>(),
                 It.IsAny<Dictionary<string, dynamic>?>(),
                 It.IsAny<IReadOnlyList<Guid>?>(),
+                It.IsAny<IReadOnlyList<Guid>?>(),
                 It.IsAny<string?>(),
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),

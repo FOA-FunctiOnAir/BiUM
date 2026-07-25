@@ -16,6 +16,7 @@ public partial class CurrencyRepository
 {
     public async Task<PaginatedApiResponse<GetFwCurrenciesForParameterDto>> GetFwCurrenciesForParameter(
         IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
         string? q,
         int? pageStart,
         int? pageSize,
@@ -29,11 +30,8 @@ public partial class CurrencyRepository
                 string.IsNullOrEmpty(c.Code) || c.Code.Contains(q)
             );
 
-        var result = await query.ToPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
-
-        await result.MergeSelectedIdsAsync(selectedIds, query, Mapper, cancellationToken);
-
-        return result;
+        return await query.ToForParameterPaginatedListAsync<Currency, GetFwCurrenciesForParameterDto>(
+            selectedIds, excludedIds, pageStart, pageSize, Mapper, cancellationToken);
     }
 
     public async Task<ApiResponse<IList<GetFwCurrenciesForNamesDto>>> GetFwCurrenciesForNames(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
@@ -42,7 +40,7 @@ public partial class CurrencyRepository
 
         var currencies = await _context.Currencies
             .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
-            .Where(m => ids.Contains(m.Id))
+            .ApplyForNamesIds(ids)
             .ToIListAsync<Currency, GetFwCurrenciesForNamesDto>(Mapper, cancellationToken);
 
         returnObject.Value = currencies;

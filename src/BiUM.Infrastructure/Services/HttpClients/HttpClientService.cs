@@ -97,6 +97,7 @@ public class HttpClientService : IHttpClientsService
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -106,6 +107,7 @@ public class HttpClientService : IHttpClientsService
             serviceId: serviceId,
             parameters: parameters,
             selectedIds: selectedIds,
+            excludedIds: excludedIds,
             q: q,
             pageStart: pageStart,
             pageSize: pageSize,
@@ -117,6 +119,7 @@ public class HttpClientService : IHttpClientsService
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
@@ -126,10 +129,34 @@ public class HttpClientService : IHttpClientsService
             serviceId: serviceId,
             parameters: parameters,
             selectedIds: selectedIds,
+            excludedIds: excludedIds,
             q: q,
             pageStart: pageStart,
             pageSize: pageSize,
             returnValue: true,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<PaginatedApiResponse<TResponse>> CallPaginatedService<TResponse>(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return (PaginatedApiResponse<TResponse>)await CallServiceBase<TResponse>(
+            serviceId: serviceId,
+            parameters: parameters,
+            selectedIds: selectedIds,
+            excludedIds: excludedIds,
+            q: q,
+            pageStart: pageStart,
+            pageSize: pageSize,
+            returnValue: true,
+            paginatedResponse: true,
             cancellationToken: cancellationToken);
     }
 
@@ -335,10 +362,12 @@ public class HttpClientService : IHttpClientsService
         Guid serviceId,
         Dictionary<string, dynamic>? parameters = null,
         IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
         bool returnValue = true,
+        bool paginatedResponse = false,
         CancellationToken cancellationToken = default)
     {
         string? serviceUrl = null;
@@ -354,7 +383,9 @@ public class HttpClientService : IHttpClientsService
 
             if (!serviceResult.Success)
             {
-                var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
+                var result = returnValue
+                    ? paginatedResponse ? new PaginatedApiResponse<TResponse>() : new ApiResponse<TResponse>()
+                    : new ApiResponse();
 
                 result.AddMessage(serviceResult);
 
@@ -365,7 +396,9 @@ public class HttpClientService : IHttpClientsService
 
             if (serviceResult.Value is null)
             {
-                var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
+                var result = returnValue
+                    ? paginatedResponse ? new PaginatedApiResponse<TResponse>() : new ApiResponse<TResponse>()
+                    : new ApiResponse();
 
                 result.AddMessage(new ResponseMessage()
                 {
@@ -385,7 +418,7 @@ public class HttpClientService : IHttpClientsService
 
             var isExternal = service.Type == Ids.Parameter.ServiceType.Values.External;
 
-            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize, selectedIds);
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize, selectedIds, excludedIds);
 
             var (rFinalUrl, rHttpMethod, response) =
                 isExternal
@@ -400,11 +433,17 @@ public class HttpClientService : IHttpClientsService
             {
                 var result =
                     returnValue
-                        ? await TryDeserializeApiResponse<TResponse>(
-                            response,
-                            external: isExternal,
-                            isSuccessful: response.IsSuccessStatusCode,
-                            cancellationToken: cancellationToken)
+                        ? paginatedResponse
+                            ? await TryDeserializePaginatedApiResponse<TResponse>(
+                                response,
+                                external: isExternal,
+                                isSuccessful: response.IsSuccessStatusCode,
+                                cancellationToken: cancellationToken)
+                            : await TryDeserializeApiResponse<TResponse>(
+                                response,
+                                external: isExternal,
+                                isSuccessful: response.IsSuccessStatusCode,
+                                cancellationToken: cancellationToken)
                         : await TryDeserializeApiResponse(
                             response,
                             external: isExternal,
@@ -424,7 +463,9 @@ public class HttpClientService : IHttpClientsService
 
             LogHttpClientException(nameof(CallService), ex, serviceUrl ?? finalUrl, httpMethod, serviceId, FormatOutboundRequestForLog(httpMethod, finalUrl ?? serviceUrl, parameters, serviceId));
 
-            var result = returnValue ? new ApiResponse<TResponse>() : new ApiResponse();
+            var result = returnValue
+                ? paginatedResponse ? new PaginatedApiResponse<TResponse>() : new ApiResponse<TResponse>()
+                : new ApiResponse();
 
             result.AddMessage(new ResponseMessage()
             {
@@ -797,7 +838,8 @@ public class HttpClientService : IHttpClientsService
         string? q = null,
         int? pageStart = null,
         int? pageSize = null,
-        IReadOnlyList<Guid>? selectedIds = null)
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null)
     {
         parameters ??= [];
 
@@ -819,6 +861,11 @@ public class HttpClientService : IHttpClientsService
         if (selectedIds?.Count > 0)
         {
             parameters.Add("SelectedIds", selectedIds);
+        }
+
+        if (excludedIds?.Count > 0)
+        {
+            parameters.Add("ExcludedIds", excludedIds);
         }
 
         return parameters;
@@ -1261,6 +1308,81 @@ public class HttpClientService : IHttpClientsService
         catch (Exception ex)
         {
             var result = new ApiResponse<TResponse>();
+
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
+
+            return result;
+        }
+    }
+
+    private async ValueTask<PaginatedApiResponse<TResponse>> TryDeserializePaginatedApiResponse<TResponse>(HttpResponseMessage response, bool isSuccessful = false, bool external = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+            if (external)
+            {
+                var externalValue = await JsonSerializer.DeserializeAsync<PaginatedApiResponse<TResponse>>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+                if (externalValue is not null)
+                {
+                    if (!isSuccessful)
+                    {
+                        externalValue.AddMessage(new ResponseMessage()
+                        {
+                            Code = UnexpectedSuccessErrorCode,
+                            Message = "The response was expected to be an error, but indicates success.",
+                            Severity = MessageSeverity.Warning
+                        });
+                    }
+
+                    return externalValue;
+                }
+            }
+
+            var result = await JsonSerializer.DeserializeAsync<PaginatedApiResponse<TResponse>>(responseStream, _jsonSerializerOptions, cancellationToken);
+
+            if (result is not null)
+            {
+                if (isSuccessful)
+                {
+                    return result;
+                }
+
+                if (result.Success)
+                {
+                    result.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Error
+                    });
+
+                    return result;
+                }
+            }
+
+            result = new PaginatedApiResponse<TResponse>();
+
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = DeserializationFailedErrorCode,
+                Message = "Unable to deserialize the response",
+                Severity = MessageSeverity.Error
+            });
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            var result = new PaginatedApiResponse<TResponse>();
 
             result.AddMessage(new ResponseMessage()
             {

@@ -31,12 +31,15 @@ void AssertSelectOnly(string sql)
         Console.Error.WriteLine("HATA: Yalnızca SELECT sorguları çalıştırılabilir.");
         Environment.Exit(1);
     }
+
     foreach (var kw in new[] { "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER", "TRUNCATE", "EXECUTE", "EXEC" })
+    {
         if (Regex.IsMatch(sql, $@"\b{kw}\b", RegexOptions.IgnoreCase))
         {
             Console.Error.WriteLine($"HATA: Yasak keyword '{kw}'.");
             Environment.Exit(1);
         }
+    }
 }
 
 async Task<List<Dictionary<string, string>>> RunQuery(string connStr, string sql)
@@ -67,7 +70,7 @@ void PrintTable(List<Dictionary<string, string>> rows)
 if (Args.Count < 2) { Console.Error.WriteLine("Kullanım: dotnet-script query-db.csx \"<conn>\" @query.sql [--diff \"<conn2>\" @q2.sql --key <kolon>]"); Environment.Exit(1); return; }
 
 var conn1 = Args[0];
-var sql1  = ReadSqlArg(Args[1]);
+var sql1 = ReadSqlArg(Args[1]);
 AssertSelectOnly(sql1);
 
 // --diff modu
@@ -79,9 +82,9 @@ if (diffIdx >= 0)
         Console.Error.WriteLine("--diff kullanımı: --diff \"<conn2>\" @q2.sql --key <kolon>");
         Environment.Exit(1); return;
     }
-    var conn2   = Args[diffIdx + 1];
-    var sql2    = ReadSqlArg(Args[diffIdx + 2]);
-    var keyCol  = Args[diffIdx + 4];
+    var conn2 = Args[diffIdx + 1];
+    var sql2 = ReadSqlArg(Args[diffIdx + 2]);
+    var keyCol = Args[diffIdx + 4];
     AssertSelectOnly(sql2);
 
     Console.WriteLine("Sorgu 1 çalışıyor...");

@@ -20,7 +20,7 @@ public static partial class ApplicationExtensions
         {
             options.AddServerHeader = false;
 
-            options.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1);
+            options.ListenAnyIP(appPort, lo => lo.Protocols = HttpProtocols.Http1AndHttp2);
             options.ListenAnyIP(appPort + 1000, lo => lo.Protocols = HttpProtocols.Http2);
         });
 

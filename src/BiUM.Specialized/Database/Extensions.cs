@@ -84,6 +84,11 @@ public static partial class Extensions
         this IQueryable<T> source,
         IBaseQuery baseQuery)
     {
+        if (!baseQuery.HasExplicitSortBy() && source.IsAlreadyOrdered())
+        {
+            return source;
+        }
+
         var (_sortBy, _sortDirection, _, _) = baseQuery.GetQueryParameters();
 
         var query = source.OrderByProperty(_sortBy, _sortDirection);
@@ -97,9 +102,40 @@ public static partial class Extensions
     {
         var (_sortBy, _sortDirection, _pageStart, _pageSize) = baseQuery.GetQueryParameters();
 
-        var query = source.OrderByProperty(_sortBy, _sortDirection).Skip(_pageStart).Take(_pageSize);
+        var orderedSource = !baseQuery.HasExplicitSortBy() && source.IsAlreadyOrdered()
+            ? source
+            : source.OrderByProperty(_sortBy, _sortDirection);
+
+        var query = orderedSource.Skip(_pageStart).Take(_pageSize);
 
         return query;
+    }
+
+    private static bool HasExplicitSortBy(this IBaseQuery baseQuery) =>
+        !string.IsNullOrEmpty(baseQuery?.SortBy);
+
+    private static bool IsAlreadyOrdered<T>(this IQueryable<T> source)
+    {
+        var expression = source.Expression;
+
+        while (expression is MethodCallExpression methodCall)
+        {
+            if (methodCall.Method.DeclaringType == typeof(Queryable) &&
+                (methodCall.Method.Name == nameof(Queryable.OrderBy) ||
+                 methodCall.Method.Name == nameof(Queryable.OrderByDescending)))
+            {
+                return true;
+            }
+
+            if (methodCall.Arguments.Count == 0)
+            {
+                break;
+            }
+
+            expression = methodCall.Arguments[0];
+        }
+
+        return false;
     }
 
     public static IQueryable<T> OrderByProperty<T>(

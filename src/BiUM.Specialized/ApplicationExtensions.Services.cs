@@ -4,6 +4,7 @@ using BiUM.Core.HttpClients;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Services.HttpClients;
 using BiUM.Specialized.Common.API;
+using BiUM.Specialized.Common.Mapper;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Compensation;
@@ -35,7 +36,11 @@ public static partial class ApplicationExtensions
                 options.Filters.Add<ApiResponseLoggingFilter>();
                 options.Filters.Add<CompensatableApiActionFilter>();
             })
-            .AddJsonOptions(options => BiJsonOptions.Configure(options.JsonSerializerOptions));
+            .AddJsonOptions(options =>
+            {
+                BiJsonOptions.Configure(options.JsonSerializerOptions);
+                options.JsonSerializerOptions.Converters.Add(new JsonNullableGuidConverter());
+            });
 
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing

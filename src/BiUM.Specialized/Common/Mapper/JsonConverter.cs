@@ -544,6 +544,48 @@ public sealed class JsonGuidConverter : JsonConverter<Guid>
         => w.WriteStringValue(v.ToString());
 }
 
+public sealed class JsonNullableGuidConverter : JsonConverter<Guid?>
+{
+    public override Guid? Read(ref Utf8JsonReader r, Type t, JsonSerializerOptions o)
+    {
+        if (r.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        if (r.TokenType == JsonTokenType.String)
+        {
+            var s = r.GetString();
+
+            if (string.IsNullOrEmpty(s))
+            {
+                return null;
+            }
+
+            if (Guid.TryParse(s, out var g))
+            {
+                return g;
+            }
+
+            return null;
+        }
+
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter w, Guid? value, JsonSerializerOptions o)
+    {
+        if (value.HasValue)
+        {
+            w.WriteStringValue(value.Value.ToString());
+        }
+        else
+        {
+            w.WriteNullValue();
+        }
+    }
+}
+
 public sealed class JsonEnumNullConverterFactory : JsonConverterFactory
 {
     public override bool CanConvert(Type typeToConvert)

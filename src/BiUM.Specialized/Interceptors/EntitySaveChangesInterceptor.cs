@@ -231,7 +231,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
 
         var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
-        var userId = correlationContext.User?.Id ?? correlationContext.ClientId ?? Guid.Empty;
+        var userId = correlationContext.User?.Id;
+        var clientId = correlationContext.ClientId;
 
         foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
         {
@@ -313,17 +314,20 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             _auditBuffer.Add(new AuditLogEvent
             {
                 CorrelationId = correlationContext.CorrelationId,
+                ApplicationId = correlationContext.ApplicationId,
+                TenantId = correlationContext.TenantId,
+                UserId = userId,
+                ApplicationClientId = clientId,
                 ServiceName = _biAppOptions?.Domain ?? string.Empty,
                 EntityName = entry.Entity.GetType().Name,
                 EntityId = entry.Entity.Id.ToString(),
-                UserId = userId,
                 BeforeJson = beforeJson,
                 AfterJson = afterJson,
                 ChangedFieldsJson = changedFieldsJson,
                 ChangeCount = changeCount,
                 Created = DateOnly.FromDateTime(_dateTimeService.Now.ToUniversalTime()),
                 CreatedTime = TimeOnly.FromDateTime(_dateTimeService.Now.ToUniversalTime()),
-                CreatedBy = userId
+                CreatedBy = userId ?? clientId ?? Guid.Empty
             });
         }
     }

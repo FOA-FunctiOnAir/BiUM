@@ -7,10 +7,13 @@ namespace BiUM.Core.MessageBroker.Events;
 [MemoryPackable]
 public partial class AuditLogEvent : BaseEvent
 {
+    public Guid ApplicationId { get; set; }
+    public Guid? TenantId { get; set; }
+    public Guid? UserId { get; set; }
+    public Guid? ApplicationClientId { get; set; }
     public string ServiceName { get; set; } = string.Empty;
     public string EntityName { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
-    public Guid UserId { get; set; }
     public string? BeforeJson { get; set; }
     public string? AfterJson { get; set; }
     public string? ChangedFieldsJson { get; set; }

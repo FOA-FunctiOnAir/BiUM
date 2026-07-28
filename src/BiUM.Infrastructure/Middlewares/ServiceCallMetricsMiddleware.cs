@@ -1,3 +1,4 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
@@ -29,7 +30,7 @@ public class ServiceCallMetricsMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, ICorrelationContextProvider correlationContextProvider)
     {
         if (_rabbitMQClient is null || _biAppOptions is null || ShouldIgnoreRequest(context))
         {
@@ -60,8 +61,13 @@ public class ServiceCallMetricsMiddleware
         {
             try
             {
+                var correlationContext = correlationContextProvider.Get();
                 var serviceCalledEvent = new ServiceCalledEvent
                 {
+                    ApplicationId = correlationContext?.ApplicationId ?? Guid.Empty,
+                    TenantId = correlationContext?.TenantId,
+                    UserId = correlationContext?.User?.Id,
+                    ApplicationClientId = correlationContext?.ClientId,
                     ServiceName = FormatServiceName(_biAppOptions.Domain),
                     Endpoint = context.Request.Path + context.Request.QueryString,
                     HttpMethod = context.Request.Method,

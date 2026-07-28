@@ -7,6 +7,10 @@ namespace BiUM.Core.MessageBroker.Events;
 [MemoryPackable]
 public partial class ServiceCalledEvent : BaseEvent
 {
+    public Guid ApplicationId { get; set; }
+    public Guid? TenantId { get; set; }
+    public Guid? UserId { get; set; }
+    public Guid? ApplicationClientId { get; set; }
     public Guid? MicroserviceId { get; set; }
     public Guid? ServiceId { get; set; }
     public string? ServiceName { get; set; }

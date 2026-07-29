@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Common.Translation;
@@ -193,7 +194,21 @@ public sealed partial class TranslationService
 
         if (translation is null || translation.DomainTranslationDetails.Count == 0)
         {
-            return null;
+            if (_correlationContext.ApplicationId == Ids.Application.BiDynamic.Id)
+            {
+                return null;
+            }
+
+            translation = await _baseContext.DomainTranslations
+                .AsNoTracking()
+                .Include(dt => dt.DomainTranslationDetails.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
+                .Where(x => x.Code.Equals(code) && x.ApplicationId == Ids.Application.BiDynamic.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (translation is null || translation.DomainTranslationDetails.Count == 0)
+            {
+                return null;
+            }
         }
 
         return translation;

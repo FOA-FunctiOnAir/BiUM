@@ -56,7 +56,57 @@ Queries and commands that **read or write** translations should follow the same 
 
 ---
 
-## 5. Agent workflow
+## 5. Error code naming — `AddMessage()` codes
+
+Every string passed to **`AddMessage(response, code, cancellationToken)`** is an **error code** that is looked up at runtime in `dbo.__TRANSLATION` (keyed by `CODE + APPLICATION_ID`). If no matching row exists the client receives `translation_not_found`.
+
+### 5.1 Format rule — always `snake_case`
+
+Codes **must** be `snake_case`. PascalCase (`"ProfessionNotFound"`) and human-readable strings (`"Profession Not Found"`) are **never** inserted into `__TRANSLATION`, so they will always fail lookup at runtime.
+
+| Wrong | Correct |
+|-------|---------|
+| `"ProfessionNotFound"` | `"profession_not_found"` |
+| `"RoleNotFound"` | `"role_not_found"` |
+| `"Tenant Registration Not Found"` | `"tenant_registration_not_found"` |
+| `"profession not found"` | `"profession_not_found"` |
+
+### 5.2 Standard code patterns
+
+Use these canonical forms. Do not invent synonyms — the pattern must match the DB row exactly.
+
+| Situation | Pattern | Example |
+|-----------|---------|---------|
+| Required field missing | `X_required` | `"id_required"`, `"application_required"` |
+| Record not found | `X_not_found` | `"customer_not_found"`, `"role_not_found"` |
+| Duplicate / already exists | `X_already_exists` | `"customer_is_already_exists_with_same_identity"` |
+| Conflict / already defined | `X_already_defined` | `"portfolio_is_already_defined_this_customer"` |
+| Generic operation failure | `X_failed` | `"save_failed"` |
+
+**`X_not_found` is the canonical form.** The alias `no_X_found` is a semantic duplicate — always use `X_not_found`.
+
+### 5.3 Typo audit before committing
+
+Before adding a new code, search the file for existing variants:
+
+- Misspellings in the middle (`"registrration"`, `"porfolio"`, `"aleady"`)
+- `_exist_` vs `_exists_` — prefer `_exists_`
+
+A typo in a code string is a silent runtime failure; the lookup will never match even if the DB row is correct.
+
+### 5.4 DB insertion requirement
+
+For every new code used in code there **must** be a corresponding row in `__TRANSLATION` + `__TRANSLATION_DETAIL` for all active languages. Use `APPLICATION_ID = Ids.Application.BiDynamic.Id` (`5abc0777-19ff-5993-b71e-38cc9f7673a2`) so codes are shared across microservices via the BiDynamic fallback.
+
+Fallback resolution order at runtime (see `TranslationService.GetTranslation`):
+
+1. Lookup by `correlationContext.ApplicationId` + `code`
+2. If not found **and** current app ≠ BiDynamic → lookup by `Ids.Application.BiDynamic.Id` + `code`
+3. Returns `null` → response carries `translation_not_found`
+
+---
+
+## 6. Agent workflow
 
 When editing entities or DTOs in any **BiApp.\*** service:
 
@@ -64,4 +114,4 @@ When editing entities or DTOs in any **BiApp.\*** service:
 2. Apply **this document** for naming and translation shape.
 3. If behaviour touches BiUM pipelines (transactions, CRUD publishing, etc.), use the relevant **Agents.\*.md** from the BiUM `AGENTS.md` index.
 
-When you introduce or change a **team-wide** rule that contradicts or extends this file, update **this file** and, if needed, **[AGENTS.md](AGENTS.md)** links so agents and developers stay in sync.
+When you introduce or change a **team-wide** rule that contradicts or extends this file, update **this file** and, if needed, **[Agents.md](Agents.md)** links so agents and developers stay in sync.

@@ -141,9 +141,8 @@ public static class CompensationEntityProcessor
         var dbMax = context.Set<DomainCompensationSnapshot>()
             .AsNoTracking()
             .Where(s => s.EntityId == entityId && s.CompensationSessionId == sessionId)
-            .Select(s => s.Version)
-            .DefaultIfEmpty(0)
-            .Max();
+            .Select(s => (int?)s.Version)
+            .Max() ?? 0;
 
         return Math.Max(localMax, dbMax) + 1;
     }

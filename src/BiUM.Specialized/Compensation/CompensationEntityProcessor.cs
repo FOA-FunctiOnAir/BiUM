@@ -18,7 +18,7 @@ public static class CompensationEntityProcessor
         var correlation = correlationContextProvider.Get() ?? CorrelationContext.Empty;
         var sessionId = correlation.CompensationSessionId;
 
-        foreach (var entry in context.ChangeTracker.Entries<ICompensatableEntity>())
+        foreach (var entry in context.ChangeTracker.Entries<ICompensatableEntity>().ToList())
         {
             if (entry.Entity is DomainCompensationSnapshot)
             {

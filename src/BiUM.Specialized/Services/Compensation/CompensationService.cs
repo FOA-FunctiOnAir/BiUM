@@ -1,3 +1,4 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Compensation;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
@@ -19,12 +20,40 @@ public sealed class CompensationService : ICompensationService
 
     private readonly BaseDbContext _dbContext;
     private readonly IConfiguration _configuration;
+    private readonly ICorrelationContextAccessor _correlationContextAccessor;
 
-    public CompensationService(IDbContext dbContext, IConfiguration configuration)
+    public CompensationService(IDbContext dbContext, IConfiguration configuration, ICorrelationContextAccessor correlationContextAccessor)
     {
         _dbContext = dbContext as BaseDbContext
             ?? throw new ArgumentException("IDbContext must be BaseDbContext for compensation.", nameof(dbContext));
         _configuration = configuration;
+        _correlationContextAccessor = correlationContextAccessor;
+    }
+
+    // CommitSessionAsync/RollbackSessionAsync'in kendi SaveChangesAsync çağrısı, EntitySaveChangesInterceptor'ı
+    // tekrar tetikler; CorrelationContext.CompensationSessionId hala doluyken bu, az önce Committed/RolledBack
+    // olarak işaretlediğimiz entity'leri yeni bir Pending snapshot olarak tekrar track eder. Save sırasında
+    // session id'yi geçici olarak temizleyip Apply()'ı no-op finalize yoluna düşürüyoruz.
+    private async Task SaveChangesWithoutReprocessingAsync(CancellationToken cancellationToken)
+    {
+        var originalContext = _correlationContextAccessor.CorrelationContext;
+
+        if (originalContext is not null)
+        {
+            _correlationContextAccessor.CorrelationContext = originalContext.WithCompensationSessionId(Guid.Empty);
+        }
+
+        try
+        {
+            _ = await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        finally
+        {
+            if (originalContext is not null)
+            {
+                _correlationContextAccessor.CorrelationContext = originalContext;
+            }
+        }
     }
 
     public async Task CommitSessionAsync(Guid compensationSessionId, CancellationToken cancellationToken)
@@ -64,7 +93,7 @@ public sealed class CompensationService : ICompensationService
             }
         }
 
-        _ = await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveChangesWithoutReprocessingAsync(cancellationToken);
     }
 
     public async Task RollbackSessionAsync(Guid compensationSessionId, CancellationToken cancellationToken)
@@ -91,7 +120,7 @@ public sealed class CompensationService : ICompensationService
             snap.ProcessedAt = now;
         }
 
-        _ = await _dbContext.SaveChangesAsync(cancellationToken);
+        await SaveChangesWithoutReprocessingAsync(cancellationToken);
     }
 
     private async Task CommitCrudRowAsync(DomainCompensationSnapshot snap, CancellationToken cancellationToken)

@@ -81,6 +81,7 @@ public static class BiUMServiceFactory
         bool registerRealTranslation)
     {
         services.AddSingleton<ICorrelationContextProvider>(correlationProvider);
+        services.AddSingleton<ICorrelationContextAccessor>(new TestCorrelationContextAccessor { CorrelationContext = correlationProvider.Context });
 
         var dateTimeMock = new Mock<IDateTimeService>();
         dateTimeMock.Setup(d => d.Now).Returns(DateTime.UtcNow);

@@ -72,7 +72,7 @@ public sealed class CompensationService : ICompensationService
 
             if (!string.IsNullOrEmpty(snap.EntityClrTypeName))
             {
-                var clr = Type.GetType(snap.EntityClrTypeName);
+                var clr = ResolveEntityType(snap.EntityClrTypeName);
 
                 if (clr is null)
                 {
@@ -258,7 +258,7 @@ public sealed class CompensationService : ICompensationService
 
     private async Task RollbackEntitySnapshotAsync(DomainCompensationSnapshot snap, CancellationToken cancellationToken)
     {
-        var clr = Type.GetType(snap.EntityClrTypeName!);
+        var clr = ResolveEntityType(snap.EntityClrTypeName!);
 
         if (clr is null)
         {
@@ -361,6 +361,26 @@ public sealed class CompensationService : ICompensationService
             {
             }
         }
+    }
+
+    // Type.GetType(assemblyQualifiedName) çağrıldığı assembly'nin (BiUM.Specialized) bağlamında çözümleniyor;
+    // hedef entity tipinin assembly'si (örn. BiApp.Authentication.Domain) versiyon dizesi tam eşleşmediğinde
+    // veya varsayılan yükleme bağlamında doğrudan bulunamadığında sessizce null dönebiliyor. Bu durumda,
+    // process'te zaten yüklü olan assembly'leri basit tip adına göre tarayarak geriye dönüş yapıyoruz.
+    private static Type? ResolveEntityType(string assemblyQualifiedName)
+    {
+        var direct = Type.GetType(assemblyQualifiedName);
+
+        if (direct is not null)
+        {
+            return direct;
+        }
+
+        var typeName = assemblyQualifiedName.Split(',')[0].Trim();
+
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType(typeName, throwOnError: false))
+            .FirstOrDefault(t => t is not null);
     }
 
     private static string ResolveSchema(Guid applicationId, Guid tenantId)

@@ -128,8 +128,14 @@ public static class CompensationEntityProcessor
             entry.State = EntityState.Detached;
             context.Entry(snap).State = EntityState.Detached;
 
-            sibling.Add(entry.Entity);
-            sibling.Add(snap);
+            // DbContext.Add(...) graph-based'dir; entity'den navigation property'lerle ulaşılabilen tüm bağımlı
+            // entity'leri (örn. Customer.Persons) de "Added" olarak sibling context'e sürükler — bu da onların
+            // ana context'te ZATEN insert edilecek olan hallerinin sibling'de tekrar insert edilip PK çakışması
+            // (duplicate key) üretmesine yol açar. Entry(...).State ataması ise SADECE bu tek entity'yi işaretler,
+            // navigation graph'ı takip etmez — bağımlı (compensatable olmayan) entity'ler ana context'te kalıp
+            // orada normal şekilde insert edilmeye devam eder.
+            sibling.Entry(entry.Entity).State = EntityState.Added;
+            sibling.Entry(snap).State = EntityState.Added;
         }
 
         sibling.SaveChanges();

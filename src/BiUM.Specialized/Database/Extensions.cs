@@ -18,14 +18,16 @@ public static partial class Extensions
         where TDbContext : DbContext, IDbContext
         where TDbContextInitialiser : class
     {
+        Action<DbContextOptionsBuilder>? configureOptions = null;
+
         if (configuration.GetValue<string>("DatabaseType") == "InMemory")
         {
-            services.AddDbContext<TDbContext>(options =>
-                options.UseInMemoryDatabase("InMemoryDb"));
+            configureOptions = options =>
+                options.UseInMemoryDatabase("InMemoryDb");
         }
         else if (configuration.GetValue<string>("DatabaseType") == "MSSQL")
         {
-            services.AddDbContext<TDbContext>(options =>
+            configureOptions = options =>
                 options.UseSqlServer(
                     configuration.GetConnectionString("MSSQL"),
                     sql =>
@@ -40,7 +42,7 @@ public static partial class Extensions
                             maxRetryDelay: TimeSpan.FromSeconds(10),
                             errorNumbersToAdd: null);
                         _ = sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    }));
+                    });
         }
         else if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
         {
@@ -52,7 +54,7 @@ public static partial class Extensions
                 KeepAlive = 30
             };
 
-            services.AddDbContext<TDbContext>(options =>
+            configureOptions = options =>
                 options.UseNpgsql(
                     connectionStringBuilder.ConnectionString,
                     npgsqlOptions =>
@@ -67,7 +69,16 @@ public static partial class Extensions
                             maxRetryDelay: TimeSpan.FromSeconds(10),
                             errorCodesToAdd: null);
                         npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    }));
+                    });
+        }
+
+        if (configureOptions is not null)
+        {
+            services.AddDbContext<TDbContext>(configureOptions);
+
+            // Compensatable entity'lerin erken/bağımsız commit'i için (CompensationEntityProcessor.Apply):
+            // ambient request transaction'ından tamamen bağımsız, kendi connection'ını açan kısa ömürlü context'ler.
+            services.AddDbContextFactory<TDbContext>(configureOptions);
         }
 
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<TDbContext>());

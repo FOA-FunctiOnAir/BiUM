@@ -15,17 +15,19 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly ICorrelationContextProvider _correlationContextProvider;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IServiceProvider _serviceProvider;
 
-    public BoltEntitySaveChangesInterceptor(ICorrelationContextProvider correlationContextProvider, IDateTimeService dateTimeService)
+    public BoltEntitySaveChangesInterceptor(ICorrelationContextProvider correlationContextProvider, IDateTimeService dateTimeService, IServiceProvider serviceProvider)
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
+        _serviceProvider = serviceProvider;
     }
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
 
         return base.SavingChanges(eventData, result);
     }
@@ -33,7 +35,7 @@ public class BoltEntitySaveChangesInterceptor : SaveChangesInterceptor
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }

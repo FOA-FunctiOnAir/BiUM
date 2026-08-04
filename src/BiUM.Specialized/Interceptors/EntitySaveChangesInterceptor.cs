@@ -28,6 +28,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly ICorrelationContextProvider _correlationContextProvider;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IRabbitMQClient? _rabbitMQClient;
     private readonly IMapper? _mapper;
     private readonly BiAppOptions? _biAppOptions;
@@ -39,6 +40,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     public EntitySaveChangesInterceptor(
         ICorrelationContextProvider correlationContextProvider,
         IDateTimeService dateTimeService,
+        IServiceProvider serviceProvider,
         IRabbitMQClient? rabbitMQClient = null,
         IMapper? mapper = null,
         IOptions<BiAppOptions>? biAppOptions = null,
@@ -46,6 +48,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
+        _serviceProvider = serviceProvider;
         _rabbitMQClient = rabbitMQClient;
         _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
@@ -59,7 +62,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         EnsureNotSavingOnHttpGet(eventData.Context);
 
         UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
         CollectAuditEntries(eventData.Context);
 
         return base.SavingChanges(eventData, result);
@@ -73,7 +76,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         EnsureNotSavingOnHttpGet(eventData.Context);
 
         UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider);
+        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
         CollectAuditEntries(eventData.Context);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);

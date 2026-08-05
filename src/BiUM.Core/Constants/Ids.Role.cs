@@ -8,7 +8,7 @@ public static partial class Ids
     {
         public static class GlobalUser
         {
-            public static Guid Id = Guid.Parse("019f4c26-a142-70be-949f-a8f999e78bc2");
+            public static Guid Id = Guid.Parse("019f4c5e-0aca-70c7-b616-49e1c9aa1923");
         }
     }
 }

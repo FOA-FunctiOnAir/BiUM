@@ -78,7 +78,7 @@ public static partial class Extensions
 
             // Compensatable entity'lerin erken/bağımsız commit'i için (CompensationEntityProcessor.Apply):
             // ambient request transaction'ından tamamen bağımsız, kendi connection'ını açan kısa ömürlü context'ler.
-            services.AddDbContextFactory<TDbContext>(configureOptions);
+            services.AddDbContextFactory<TDbContext>(configureOptions, ServiceLifetime.Scoped);
         }
 
         services.AddScoped<IDbContext>(provider => provider.GetRequiredService<TDbContext>());

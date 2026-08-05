@@ -98,10 +98,11 @@ public static partial class ApplicationExtensions
         builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource =>
                 resource
-                    .AddService(serviceName)
+                    .AddService(serviceName, serviceInstanceId: Environment.MachineName)
                     .AddAttributes(new Dictionary<string, object>
                     {
-                        ["deployment.environment"] = string.IsNullOrEmpty(appOptions?.Environment) ? builder.Environment.EnvironmentName : appOptions.Environment
+                        ["deployment.environment"] = string.IsNullOrEmpty(appOptions?.Environment) ? builder.Environment.EnvironmentName : appOptions.Environment,
+                        ["k8s.pod.name"] = Environment.MachineName
                     }))
             .WithMetrics(metrics =>
                 metrics

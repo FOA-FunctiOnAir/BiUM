@@ -13,4 +13,6 @@ public class BiAppOptions
     public string DomainVersion { get; set; } = "v1";
 
     public string EncryptionKey { get; set; } = string.Empty;
+
+    public bool UseCompensation { get; set; } = true;
 }

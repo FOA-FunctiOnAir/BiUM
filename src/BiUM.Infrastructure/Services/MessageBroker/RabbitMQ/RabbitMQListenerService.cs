@@ -1,4 +1,5 @@
 using BiUM.Core.Common.Configs;
+using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,15 +14,18 @@ internal sealed class RabbitMQListenerService : BackgroundService
 {
     private readonly IOptionsMonitor<RabbitMqOptions> _rabbitMqOptionsMonitor;
     private readonly IRabbitMQClient _rabbitMqClient;
+    private readonly BiAppOptions _biAppOptions;
     private readonly ILogger<RabbitMQListenerService> _logger;
 
     public RabbitMQListenerService(
         IRabbitMQClient rabbitMqClient,
         IOptionsMonitor<RabbitMqOptions> rabbitMqOptionsMonitor,
+        IOptions<BiAppOptions> biAppOptions,
         ILogger<RabbitMQListenerService> logger)
     {
         _rabbitMqClient = rabbitMqClient;
         _rabbitMqOptionsMonitor = rabbitMqOptionsMonitor;
+        _biAppOptions = biAppOptions.Value;
         _logger = logger;
     }
 
@@ -37,6 +41,11 @@ internal sealed class RabbitMQListenerService : BackgroundService
             if (cancellationToken.IsCancellationRequested)
             {
                 break;
+            }
+
+            if (@event == typeof(CompensationSessionFinalizedEvent) && !_biAppOptions.UseCompensation)
+            {
+                continue;
             }
 
             try

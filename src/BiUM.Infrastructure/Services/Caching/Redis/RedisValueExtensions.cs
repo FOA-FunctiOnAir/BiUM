@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.Caching.Redis;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System;
 using System.Text.Json;
@@ -147,7 +148,7 @@ internal static class RedisValueExtensions
         }
     }
 
-    public static CacheItem<T> RedisValueToCacheValue<T>(RedisValue redisValue)
+    public static CacheItem<T> RedisValueToCacheValue<T>(RedisValue redisValue, ILogger? logger = null, string? key = null)
     {
         if (!redisValue.HasValue)
         {
@@ -167,7 +168,14 @@ internal static class RedisValueExtensions
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Unable to deserialize value {redisValue} to type {typeof(T).FullName} : Error '{e}'");
+            if (logger is not null)
+            {
+                logger.LogError(e, "Redis value for key '{Key}' could not be deserialized to type {Type}; treating it as unavailable rather than using corrupt/incompatible data.", key ?? "(unknown)", typeof(T).FullName);
+            }
+            else
+            {
+                Console.WriteLine($"Unable to deserialize value {redisValue} to type {typeof(T).FullName} : Error '{e}'");
+            }
 
             return CacheItem<T>.NoValue;
         }

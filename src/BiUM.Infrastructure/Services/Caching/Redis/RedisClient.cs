@@ -51,9 +51,67 @@ public class RedisClient : IRedisClient
         var configurationOptions = ConfigurationOptions.Parse(_redisClientOptions.ConnectionString ?? "");
         configurationOptions.AllowAdmin = true;
 
-        _connectionMultiplexer = ConnectionMultiplexer.Connect(configurationOptions);
+        try
+        {
+            _connectionMultiplexer = ConnectionMultiplexer.Connect(configurationOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Redis client '{OptionsName}' failed to connect to {Endpoints}.", _optionsName, RedactConnectionString(_redisClientOptions.ConnectionString));
+
+            throw;
+        }
+
+        _connectionMultiplexer.ConnectionFailed += OnConnectionFailed;
+        _connectionMultiplexer.ConnectionRestored += OnConnectionRestored;
+
         _database = _connectionMultiplexer.GetDatabase();
         _defaultCacheTimeout = _redisClientOptions.DefaultCacheTimeout;
+    }
+
+    private void OnConnectionFailed(object? sender, ConnectionFailedEventArgs e)
+    {
+        _logger.LogError(e.Exception, "Redis client '{OptionsName}' lost connection to endpoint {Endpoint} (failureType={FailureType}). Reads/writes on this client will fail until the connection is restored.", _optionsName, e.EndPoint, e.FailureType);
+    }
+
+    private void OnConnectionRestored(object? sender, ConnectionFailedEventArgs e)
+    {
+        _logger.LogInformation("Redis client '{OptionsName}' connection restored for endpoint {Endpoint}.", _optionsName, e.EndPoint);
+    }
+
+    private string DescribeEndpoints()
+    {
+        if (_connectionMultiplexer is not null)
+        {
+            try
+            {
+                var endpoints = _connectionMultiplexer.GetEndPoints();
+
+                if (endpoints.Length > 0)
+                {
+                    return string.Join(",", endpoints.Select(static e => e.ToString()));
+                }
+            }
+            catch
+            {
+                // fall through to connection-string-based description
+            }
+        }
+
+        return RedactConnectionString(_redisClientOptions.ConnectionString);
+    }
+
+    private static string RedactConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return "(no connection string configured)";
+        }
+
+        return string.Join(
+            ",",
+            connectionString.Split(',').Select(static part =>
+                part.TrimStart().StartsWith("password=", StringComparison.OrdinalIgnoreCase) ? "password=***" : part));
     }
 
     /// <summary>
@@ -74,9 +132,20 @@ public class RedisClient : IRedisClient
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
 
-        var redisValue = await _database.StringGetAsync(key, CommandFlags.PreferReplica);
+        RedisValue redisValue;
 
-        return RedisValueExtensions.RedisValueToCacheValue<T>(redisValue);
+        try
+        {
+            redisValue = await _database.StringGetAsync(key, CommandFlags.PreferReplica);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogError(ex, "Redis GET failed for key '{Key}' on client '{OptionsName}' (endpoint(s): {Endpoints}); could not connect to or read from Redis.", key, _optionsName, DescribeEndpoints());
+
+            throw;
+        }
+
+        return RedisValueExtensions.RedisValueToCacheValue<T>(redisValue, _logger, key);
     }
 
     /// <summary>
@@ -91,14 +160,24 @@ public class RedisClient : IRedisClient
         _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
 
         var keyArray = keys.ToArray();
+        RedisValue[] values;
 
-        var values = await _database.StringGetAsync(keyArray.Select(k => (RedisKey)k).ToArray(), CommandFlags.PreferReplica);
+        try
+        {
+            values = await _database.StringGetAsync(keyArray.Select(k => (RedisKey)k).ToArray(), CommandFlags.PreferReplica);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogError(ex, "Redis MGET failed for {Count} keys on client '{OptionsName}' (endpoint(s): {Endpoints}); could not connect to or read from Redis.", keyArray.Length, _optionsName, DescribeEndpoints());
+
+            throw;
+        }
 
         var result = new Dictionary<string, CacheItem<T>>();
 
         for (var i = 0; i < keyArray.Length; i++)
         {
-            result.Add(keyArray[i], RedisValueExtensions.RedisValueToCacheValue<T>(values[i]));
+            result.Add(keyArray[i], RedisValueExtensions.RedisValueToCacheValue<T>(values[i], _logger, keyArray[i]));
         }
 
         return result;

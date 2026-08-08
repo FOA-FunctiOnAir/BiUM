@@ -1,7 +1,6 @@
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Compensation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,7 +82,7 @@ public partial class CrudService
         var version = await GetVersionByCodeAsync(code, cancellationToken);
         var (api2db, _) = BuildMaps(version, version.DomainCrud?.Compensatible == true);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _dbType;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -130,7 +129,7 @@ public partial class CrudService
         var compensatible = version.DomainCrud?.Compensatible == true;
         var (api2db, db2api) = BuildMaps(version, compensatible);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _dbType;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -175,7 +174,7 @@ public partial class CrudService
         var compensatible = version.DomainCrud?.Compensatible == true;
         var (api2db, db2api) = BuildMaps(version, compensatible);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _dbType;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 

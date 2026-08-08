@@ -10,11 +10,14 @@ public partial class CrudService : BaseRepository, ICrudService
 {
     private readonly IConfiguration _configuration;
     private readonly IHttpClientsService _httpClientsService;
+    // M-8: read once at construction — DatabaseType is static per deployment.
+    private readonly string _dbType;
 
     public CrudService(IServiceProvider serviceProvider, IDbContext dbContext, IConfiguration configuration)
         : base(serviceProvider, dbContext)
     {
         _configuration = configuration;
         _httpClientsService = serviceProvider.GetRequiredService<IHttpClientsService>();
+        _dbType = configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
     }
 }

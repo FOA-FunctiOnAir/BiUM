@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -588,13 +590,21 @@ public sealed class JsonNullableGuidConverter : JsonConverter<Guid?>
 
 public sealed class JsonEnumNullConverterFactory : JsonConverterFactory
 {
+    private static readonly ConcurrentDictionary<Type, JsonConverter> _enumConverterCache = new();
+
     public override bool CanConvert(Type typeToConvert)
         => typeToConvert.IsEnum;
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        var converterType = typeof(EnumNullToDefaultConverter<>).MakeGenericType(typeToConvert);
-        return (JsonConverter)Activator.CreateInstance(converterType)!;
+        return _enumConverterCache.GetOrAdd(typeToConvert, static t =>
+        {
+            var converterType = typeof(EnumNullToDefaultConverter<>).MakeGenericType(t);
+            var ctor = converterType.GetConstructor(Type.EmptyTypes)!;
+            var factory = Expression.Lambda<Func<JsonConverter>>(
+                Expression.Convert(Expression.New(ctor), typeof(JsonConverter))).Compile();
+            return factory();
+        });
     }
 
     private sealed class EnumNullToDefaultConverter<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
@@ -687,15 +697,22 @@ public sealed class JsonTimeSpanConverter : JsonConverter<TimeSpan>
 
 public sealed class JsonNullToEmptyListConverterFactory : JsonConverterFactory
 {
+    private static readonly ConcurrentDictionary<Type, JsonConverter> _listConverterCache = new();
+
     public override bool CanConvert(Type typeToConvert)
         => typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(List<>);
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        var elementType = typeToConvert.GetGenericArguments()[0];
-        var convType = typeof(NullToEmptyListConverter<>).MakeGenericType(elementType);
-
-        return (JsonConverter)Activator.CreateInstance(convType)!;
+        return _listConverterCache.GetOrAdd(typeToConvert, static t =>
+        {
+            var elementType = t.GetGenericArguments()[0];
+            var convType = typeof(NullToEmptyListConverter<>).MakeGenericType(elementType);
+            var ctor = convType.GetConstructor(Type.EmptyTypes)!;
+            var factory = Expression.Lambda<Func<JsonConverter>>(
+                Expression.Convert(Expression.New(ctor), typeof(JsonConverter))).Compile();
+            return factory();
+        });
     }
 
     private sealed class NullToEmptyListConverter<T> : JsonConverter<List<T>>

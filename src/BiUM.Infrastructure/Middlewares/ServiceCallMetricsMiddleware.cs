@@ -86,13 +86,13 @@ public class ServiceCallMetricsMiddleware
 
     private static bool ShouldIgnoreRequest(HttpContext context)
     {
-        var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
+        var path = context.Request.Path.Value ?? string.Empty;
 
-        return path.StartsWith("/health") ||
-               path.StartsWith("/swagger") ||
-               path.StartsWith("/version") ||
-               path.StartsWith("/index.html") ||
-               path.StartsWith("/favicon.ico");
+        return path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) ||
+               path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase) ||
+               path.StartsWith("/version", StringComparison.OrdinalIgnoreCase) ||
+               path.StartsWith("/index.html", StringComparison.OrdinalIgnoreCase) ||
+               path.StartsWith("/favicon.ico", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatServiceName(string serviceName)

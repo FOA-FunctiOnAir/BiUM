@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,12 @@ namespace BiUM.Specialized.Common.API;
 
 public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 {
+    // M-2: cache attribute presence per MemberInfo — reflection runs at most once per endpoint.
+    private static readonly ConcurrentDictionary<MemberInfo, bool> _compensatableAttrCache = new();
+
+    private static bool HasCompensatableAttribute(MemberInfo member)
+        => _compensatableAttrCache.GetOrAdd(member, static m => m.GetCustomAttribute<CompensatableApiAttribute>(inherit: true) is not null);
+
     private const string LocalOrchestrationKey = "BiUM.Compensation.LocalOrchestration";
 
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
@@ -44,8 +51,8 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
         }
 
         var isMainCompensatableEndpoint =
-            cad.MethodInfo.GetCustomAttribute<CompensatableApiAttribute>(inherit: true) is not null
-            || cad.ControllerTypeInfo.GetCustomAttribute<CompensatableApiAttribute>(inherit: true) is not null;
+            HasCompensatableAttribute(cad.MethodInfo) ||
+            HasCompensatableAttribute(cad.ControllerTypeInfo);
 
         if (!isMainCompensatableEndpoint)
         {

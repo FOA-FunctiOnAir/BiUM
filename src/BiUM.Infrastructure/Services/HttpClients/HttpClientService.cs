@@ -10,13 +10,13 @@ using BiUM.Core.HttpClients;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -54,7 +54,8 @@ public class HttpClientService : IHttpClientsService
     private static readonly TimeSpan Timeout = new(0, 5, 0);
     private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromHours(2);
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ServiceInfoLocks = new();
+    // H-5: SemaphoreSlim sliding expiry — entries evicted after 30 min idle instead of accumulating forever.
+    private static readonly TimeSpan ServiceInfoLockSlide = TimeSpan.FromMinutes(30);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -66,6 +67,7 @@ public class HttpClientService : IHttpClientsService
     private readonly HttpClientsOptions _httpClientOptions;
     private readonly IRedisClient? _redisClient;
     private readonly IInMemoryClient? _inMemoryClient;
+    private readonly IMemoryCache _semaphoreLocks;
 
     private readonly bool _isProductionLike;
 
@@ -82,6 +84,7 @@ public class HttpClientService : IHttpClientsService
         IOptions<HttpClientsOptions> httpClientOptionsAccessor,
         IEnumerable<IRedisClient> redisClients,
         IEnumerable<IInMemoryClient> inMemoryClients,
+        IMemoryCache semaphoreLocks,
         ILogger<HttpClientService> logger)
     {
         _httpClientFactory = httpClientFactory;
@@ -93,6 +96,7 @@ public class HttpClientService : IHttpClientsService
         _httpClientOptions = httpClientOptionsAccessor.Value;
         _redisClient = redisClients.FirstOrDefault();
         _inMemoryClient = inMemoryClients.FirstOrDefault();
+        _semaphoreLocks = semaphoreLocks;
         _logger = logger;
 
         _isProductionLike = environment.IsProductionLike(_appOptions);
@@ -678,8 +682,12 @@ public class HttpClientService : IHttpClientsService
             }
         }
 
-        // Serialize concurrent misses for the same key to prevent stampede
-        var semaphore = ServiceInfoLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
+        // H-5: semaphores stored in IMemoryCache with sliding expiry — auto-evicted when idle.
+        var semaphore = _semaphoreLocks.GetOrCreate(cacheKey, entry =>
+        {
+            entry.SlidingExpiration = ServiceInfoLockSlide;
+            return new SemaphoreSlim(1, 1);
+        })!;
 
         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -1498,55 +1506,63 @@ public class HttpClientService : IHttpClientsService
         Guid? callServiceId = null,
         Guid? catalogServiceIdForGetService = null)
     {
-        var sb = new StringBuilder();
+        // L-2: rent from the existing pool instead of allocating a new StringBuilder each call.
+        var sb = StringBuilderPool.Get();
 
-        if (callServiceId.HasValue)
+        try
         {
-            sb.Append("callServiceId=");
-            sb.Append(callServiceId.Value);
-            sb.Append(' ');
-        }
-
-        if (catalogServiceIdForGetService.HasValue)
-        {
-            sb.Append("catalogServiceId=");
-            sb.Append(catalogServiceIdForGetService.Value);
-            sb.Append(' ');
-        }
-
-        if (method is not null)
-        {
-            sb.Append(method.Method);
-            sb.Append(' ');
-        }
-
-        if (!string.IsNullOrEmpty(effectiveUrl))
-        {
-            sb.Append(TruncateForFailureLog(effectiveUrl, FailureLogUrlMaxChars));
-        }
-
-        if (parameters is { Count: > 0 })
-        {
-            if (sb.Length > 0)
+            if (callServiceId.HasValue)
             {
+                sb.Append("callServiceId=");
+                sb.Append(callServiceId.Value);
                 sb.Append(' ');
             }
 
-            try
+            if (catalogServiceIdForGetService.HasValue)
             {
-                var json = JsonSerializer.Serialize(parameters, _jsonSerializerOptions);
-                sb.Append("body=");
-                sb.Append(TruncateForFailureLog(json, FailureLogJsonMaxChars));
+                sb.Append("catalogServiceId=");
+                sb.Append(catalogServiceIdForGetService.Value);
+                sb.Append(' ');
             }
-            catch
+
+            if (method is not null)
             {
-                sb.Append("body=<unserializable>");
+                sb.Append(method.Method);
+                sb.Append(' ');
             }
+
+            if (!string.IsNullOrEmpty(effectiveUrl))
+            {
+                sb.Append(TruncateForFailureLog(effectiveUrl, FailureLogUrlMaxChars));
+            }
+
+            if (parameters is { Count: > 0 })
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
+
+                try
+                {
+                    var json = JsonSerializer.Serialize(parameters, _jsonSerializerOptions);
+                    sb.Append("body=");
+                    sb.Append(TruncateForFailureLog(json, FailureLogJsonMaxChars));
+                }
+                catch
+                {
+                    sb.Append("body=<unserializable>");
+                }
+            }
+
+            var s = sb.Length == 0 ? "-" : sb.ToString();
+
+            return TruncateForFailureLog(s, FailureLogRequestMaxChars);
         }
-
-        var s = sb.Length == 0 ? "-" : sb.ToString();
-
-        return TruncateForFailureLog(s, FailureLogRequestMaxChars);
+        finally
+        {
+            StringBuilderPool.Return(sb);
+        }
     }
 
     private static string TruncateForFailureLog(string s, int maxChars)

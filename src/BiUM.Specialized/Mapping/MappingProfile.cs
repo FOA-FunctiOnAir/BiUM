@@ -1,12 +1,29 @@
 using AutoMapper;
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace BiUM.Specialized.Mapping;
 
 public class MappingProfile : Profile
 {
+    // L-4: compiled Func<object> per type replaces Activator.CreateInstance reflection on every mapping scan.
+    private static readonly ConcurrentDictionary<Type, Func<object>> _instanceFactoryCache = new();
+
+    private static object CreateInstance(Type type)
+        => _instanceFactoryCache.GetOrAdd(type, static t =>
+        {
+            var ctor = t.GetConstructor(Type.EmptyTypes);
+            if (ctor is not null)
+            {
+                return Expression.Lambda<Func<object>>(Expression.Convert(Expression.New(ctor), typeof(object))).Compile();
+            }
+
+            return () => System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(t);
+        })();
+
     public MappingProfile()
     {
         ApplyMappingsFromAssembly(typeof(IMapFrom<>).Assembly);
@@ -69,7 +86,7 @@ public class MappingProfile : Profile
                 }
                 else
                 {
-                    var instance = Activator.CreateInstance(type);
+                    var instance = CreateInstance(type);
 
                     methodInfo.Invoke(instance, [this]);
                 }
@@ -77,7 +94,7 @@ public class MappingProfile : Profile
                 continue;
             }
 
-            var instanceForInterface = Activator.CreateInstance(type);
+            var instanceForInterface = CreateInstance(type);
 
             var interfaces = type.GetInterfaces().Where(t => HasInterface(t, mapFromType));
 

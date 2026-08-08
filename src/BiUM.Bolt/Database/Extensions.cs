@@ -5,8 +5,10 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +16,9 @@ namespace BiUM.Bolt.Database;
 
 public static class Extensions
 {
+    // M-4 + M-5: shared PropertyInfo cache for DbContext DbSet lookups by name.
+    internal static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> BoltExtensionsPropertyCache = new();
+
     public static async Task<bool> AddOrUpdate<TDbContext, TEntity>(
         this IBaseBoltDbContext boltDomainDbContext,
         TDbContext dbContext,
@@ -36,7 +41,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }
@@ -80,7 +85,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }
@@ -141,7 +146,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }
@@ -192,7 +197,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }
@@ -246,7 +251,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }
@@ -302,7 +307,7 @@ public static class Extensions
             return false;
         }
 
-        if (dbContext.GetType().GetProperty(name)?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
+        if (BoltExtensionsPropertyCache.GetOrAdd((dbContext.GetType(), name), static key => key.Item1.GetProperty(key.Item2))?.GetValue(dbContext) is not IQueryable<IEntity> linqQuery)
         {
             return false;
         }

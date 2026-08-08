@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -20,7 +21,18 @@ public class BaseDbContext : DbContext, IDbContext
     private readonly IServiceProvider _serviceProvider;
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
+    private readonly ICorrelationContextAccessor? _correlationContextAccessor;
     protected BiAppOptions BiAppOptions { get; }
+
+    // L-5: compiled open delegates per entity type replace MakeGenericMethod().Invoke() on every model build.
+    private static readonly MethodInfo _applyCompensationMethodDef =
+        typeof(BaseDbContext).GetMethod(nameof(ApplyCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    private static readonly MethodInfo _applyReadableMethodDef =
+        typeof(BaseDbContext).GetMethod(nameof(ApplyReadableCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    private static readonly ConcurrentDictionary<Type, Action<BaseDbContext, ModelBuilder>> _compensationFilterDelegates = new();
+    private static readonly ConcurrentDictionary<Type, Action<BaseDbContext, ModelBuilder>> _readableFilterDelegates = new();
 
     public BaseDbContext(
         IServiceProvider serviceProvider,
@@ -30,6 +42,7 @@ public class BaseDbContext : DbContext, IDbContext
     {
         _serviceProvider = serviceProvider;
         _entitySaveChangesInterceptor = entitySaveChangesInterceptor;
+        _correlationContextAccessor = serviceProvider.GetService<ICorrelationContextAccessor>();
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
@@ -42,6 +55,7 @@ public class BaseDbContext : DbContext, IDbContext
     {
         _serviceProvider = serviceProvider;
         _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
+        _correlationContextAccessor = serviceProvider.GetService<ICorrelationContextAccessor>();
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
@@ -79,8 +93,9 @@ public class BaseDbContext : DbContext, IDbContext
     // Çağrıldığı anda AsyncLocal'dan aktif session ID'yi okur.
     // Global query filter expression'larında 'this.GetCurrentCompensationSessionId()' olarak
     // referans edilir; EF Core her sorgu çevrimiyle DbContext instance'ına karşı değerlendirir.
+    // _correlationContextAccessor constructor'da cache'lendi — her sorgu için DI lookup yapılmaz.
     private Guid? GetCurrentCompensationSessionId()
-        => _serviceProvider.GetService<ICorrelationContextAccessor>()?.CorrelationContext?.CompensationSessionId;
+        => _correlationContextAccessor?.CorrelationContext?.CompensationSessionId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,12 +117,6 @@ public class BaseDbContext : DbContext, IDbContext
         //modelBuilder.Ignore<DomainDynamicApiVersion>();
         //modelBuilder.Ignore<DomainDynamicApiVersionParameter>();
 
-        var applyCompensation = typeof(BaseDbContext)
-            .GetMethod(nameof(ApplyCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-        var applyReadable = typeof(BaseDbContext)
-            .GetMethod(nameof(ApplyReadableCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
-
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (!typeof(IBaseEntity).IsAssignableFrom(entityType.ClrType))
@@ -121,11 +130,25 @@ public class BaseDbContext : DbContext, IDbContext
 
             if (typeof(ICompensation).IsAssignableFrom(entityType.ClrType))
             {
-                applyCompensation.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+                var del = _compensationFilterDelegates.GetOrAdd(entityType.ClrType, static (t, m) =>
+                {
+                    var selfParam = Expression.Parameter(typeof(BaseDbContext), "self");
+                    var mbParam = Expression.Parameter(typeof(ModelBuilder), "mb");
+                    var call = Expression.Call(selfParam, m.MakeGenericMethod(t), mbParam);
+                    return Expression.Lambda<Action<BaseDbContext, ModelBuilder>>(call, selfParam, mbParam).Compile();
+                }, _applyCompensationMethodDef);
+                del(this, modelBuilder);
             }
             else if (typeof(IReadableCompensation).IsAssignableFrom(entityType.ClrType))
             {
-                applyReadable.MakeGenericMethod(entityType.ClrType).Invoke(this, [modelBuilder]);
+                var del = _readableFilterDelegates.GetOrAdd(entityType.ClrType, static (t, m) =>
+                {
+                    var selfParam = Expression.Parameter(typeof(BaseDbContext), "self");
+                    var mbParam = Expression.Parameter(typeof(ModelBuilder), "mb");
+                    var call = Expression.Call(selfParam, m.MakeGenericMethod(t), mbParam);
+                    return Expression.Lambda<Action<BaseDbContext, ModelBuilder>>(call, selfParam, mbParam).Compile();
+                }, _applyReadableMethodDef);
+                del(this, modelBuilder);
             }
             else
             {

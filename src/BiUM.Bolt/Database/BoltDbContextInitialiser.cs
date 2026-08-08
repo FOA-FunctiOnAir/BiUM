@@ -131,7 +131,7 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
                         continue;
                     }
 
-                    var boltContextDbSetProp = BoltDbContext.GetType().GetProperty(transaction.TableName);
+                    var boltContextDbSetProp = Extensions.BoltExtensionsPropertyCache.GetOrAdd((BoltDbContext.GetType(), transaction.TableName), static key => key.Item1.GetProperty(key.Item2));
 
                     if (boltContextDbSetProp is null)
                     {
@@ -147,7 +147,7 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
                         .Where(x => uniqueIds.AsEnumerable().Contains(x.Id))
                         .ToListAsync(cancellationToken);
 
-                    var contextDbSetProp = DbContext.GetType().GetProperty(transaction.TableName);
+                    var contextDbSetProp = Extensions.BoltExtensionsPropertyCache.GetOrAdd((DbContext.GetType(), transaction.TableName), static key => key.Item1.GetProperty(key.Item2));
 
                     if (contextDbSetProp is null)
                     {
@@ -301,7 +301,7 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
 
     private static List<IEntity> OrderHierarchically(List<IEntity> entities, Type entityClrType)
     {
-        var parentProp = entityClrType.GetProperty("ParentId");
+        var parentProp = Extensions.BoltExtensionsPropertyCache.GetOrAdd((entityClrType, "ParentId"), static key => key.Item1.GetProperty(key.Item2));
 
         if (parentProp is null)
         {

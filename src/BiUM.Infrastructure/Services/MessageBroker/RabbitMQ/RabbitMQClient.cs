@@ -25,6 +25,12 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 {
+    // M-1: cache EventAttribute per message type — GetCustomAttribute reflection runs at most once per type.
+    private static readonly ConcurrentDictionary<Type, EventAttribute?> _eventAttrCache = new();
+
+    private static EventAttribute? GetEventAttribute(Type type)
+        => _eventAttrCache.GetOrAdd(type, static t => t.GetCustomAttribute<EventAttribute>());
+
     private const string RetryCountHeader = "x-retry-count";
     private const string OriginalQueueHeader = "x-original-queue";
     private const string FailureReasonHeader = "x-failure-reason";
@@ -89,7 +95,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var type = message.GetType();
 
-        var eventAttribute = type.GetCustomAttribute<EventAttribute>();
+        var eventAttribute = GetEventAttribute(type);
 
         var correlationContext = _correlationContextAccessor.CorrelationContext ?? CorrelationContext.Empty;
 
@@ -185,7 +191,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             return;
         }
 
-        var eventAttribute = type.GetCustomAttribute<EventAttribute>();
+        var eventAttribute = GetEventAttribute(type);
 
         if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange))
         {

@@ -5,9 +5,11 @@ using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,6 +67,10 @@ public sealed class CompensationService : ICompensationService
 
         var now = DateTime.UtcNow;
 
+        // Pre-load all compensatable entities into EF's L1 (change tracker) cache — one query per
+        // entity type instead of one FindAsync per snapshot.  The loop below then gets L1 hits only.
+        await PrefetchEntitiesAsync(pending, cancellationToken);
+
         foreach (var snap in pending)
         {
             snap.State = (int)CompensationSnapshotRowState.Committed;
@@ -79,6 +85,7 @@ public sealed class CompensationService : ICompensationService
                     continue;
                 }
 
+                // L1 cache hit — no DB round-trip after PrefetchEntitiesAsync.
                 var entity = await _dbContext.FindAsync(clr, [snap.EntityId], cancellationToken);
 
                 if (entity is ICompensatableEntity c)
@@ -95,6 +102,39 @@ public sealed class CompensationService : ICompensationService
 
         await SaveChangesWithoutReprocessingAsync(cancellationToken);
     }
+
+    private static readonly MethodInfo _prefetchMethodDef =
+        typeof(CompensationService).GetMethod(nameof(PrefetchEntityTypeAsync), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    // Compiled open delegates cached per entity type — MakeGenericMethod runs once per type,
+    // subsequent calls are a delegate invoke (no MethodInfo.Invoke overhead).
+    private static readonly ConcurrentDictionary<Type, Func<CompensationService, List<Guid>, CancellationToken, Task>> _prefetchDelegateCache = new();
+
+    private async Task PrefetchEntitiesAsync(List<DomainCompensationSnapshot> snapshots, CancellationToken ct)
+    {
+        var byType = snapshots
+            .Where(s => !string.IsNullOrEmpty(s.EntityClrTypeName))
+            .GroupBy(s => s.EntityClrTypeName!);
+
+        foreach (var group in byType)
+        {
+            var clr = ResolveEntityType(group.Key);
+            if (clr is null) continue;
+
+            var ids = group.Select(s => s.EntityId).Distinct().ToList();
+
+            var del = _prefetchDelegateCache.GetOrAdd(clr, static t =>
+                (Func<CompensationService, List<Guid>, CancellationToken, Task>)
+                    _prefetchMethodDef.MakeGenericMethod(t).CreateDelegate(
+                        typeof(Func<CompensationService, List<Guid>, CancellationToken, Task>)));
+
+            await del(this, ids, ct);
+        }
+    }
+
+    private Task PrefetchEntityTypeAsync<T>(List<Guid> ids, CancellationToken ct)
+        where T : class, IBaseEntity
+        => _dbContext.Set<T>().Where(e => ids.Contains(e.Id)).ToListAsync(ct);
 
     public async Task RollbackSessionAsync(Guid compensationSessionId, CancellationToken cancellationToken)
     {
@@ -286,12 +326,11 @@ public sealed class CompensationService : ICompensationService
                         return;
                     }
 
-                    var instance = Activator.CreateInstance(clr);
-
-                    if (instance is null)
-                    {
-                        return;
-                    }
+                    // GetUninitializedObject skips the constructor entirely — safe here because
+                    // ApplyJsonToEntity immediately overwrites every property from OldDataJson.
+                    // This also avoids the silent failure that Activator.CreateInstance causes
+                    // when the entity has no public parameterless constructor.
+                    var instance = RuntimeHelpers.GetUninitializedObject(clr);
 
                     ApplyJsonToEntity(instance, snap.OldDataJson);
 
@@ -332,6 +371,9 @@ public sealed class CompensationService : ICompensationService
         }
     }
 
+    // H-3: cache PropertyInfo lookups per (Type, propertyName) to avoid reflection on every rollback.
+    private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _propCache = new();
+
     private static void ApplyJsonToEntity(object entity, string json)
     {
         var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
@@ -344,9 +386,13 @@ public sealed class CompensationService : ICompensationService
 
         foreach (var kv in dict)
         {
-            var prop = type.GetProperty(kv.Key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var prop = _propCache.GetOrAdd((type, kv.Key), static key =>
+            {
+                var p = key.Item1.GetProperty(key.Item2, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                return p?.CanWrite == true ? p : null;
+            });
 
-            if (prop is null || !prop.CanWrite)
+            if (prop is null)
             {
                 continue;
             }
@@ -363,24 +409,29 @@ public sealed class CompensationService : ICompensationService
         }
     }
 
-    // Type.GetType(assemblyQualifiedName) çağrıldığı assembly'nin (BiUM.Specialized) bağlamında çözümleniyor;
-    // hedef entity tipinin assembly'si (örn. BiApp.Authentication.Domain) versiyon dizesi tam eşleşmediğinde
-    // veya varsayılan yükleme bağlamında doğrudan bulunamadığında sessizce null dönebiliyor. Bu durumda,
-    // process'te zaten yüklü olan assembly'leri basit tip adına göre tarayarak geriye dönüş yapıyoruz.
+    // H-4: cache type resolution per assembly-qualified name — assembly scan runs at most once per type name.
+    private static readonly ConcurrentDictionary<string, Type?> _typeCache = new();
+
     private static Type? ResolveEntityType(string assemblyQualifiedName)
     {
-        var direct = Type.GetType(assemblyQualifiedName);
-
-        if (direct is not null)
+        return _typeCache.GetOrAdd(assemblyQualifiedName, static name =>
         {
-            return direct;
-        }
+            // Fast path: Type.GetType resolves via load context.
+            var direct = Type.GetType(name);
 
-        var typeName = assemblyQualifiedName.Split(',')[0].Trim();
+            if (direct is not null)
+            {
+                return direct;
+            }
 
-        return AppDomain.CurrentDomain.GetAssemblies()
-            .Select(a => a.GetType(typeName, throwOnError: false))
-            .FirstOrDefault(t => t is not null);
+            // Fallback: scan loaded assemblies by simple type name.
+            // Assembly version string may differ from what was serialized into EntityClrTypeName.
+            var typeName = name.Split(',')[0].Trim();
+
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType(typeName, throwOnError: false))
+                .FirstOrDefault(t => t is not null);
+        });
     }
 
     private static string ResolveSchema(Guid applicationId, Guid tenantId)

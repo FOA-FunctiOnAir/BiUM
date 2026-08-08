@@ -2,7 +2,6 @@ using BiUM.Core.Common.Utils;
 using BiUM.Core.Compensation;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -73,10 +72,19 @@ public partial class CrudService
 
     private async Task<string?> GetCrudRowJsonUnfilteredAsync(DomainCrudVersion version, Guid id, CancellationToken ct)
     {
-        var versionForMaps = await DbContext.DomainCrudVersions
-            .Include(s => s.DomainCrudVersionColumns)
-            .Include(s => s.DomainCrud)
-            .FirstOrDefaultAsync(s => s.Id == version.Id, ct);
+        // M-7: skip re-fetch when the caller already loaded navigation properties.
+        DomainCrudVersion? versionForMaps;
+        if (version.DomainCrudVersionColumns is not null && version.DomainCrud is not null)
+        {
+            versionForMaps = version;
+        }
+        else
+        {
+            versionForMaps = await DbContext.DomainCrudVersions
+                .Include(s => s.DomainCrudVersionColumns)
+                .Include(s => s.DomainCrud)
+                .FirstOrDefaultAsync(s => s.Id == version.Id, ct);
+        }
 
         if (versionForMaps is null)
         {
@@ -85,7 +93,7 @@ public partial class CrudService
 
         var compensatible = versionForMaps.DomainCrud?.Compensatible == true;
         var (api2db, db2api) = BuildMaps(versionForMaps, compensatible);
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _dbType;
         var schema = ResolveSchema(versionForMaps.ApplicationId, versionForMaps.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(versionForMaps.TableName)}" : $"[{schema}].[{versionForMaps.TableName}]";
 

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -82,9 +83,16 @@ public class GlobalApiResponseFilter : MagicOnionFilterAttribute
             return null;
         }
 
+        // Compile a constructor delegate once per response type — avoids Activator.CreateInstance
+        // overhead on every exception path invocation.
+        var ctor = responseType.GetConstructor(Type.EmptyTypes)
+            ?? throw new InvalidOperationException($"Response type '{responseType.Name}' must have a public parameterless constructor.");
+        var factory = Expression.Lambda<Func<ApiResponse>>(
+            Expression.Convert(Expression.New(ctor), typeof(ApiResponse))).Compile();
+
         return (context, exception, isNotProductionLike) =>
         {
-            var responseInstance = (ApiResponse)Activator.CreateInstance(responseType)!;
+            var responseInstance = factory();
 
             SetStatusCode(context, StatusCode.OK, string.Empty);
 

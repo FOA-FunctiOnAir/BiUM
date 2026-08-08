@@ -14,8 +14,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -33,9 +36,15 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     private readonly IMapper? _mapper;
     private readonly BiAppOptions? _biAppOptions;
     private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly ILogger<EntitySaveChangesInterceptor> _logger;
 
     private readonly List<BaseEvent> _entityEventBuffer = [];
     private readonly List<AuditLogEvent> _auditBuffer = [];
+
+    // IsAuditable is cached per Type with a 5-minute TTL (attribute values never change at runtime,
+    // but TTL allows hot-reload scenarios without requiring a restart).
+    private static readonly ConcurrentDictionary<Type, (bool Value, long ExpiresAtTicks)> _auditableCache = new();
+    private static readonly long _auditableCacheTtlTicks = TimeSpan.FromHours(1).Ticks;
 
     public EntitySaveChangesInterceptor(
         ICorrelationContextProvider correlationContextProvider,
@@ -44,7 +53,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         IRabbitMQClient? rabbitMQClient = null,
         IMapper? mapper = null,
         IOptions<BiAppOptions>? biAppOptions = null,
-        IHttpContextAccessor? httpContextAccessor = null)
+        IHttpContextAccessor? httpContextAccessor = null,
+        ILogger<EntitySaveChangesInterceptor>? logger = null)
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
@@ -53,6 +63,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger ?? NullLogger<EntitySaveChangesInterceptor>.Instance;
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -61,33 +72,57 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     {
         EnsureNotSavingOnHttpGet(eventData.Context);
 
-        UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
-        CollectAuditEntries(eventData.Context);
+        // L-6: compute ChangeTracker entries once and pass to both methods.
+        if (eventData.Context is BaseDbContext bdc)
+        {
+            var entries = bdc.ChangeTracker.Entries<IBaseEntity>().ToList();
+            UpdateEntities(bdc, entries);
+            CompensationEntityProcessor.Apply(bdc, _correlationContextProvider, _serviceProvider, _dateTimeService);
+            CollectAuditEntries(bdc, entries);
+        }
+        else
+        {
+            UpdateEntities(eventData.Context);
+            CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
+            CollectAuditEntries(eventData.Context);
+        }
 
         return base.SavingChanges(eventData, result);
     }
 
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
         EnsureNotSavingOnHttpGet(eventData.Context);
 
-        UpdateEntities(eventData.Context);
-        CompensationEntityProcessor.Apply(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService);
-        CollectAuditEntries(eventData.Context);
+        // L-6 + M-3: single ChangeTracker scan; async path uses ApplyAsync (no sync-over-async).
+        if (eventData.Context is BaseDbContext bdc)
+        {
+            var entries = bdc.ChangeTracker.Entries<IBaseEntity>().ToList();
+            UpdateEntities(bdc, entries);
+            await CompensationEntityProcessor.ApplyAsync(bdc, _correlationContextProvider, _serviceProvider, _dateTimeService, cancellationToken);
+            CollectAuditEntries(bdc, entries);
+        }
+        else
+        {
+            UpdateEntities(eventData.Context);
+            await CompensationEntityProcessor.ApplyAsync(eventData.Context!, _correlationContextProvider, _serviceProvider, _dateTimeService, cancellationToken);
+            CollectAuditEntries(eventData.Context);
+        }
 
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
     public override int SavedChanges(
         SaveChangesCompletedEventData eventData,
         int result)
     {
-        _ = PublishEntityEventsAsync();
-        _ = PublishAuditLogEventsAsync();
+        // Fire-and-forget: wrap in a safe async shell so unobserved exceptions are logged
+        // rather than silently swallowed or crashing the finalizer thread.
+        _ = SafePublishAsync(PublishEntityEventsAsync());
+        _ = SafePublishAsync(PublishAuditLogEventsAsync());
 
         return base.SavedChanges(eventData, result);
     }
@@ -151,7 +186,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
     }
 
-    private void UpdateEntities(DbContext? dbContext)
+    private void UpdateEntities(DbContext? dbContext, List<EntityEntry<IBaseEntity>>? precomputedEntries = null)
     {
         if (dbContext is not BaseDbContext baseDbContext)
         {
@@ -160,8 +195,14 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
 
         var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
 
-        foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
+        var effectiveEntries = precomputedEntries ?? baseDbContext.ChangeTracker.Entries<IBaseEntity>().ToList();
+
+        foreach (var entry in effectiveEntries)
         {
+            // Compute once; reused in both timestamp logic and CollectEntityEvents below.
+            var ownedChanged = entry.HasChangedOwnedEntities();
+            var isSoftDelete = false;
+
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
@@ -173,7 +214,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.Created = _dateTimeService.Today;
                 entry.Entity.CreatedTime = _dateTimeService.TimeNow;
             }
-            else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
+            else if (entry.State == EntityState.Modified || ownedChanged)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
                 if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
@@ -188,6 +229,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.Deleted = true;
+                isSoftDelete = true;
 
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
                 if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
@@ -199,25 +241,29 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
 
-            CollectEntityEvents(entry);
+            // For soft-deletes, entry.State is now Modified but the domain intent is Deleted;
+            // pass the original semantic state so the correct domain event (Deleted) is raised.
+            CollectEntityEvents(entry, isSoftDelete ? EntityState.Deleted : entry.State, ownedChanged);
         }
     }
 
-    private void CollectEntityEvents(EntityEntry<IBaseEntity> entry)
+    private void CollectEntityEvents(EntityEntry<IBaseEntity> entry, EntityState effectiveState, bool ownedChanged)
     {
         IBaseEvent? baseEvent = null;
 
-        if (entry.State == EntityState.Added)
+        if (effectiveState == EntityState.Added)
         {
             baseEvent = entry.Entity.AddCreatedEvent(_mapper, null);
         }
-        else if (entry.State == EntityState.Modified || entry.HasChangedOwnedEntities())
+        else if (effectiveState == EntityState.Deleted)
+        {
+            // Checked before Modified so that a soft-delete (effectiveState=Deleted, ownedChanged=true)
+            // correctly raises the Deleted event rather than Updated.
+            baseEvent = entry.Entity.AddDeletedEvent(_mapper, null);
+        }
+        else if (effectiveState == EntityState.Modified || ownedChanged)
         {
             baseEvent = entry.Entity.AddUpdatedEvent(_mapper, null);
-        }
-        else if (entry.State == EntityState.Deleted)
-        {
-            baseEvent = entry.Entity.AddDeletedEvent(_mapper, null);
         }
 
         if (baseEvent is BaseEvent concreteEvent)
@@ -226,7 +272,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
     }
 
-    private void CollectAuditEntries(DbContext? dbContext)
+    private void CollectAuditEntries(DbContext? dbContext, List<EntityEntry<IBaseEntity>>? precomputedEntries = null)
     {
         if (dbContext is not BaseDbContext baseDbContext)
         {
@@ -237,7 +283,9 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         var userId = correlationContext.User?.Id;
         var clientId = correlationContext.ClientId;
 
-        foreach (var entry in baseDbContext.ChangeTracker.Entries<IBaseEntity>())
+        var effectiveEntries = precomputedEntries ?? baseDbContext.ChangeTracker.Entries<IBaseEntity>().ToList();
+
+        foreach (var entry in effectiveEntries)
         {
             if (entry.State is EntityState.Detached or EntityState.Unchanged)
             {
@@ -303,7 +351,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     }
 
                 case EntityState.Deleted:
-                    beforeJson = JsonSerializer.Serialize(entry.Entity);
+                    // Use runtime type to include all derived-class properties in the snapshot.
+                    beforeJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
                     changeCount = 1;
 
                     break;
@@ -377,12 +426,16 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
-        foreach (var evt in _entityEventBuffer)
+        // Snapshot + clear before any await so that a concurrent SavingChanges call
+        // (e.g. from a re-entrant save or the sibling context's own SavedChanges hook)
+        // cannot modify the list while we iterate it.
+        var snapshot = _entityEventBuffer.ToList();
+        _entityEventBuffer.Clear();
+
+        foreach (var evt in snapshot)
         {
             await _rabbitMQClient.PublishAsync(evt);
         }
-
-        _entityEventBuffer.Clear();
     }
 
     private async Task PublishAuditLogEventsAsync()
@@ -392,21 +445,43 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
-        foreach (var auditEvent in _auditBuffer)
+        var snapshot = _auditBuffer.ToList();
+        _auditBuffer.Clear();
+
+        foreach (var auditEvent in snapshot)
         {
             await _rabbitMQClient.PublishAsync(auditEvent);
         }
+    }
 
-        _auditBuffer.Clear();
+    private async Task SafePublishAsync(Task publishTask)
+    {
+        try
+        {
+            await publishTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Background RabbitMQ publish failed in EntitySaveChangesInterceptor");
+        }
     }
 
     private static bool IsAuditable(object entity)
     {
-        var attr = entity.GetType()
-            .GetCustomAttributes(typeof(AuditableAttribute), false)
-            .FirstOrDefault() as AuditableAttribute;
+        var type = entity.GetType();
+        var nowTicks = DateTime.UtcNow.Ticks;
 
-        return attr?.Enabled != false;
+        if (_auditableCache.TryGetValue(type, out var cached) && nowTicks < cached.ExpiresAtTicks)
+        {
+            return cached.Value;
+        }
+
+        var attr = type.GetCustomAttributes(typeof(AuditableAttribute), false).FirstOrDefault() as AuditableAttribute;
+        var result = attr?.Enabled != false;
+
+        _auditableCache[type] = (result, nowTicks + _auditableCacheTtlTicks);
+
+        return result;
     }
 }
 

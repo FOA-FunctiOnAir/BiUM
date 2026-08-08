@@ -328,6 +328,19 @@ public partial class CrudService
             domainCrud.Test = command.Test;
             domainCrud.Compensatible = command.Compensatible;
 
+            // M-6: pre-load all Edited/Deleted column IDs in one query instead of one per column.
+            var columnIdsToFetch = (command.DomainCrudColumns ?? [])
+                .Where(c => c._rowStatus is RowStatuses.Edited or RowStatuses.Deleted)
+                .Select(c => c.Id)
+                .Distinct()
+                .ToList();
+
+            var prefetchedColumns = columnIdsToFetch.Count > 0
+                ? await DbContext.DomainCrudColumns
+                    .Where(c => columnIdsToFetch.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id, cancellationToken)
+                : [];
+
             foreach (var domainCrudColumn in command.DomainCrudColumns ?? [])
             {
                 switch (domainCrudColumn._rowStatus)
@@ -352,9 +365,7 @@ public partial class CrudService
 
                     case RowStatuses.Edited:
                         {
-                            var existingDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
-
-                            if (existingDomainCrudColumn is null)
+                            if (!prefetchedColumns.TryGetValue(domainCrudColumn.Id, out var existingDomainCrudColumn))
                             {
                                 break;
                             }
@@ -373,14 +384,12 @@ public partial class CrudService
 
                     case RowStatuses.Deleted:
                         {
-                            var newDomainCrudColumn = await DbContext.DomainCrudColumns.FirstOrDefaultAsync(f => f.Id == domainCrudColumn.Id, cancellationToken);
-
-                            if (newDomainCrudColumn is null)
+                            if (!prefetchedColumns.TryGetValue(domainCrudColumn.Id, out var columnToDelete))
                             {
                                 break;
                             }
 
-                            _ = DbContext.DomainCrudColumns.Remove(newDomainCrudColumn);
+                            _ = DbContext.DomainCrudColumns.Remove(columnToDelete);
 
                             break;
                         }

@@ -394,6 +394,17 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                             }
                             : CorrelationContext.Empty);
 
+                // Yayıncının aktif compensation session'ı, asenkron event tüketicilerine örtük olarak
+                // miras kalmamalı: tüketici publisher'ın senkron request ömrüyle senkronize değil, ve
+                // publisher'ın [CompensatableApi] session'ı bu event işlenmeden önce zaten finalize edilmiş
+                // olabilir — bu durumda tüketicinin yazdığı entity hiçbir zaman commit sinyali almaz ve
+                // sonsuza kadar "I" (pending) durumunda kalır. Sadece CompensationSessionFinalizedEvent'in
+                // kendisi (zaten hangi session'ı finalize edeceğini bu id ile taşıyor) bunu korumalı.
+                if (message is not CompensationSessionFinalizedEvent)
+                {
+                    correlationContext = correlationContext?.WithoutCompensationSessionId();
+                }
+
                 correlationContextAccessor?.CorrelationContext = correlationContext;
 
                 dynamic handler = scopedServiceProvider.GetRequiredService(handlerType);

@@ -51,4 +51,33 @@ public sealed partial class CorrelationContext
             User = User
         };
     }
+
+    // Bir yayıncının (publisher) aktif compensation session'ı, asenkron event tüketicilerine
+    // örtük olarak miras kalmamalı — tüketici, yayıncının senkron request ömrüyle senkronize değil,
+    // yayıncının session'ı zaten finalize edilmiş olabilir (bkz. CompensationEntityProcessor).
+    // Sadece CompensationSessionFinalizedEvent'in kendisi bu id'yi taşımaya devam etmeli.
+    public CorrelationContext WithoutCompensationSessionId()
+    {
+        if (CompensationSessionId is null)
+        {
+            return this;
+        }
+
+        return new CorrelationContext
+        {
+            CorrelationId = CorrelationId,
+            CompensationSessionId = null,
+            ConnectionId = ConnectionId,
+            TraceId = TraceId,
+            IpAddress = IpAddress,
+            ClientHost = ClientHost,
+            ApplicationId = ApplicationId,
+            TenantId = TenantId,
+            TenantName = TenantName,
+            LanguageId = LanguageId,
+            ResourceId = ResourceId,
+            ClientId = ClientId,
+            User = User
+        };
+    }
 }

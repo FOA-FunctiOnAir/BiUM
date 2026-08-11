@@ -52,8 +52,8 @@ public class HttpClientService : IHttpClientsService
     private const string UnexpectedSuccessErrorCode = "unexpected_success_response";
 
     private static readonly TimeSpan Timeout = new(0, 5, 0);
-    private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromHours(2);
+    private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromDays(1);
     // H-5: SemaphoreSlim sliding expiry — entries evicted after 30 min idle instead of accumulating forever.
     private static readonly TimeSpan ServiceInfoLockSlide = TimeSpan.FromMinutes(30);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);

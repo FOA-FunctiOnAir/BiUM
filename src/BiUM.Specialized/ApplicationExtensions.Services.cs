@@ -1,10 +1,12 @@
 using AutoMapper.Internal;
 using BiUM.Core.Common.Configs;
+using BiUM.Core.Compensation;
 using BiUM.Core.HttpClients;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Services.HttpClients;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Mapper;
+using BiUM.Specialized.Compensation;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Compensation;
@@ -55,6 +57,7 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddScoped<ICrudService, CrudService>();
         builder.Services.AddScoped<ICompensationService, CompensationService>();
+        builder.Services.AddScoped<IPendingEventStore, PendingEventStore>();
         builder.Services.AddScoped<IHttpClientsService, HttpClientService>();
         builder.Services.AddTransient<ITranslationService, TranslationService>();
 

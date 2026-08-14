@@ -11,6 +11,7 @@ public interface IDbContext
     DatabaseFacade Database { get; }
 
     DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots { get; }
+    DbSet<DomainPendingEvent> DomainPendingEvents { get; }
     DbSet<DomainCrud> DomainCruds { get; }
     DbSet<DomainCrudColumn> DomainCrudColumns { get; }
     DbSet<DomainCrudPartialUpdate> DomainCrudPartialUpdates { get; }

@@ -61,6 +61,7 @@ public class BaseDbContext : DbContext, IDbContext
     }
 
     public DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots => Set<DomainCompensationSnapshot>();
+    public DbSet<DomainPendingEvent> DomainPendingEvents => Set<DomainPendingEvent>();
     public DbSet<DomainCrud> DomainCruds => Set<DomainCrud>();
     public DbSet<DomainCrudColumn> DomainCrudColumns => Set<DomainCrudColumn>();
     public DbSet<DomainCrudPartialUpdate> DomainCrudPartialUpdates => Set<DomainCrudPartialUpdate>();
@@ -101,6 +102,7 @@ public class BaseDbContext : DbContext, IDbContext
     {
         modelBuilder.Entity<DomainCompensationSnapshot>().HasIndex(c => c.CompensationSessionId);
         modelBuilder.Entity<DomainCompensationSnapshot>().HasIndex(c => new { c.EntityId, c.CompensationSessionId });
+        modelBuilder.Entity<DomainPendingEvent>().HasIndex(e => new { e.CompensationSessionId, e.Dispatched });
         modelBuilder.Entity<DomainCrud>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainCrudColumn>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainCrudPartialUpdate>().HasIndex(c => new { c.CrudId, c.Code }).IsUnique();

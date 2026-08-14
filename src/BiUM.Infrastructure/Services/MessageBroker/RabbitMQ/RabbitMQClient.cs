@@ -2,6 +2,7 @@ using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
+using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.Events;
@@ -83,8 +84,55 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         _logger = logger;
     }
 
-    public async Task PublishAsync<T>(T message, CancellationToken cancellationToken)
+    public Task PublishAsync<T>(T message, CancellationToken cancellationToken)
         where T : IBaseEvent
+        => PublishCoreAsync(message, cancellationToken);
+
+    // Runtime-typed publish — message.GetType() (not a compile-time T) drives serialization and
+    // routing, so this also works for callers that only hold an IBaseEvent instance (e.g. a
+    // pending event deserialized from IPendingEventStore).
+    public Task PublishAsync(IBaseEvent message, CancellationToken cancellationToken = default)
+        => PublishCoreAsync(message, cancellationToken);
+
+    public async Task PublishAfterCommitAsync<T>(T message, CancellationToken cancellationToken = default)
+        where T : IBaseEvent
+    {
+        var sessionId = _correlationContextAccessor.CorrelationContext?.CompensationSessionId;
+
+        if (sessionId is null || sessionId == Guid.Empty)
+        {
+            await PublishCoreAsync(message, cancellationToken);
+
+            return;
+        }
+
+        // IPendingEventStore, IDbContext'e (Scoped) bağımlı — Singleton olan bu client
+        // constructor'ında değil, her çağrıda kendi kısa ömürlü scope'undan resolve edilir.
+        using var scope = _serviceScopeFactory.CreateScope();
+
+        var pendingEventStore = scope.ServiceProvider.GetService<IPendingEventStore>();
+
+        if (pendingEventStore is null)
+        {
+            await PublishCoreAsync(message, cancellationToken);
+
+            return;
+        }
+
+        EnsureEventTimestamps(message);
+
+        var type = message.GetType();
+
+        var payload = await _serializer.SerializeAsync(message!, type, cancellationToken);
+
+        await pendingEventStore.AddAsync(
+            sessionId.Value,
+            type.AssemblyQualifiedName ?? type.FullName!,
+            payload.ToArray(),
+            cancellationToken);
+    }
+
+    private async Task PublishCoreAsync(IBaseEvent message, CancellationToken cancellationToken)
     {
         if (!_rabbitMqOptions.Enable)
         {
@@ -108,7 +156,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         if (!string.IsNullOrWhiteSpace(eventAttribute?.Exchange)) // Commands: Multiple publishers to single consumer
         {
-            var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
+            var body = await _serializer.SerializeAsync(message, type, cancellationToken);
 
             var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
 
@@ -162,6 +210,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         {
             await PublishBroadcastFanoutAsync(
                 message,
+                type,
                 _appOptions.Domain.ToLowerInvariant(),
                 correlationContext,
                 cancellationToken);
@@ -201,7 +250,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var normalizedDomain = domain.Trim().ToLowerInvariant();
 
-        await PublishBroadcastFanoutAsync(message, normalizedDomain, correlationContext, cancellationToken);
+        await PublishBroadcastFanoutAsync(message, type, normalizedDomain, correlationContext, cancellationToken);
     }
 
     public async Task StartConsumingAsync(Type eventType, Type handlerType, CancellationToken cancellationToken)
@@ -628,16 +677,14 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         properties.Headers[RetryCountHeader] = count;
     }
 
-    private async Task PublishBroadcastFanoutAsync<T>(
-        T message,
+    private async Task PublishBroadcastFanoutAsync(
+        IBaseEvent message,
+        Type type,
         string fanoutPublisherDomainLower,
         CorrelationContext correlationContext,
         CancellationToken cancellationToken)
-        where T : IBaseEvent
     {
-        var type = message.GetType();
-
-        var body = await _serializer.SerializeAsync(message, cancellationToken: cancellationToken);
+        var body = await _serializer.SerializeAsync(message, type, cancellationToken);
 
         var correlationContextData = await _serializer.SerializeAsync(correlationContext, cancellationToken: cancellationToken);
 

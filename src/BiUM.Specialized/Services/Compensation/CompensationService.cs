@@ -1,9 +1,12 @@
 using BiUM.Core.Authorization;
 using BiUM.Core.Compensation;
+using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,13 +26,25 @@ public sealed class CompensationService : ICompensationService
     private readonly BaseDbContext _dbContext;
     private readonly IConfiguration _configuration;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
+    private readonly IRabbitMQClient? _rabbitMQClient;
+    private readonly IRabbitMQSerializer? _serializer;
+    private readonly ILogger<CompensationService>? _logger;
 
-    public CompensationService(IDbContext dbContext, IConfiguration configuration, ICorrelationContextAccessor correlationContextAccessor)
+    public CompensationService(
+        IDbContext dbContext,
+        IConfiguration configuration,
+        ICorrelationContextAccessor correlationContextAccessor,
+        IRabbitMQClient? rabbitMQClient = null,
+        IRabbitMQSerializer? serializer = null,
+        ILogger<CompensationService>? logger = null)
     {
         _dbContext = dbContext as BaseDbContext
             ?? throw new ArgumentException("IDbContext must be BaseDbContext for compensation.", nameof(dbContext));
         _configuration = configuration;
         _correlationContextAccessor = correlationContextAccessor;
+        _rabbitMQClient = rabbitMQClient;
+        _serializer = serializer;
+        _logger = logger;
     }
 
     // CommitSessionAsync/RollbackSessionAsync'in kendi SaveChangesAsync çağrısı, EntitySaveChangesInterceptor'ı
@@ -101,6 +116,8 @@ public sealed class CompensationService : ICompensationService
         }
 
         await SaveChangesWithoutReprocessingAsync(cancellationToken);
+
+        await DispatchPendingEventsAsync(compensationSessionId, cancellationToken);
     }
 
     private static readonly MethodInfo _prefetchMethodDef =
@@ -161,6 +178,84 @@ public sealed class CompensationService : ICompensationService
         }
 
         await SaveChangesWithoutReprocessingAsync(cancellationToken);
+
+        await DiscardPendingEventsAsync(compensationSessionId, cancellationToken);
+    }
+
+    // PublishAfterCommitAsync ile ertelenmiş event'leri, session başarıyla commit olduktan
+    // sonra gerçekten publish eder. Tablo henüz mevcut değilse (bu mekanizmayı kullanmayan
+    // eski bir mikroservis) ya da publish sırasında bir hata olursa, bu asıl commit/rollback
+    // akışını kesintiye uğratmamalı — sadece loglanır.
+    private async Task DispatchPendingEventsAsync(Guid compensationSessionId, CancellationToken cancellationToken)
+    {
+        if (_rabbitMQClient is null || _serializer is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var pendingEvents = await _dbContext.DomainPendingEvents
+                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched)
+                .OrderBy(e => e.Created).ThenBy(e => e.CreatedTime)
+                .ToListAsync(cancellationToken);
+
+            if (pendingEvents.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var pendingEvent in pendingEvents)
+            {
+                var type = ResolveEntityType(pendingEvent.EventClrTypeName);
+
+                if (type is null)
+                {
+                    _logger?.LogError(
+                        "Unresolvable pending event type {EventClrTypeName} for compensation session {SessionId}",
+                        pendingEvent.EventClrTypeName, compensationSessionId);
+
+                    continue;
+                }
+
+                if (await _serializer.DeserializeAsync(pendingEvent.Payload, type, cancellationToken) is IBaseEvent message)
+                {
+                    await _rabbitMQClient.PublishAsync(message, cancellationToken);
+                }
+
+                pendingEvent.Dispatched = true;
+                pendingEvent.DispatchedAt = DateTime.UtcNow;
+            }
+
+            await SaveChangesWithoutReprocessingAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to dispatch pending events for compensation session {SessionId}", compensationSessionId);
+        }
+    }
+
+    private async Task DiscardPendingEventsAsync(Guid compensationSessionId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var pendingEvents = await _dbContext.DomainPendingEvents
+                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched)
+                .ToListAsync(cancellationToken);
+
+            if (pendingEvents.Count == 0)
+            {
+                return;
+            }
+
+            _dbContext.DomainPendingEvents.RemoveRange(pendingEvents);
+
+            await SaveChangesWithoutReprocessingAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to discard pending events for compensation session {SessionId}", compensationSessionId);
+        }
     }
 
     private async Task CommitCrudRowAsync(DomainCompensationSnapshot snap, CancellationToken cancellationToken)

@@ -86,6 +86,7 @@ public sealed class RequestTransactionMiddlewarePoliciesTests
         public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
         public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
         public DbSet<DomainCompensationSnapshot> DomainCompensationSnapshots => Set<DomainCompensationSnapshot>();
+        public DbSet<DomainPendingEvent> DomainPendingEvents => Set<DomainPendingEvent>();
         public DbSet<DomainCrudPartialUpdate> DomainCrudPartialUpdates => Set<DomainCrudPartialUpdate>();
         public DbSet<DomainCrudPartialUpdateColumn> DomainCrudPartialUpdateColumns => Set<DomainCrudPartialUpdateColumn>();
         public DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates => Set<DomainCrudVersionPartialUpdate>();

@@ -98,18 +98,15 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         where T : IBaseEvent
     {
         var sessionId = _correlationContextAccessor.CorrelationContext?.CompensationSessionId;
-        var typeName = message.GetType().Name;
 
         if (sessionId is null || sessionId == Guid.Empty)
         {
-            _logger.LogInformation(
-                "PublishAfterCommitAsync: no active compensation session for {MessageType}, publishing immediately",
-                typeName);
-
             await PublishCoreAsync(message, cancellationToken);
 
             return;
         }
+
+        var typeName = message.GetType().Name;
 
         // IPendingEventStore, IDbContext'e (Scoped) bağımlı — Singleton olan bu client
         // constructor'ında değil, her çağrıda kendi kısa ömürlü scope'undan resolve edilir.

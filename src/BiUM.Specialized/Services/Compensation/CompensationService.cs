@@ -207,16 +207,8 @@ public sealed class CompensationService : ICompensationService
 
             if (pendingEvents.Count == 0)
             {
-                _logger?.LogInformation(
-                    "DispatchPendingEventsAsync: no undispatched pending events found for compensation session {SessionId}",
-                    compensationSessionId);
-
                 return;
             }
-
-            _logger?.LogInformation(
-                "DispatchPendingEventsAsync: found {Count} pending event(s) for compensation session {SessionId}",
-                pendingEvents.Count, compensationSessionId);
 
             foreach (var pendingEvent in pendingEvents)
             {
@@ -234,10 +226,6 @@ public sealed class CompensationService : ICompensationService
                 if (await _serializer.DeserializeAsync(pendingEvent.Payload, type, cancellationToken) is IBaseEvent message)
                 {
                     await _rabbitMQClient.PublishAsync(message, cancellationToken);
-
-                    _logger?.LogInformation(
-                        "DispatchPendingEventsAsync: published {EventClrTypeName} for compensation session {SessionId}",
-                        pendingEvent.EventClrTypeName, compensationSessionId);
                 }
                 else
                 {

@@ -62,12 +62,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         ? sid
                         : (Guid?)null;
 
-                logger.LogInformation(
-                    "RequestTransactionMiddleware: post-next() CompensationSessionId={SessionId} for {Method} {Path}",
-                    compensationSessionId,
-                    context.Request.Method,
-                    context.Request.Path);
-
                 await transaction.CommitAsync(context.RequestAborted);
 
                 // Dış transaction GERÇEKTEN commit olduktan sonra — PublishAfterCommitAsync ile
@@ -87,10 +81,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         }
                         else
                         {
-                            logger.LogInformation(
-                                "RequestTransactionMiddleware: dispatching pending events after commit for compensation session {SessionId}",
-                                sessionId);
-
                             // context.RequestAborted KULLANILMAZ: bu, client bağlantısına bağlı bir token —
                             // response client'a ulaşır ulaşmaz (özellikle uzun süren isteklerde) iptal
                             // olabilir. Dispatch, client hâlâ bağlı olsun ya da olmasın tamamlanmalı.
@@ -101,13 +91,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                     {
                         logger.LogError(ex, "Failed to dispatch pending events after commit for compensation session {SessionId}", sessionId);
                     }
-                }
-                else
-                {
-                    logger.LogInformation(
-                        "RequestTransactionMiddleware: no compensation session id after next() for {Method} {Path} — skipping pending-event dispatch",
-                        context.Request.Method,
-                        context.Request.Path);
                 }
             }
             catch

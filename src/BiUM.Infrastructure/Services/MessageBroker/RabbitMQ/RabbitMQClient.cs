@@ -98,9 +98,14 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         where T : IBaseEvent
     {
         var sessionId = _correlationContextAccessor.CorrelationContext?.CompensationSessionId;
+        var typeName = message.GetType().Name;
 
         if (sessionId is null || sessionId == Guid.Empty)
         {
+            _logger.LogInformation(
+                "PublishAfterCommitAsync: no active compensation session for {MessageType}, publishing immediately",
+                typeName);
+
             await PublishCoreAsync(message, cancellationToken);
 
             return;
@@ -114,6 +119,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         if (pendingEventStore is null)
         {
+            _logger.LogWarning(
+                "PublishAfterCommitAsync: IPendingEventStore not resolvable, publishing {MessageType} immediately instead of deferring (session {SessionId})",
+                typeName,
+                sessionId);
+
             await PublishCoreAsync(message, cancellationToken);
 
             return;

@@ -1,8 +1,10 @@
+using BiUM.Core.Authorization;
 using BiUM.Specialized.Middlewares;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace BiUM.Tests.Transaction;
@@ -28,7 +30,10 @@ public sealed class RequestTransactionMiddlewareTests
             ctx.Request.Method = "POST";
             ctx.Request.Path = "/api/mutation";
 
-            await middleware.InvokeAsync(ctx);
+            await middleware.InvokeAsync(
+                ctx,
+                scope.ServiceProvider.GetRequiredService<ICorrelationContextAccessor>(),
+                NullLogger<RequestTransactionMiddleware>.Instance);
 
             var currentTransaction = db.Database.CurrentTransaction;
             currentTransaction.Should().BeNull();
@@ -64,7 +69,10 @@ public sealed class RequestTransactionMiddlewareTests
             ctx.Request.Method = "POST";
             ctx.Request.Path = "/api/mutation";
 
-            var act = async () => await middleware.InvokeAsync(ctx);
+            var act = async () => await middleware.InvokeAsync(
+                ctx,
+                scope.ServiceProvider.GetRequiredService<ICorrelationContextAccessor>(),
+                NullLogger<RequestTransactionMiddleware>.Instance);
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("boom");
 
             db.Database.CurrentTransaction.Should().BeNull();

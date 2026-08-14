@@ -9,4 +9,6 @@ public interface ICompensationService
     public Task CommitSessionAsync(Guid compensationSessionId, CancellationToken cancellationToken);
 
     public Task RollbackSessionAsync(Guid compensationSessionId, CancellationToken cancellationToken);
+
+    public Task DispatchPendingEventsAsync(Guid compensationSessionId, CancellationToken cancellationToken);
 }

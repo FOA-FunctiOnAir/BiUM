@@ -116,8 +116,6 @@ public sealed class CompensationService : ICompensationService
         }
 
         await SaveChangesWithoutReprocessingAsync(cancellationToken);
-
-        await DispatchPendingEventsAsync(compensationSessionId, cancellationToken);
     }
 
     private static readonly MethodInfo _prefetchMethodDef =
@@ -182,11 +180,12 @@ public sealed class CompensationService : ICompensationService
         await DiscardPendingEventsAsync(compensationSessionId, cancellationToken);
     }
 
-    // PublishAfterCommitAsync ile ertelenmiş event'leri, session başarıyla commit olduktan
-    // sonra gerçekten publish eder. Tablo henüz mevcut değilse (bu mekanizmayı kullanmayan
-    // eski bir mikroservis) ya da publish sırasında bir hata olursa, bu asıl commit/rollback
-    // akışını kesintiye uğratmamalı — sadece loglanır.
-    private async Task DispatchPendingEventsAsync(Guid compensationSessionId, CancellationToken cancellationToken)
+    // PublishAfterCommitAsync ile ertelenmiş event'leri gerçekten publish eder.
+    // ÖNEMLİ: Bu metod CommitSessionAsync'ten ÇAĞRILMAZ — RequestTransactionMiddleware
+    // tarafından, dış (HTTP-request seviyesindeki) DB transaction'ı GERÇEKTEN commit
+    // olduktan SONRA çağrılmalıdır. Aksi halde event, consumer'a transaction henüz
+    // açıkken ulaşabilir ve bu transaction'da yazılan satırları göremez.
+    public async Task DispatchPendingEventsAsync(Guid compensationSessionId, CancellationToken cancellationToken)
     {
         if (_rabbitMQClient is null || _serializer is null)
         {

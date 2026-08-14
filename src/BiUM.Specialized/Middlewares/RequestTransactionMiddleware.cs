@@ -1,4 +1,4 @@
-using BiUM.Core.Authorization;
+using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Services.Compensation;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +15,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(
         HttpContext context,
-        ICorrelationContextAccessor correlationContextAccessor,
         ILogger<RequestTransactionMiddleware> logger)
     {
         if (RequestTransactionMiddlewarePolicies.ShouldSkipTransaction(context))
@@ -50,9 +49,18 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
             {
                 await next(context);
 
-                // [CompensatableApi] varsa, session id'si next() sırasında ambient CorrelationContext'e
-                // yazılmış olur ve burada hâlâ okunabilir (AsyncLocal). Commit'ten ÖNCE yakalıyoruz.
-                var compensationSessionId = correlationContextAccessor.CorrelationContext?.CompensationSessionId;
+                // ÖNEMLİ: session id'yi ICorrelationContextAccessor'dan DEĞİL, HttpContext.Items'tan okuyoruz.
+                // CorrelationContextAccessor'ın AsyncLocal holder'ı, next() içinde CompensatableApiActionFilter'ın
+                // yeni bir session id set etmesi sırasında (holder'ı null'layıp yenisiyle değiştirme deseni,
+                // bkz. CompensatableApiActionFilter.CompensationSessionIdItemsKey yorumu) bu middleware'in
+                // (next()'i çağıran ancestor) hâlâ işaret ettiği ESKİ holder'ı null'lıyor — next() dönünce
+                // CorrelationContext.CompensationSessionId burada HER ZAMAN null okunuyordu, event buffer
+                // edilse bile asla dispatch edilemiyordu. HttpContext.Items bu indirection'dan etkilenmez.
+                var compensationSessionId =
+                    context.Items.TryGetValue(CompensatableApiActionFilter.CompensationSessionIdItemsKey, out var sessionIdObj) &&
+                    sessionIdObj is Guid sid
+                        ? sid
+                        : (Guid?)null;
 
                 logger.LogInformation(
                     "RequestTransactionMiddleware: post-next() CompensationSessionId={SessionId} for {Method} {Path}",

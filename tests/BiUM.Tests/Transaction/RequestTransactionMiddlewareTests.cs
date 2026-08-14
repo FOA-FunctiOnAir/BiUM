@@ -1,4 +1,3 @@
-using BiUM.Core.Authorization;
 using BiUM.Specialized.Middlewares;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
@@ -32,7 +31,6 @@ public sealed class RequestTransactionMiddlewareTests
 
             await middleware.InvokeAsync(
                 ctx,
-                scope.ServiceProvider.GetRequiredService<ICorrelationContextAccessor>(),
                 NullLogger<RequestTransactionMiddleware>.Instance);
 
             var currentTransaction = db.Database.CurrentTransaction;
@@ -71,7 +69,6 @@ public sealed class RequestTransactionMiddlewareTests
 
             var act = async () => await middleware.InvokeAsync(
                 ctx,
-                scope.ServiceProvider.GetRequiredService<ICorrelationContextAccessor>(),
                 NullLogger<RequestTransactionMiddleware>.Instance);
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("boom");
 

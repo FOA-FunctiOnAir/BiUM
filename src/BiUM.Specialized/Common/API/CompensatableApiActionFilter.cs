@@ -24,6 +24,16 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 
     private const string LocalOrchestrationKey = "BiUM.Compensation.LocalOrchestration";
 
+    // RequestTransactionMiddleware, next() dönüşünden sonra dispatch edilecek compensation session id'yi
+    // buradan okur — ICorrelationContextAccessor'dan DEĞİL. Sebep: CorrelationContextAccessor, AsyncLocal
+    // holder'ını her Set çağrısında önce null'layıp sonra yeni bir holder'a geçiyor (HttpContextAccessor'daki
+    // gibi). Bu, bu filter'ın (next() içindeki bir descendant) yeni session id'yi set etmesinin, next()'i
+    // çağıran middleware'in (ancestor) AsyncLocal pointer'ının hâlâ işaret ettiği ESKİ holder'ı null'laması
+    // anlamına gelir — middleware next() dönünce CorrelationContext.CompensationSessionId'i hep null okur,
+    // event her zaman buffer'lanır ama asla dispatch edilmez. HttpContext.Items, bu indirection'dan bağımsız
+    // düz bir per-request dictionary olduğu için bu sorunu yaşamaz.
+    internal const string CompensationSessionIdItemsKey = "BiUM.Compensation.SessionId";
+
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICrudService _crudService;
     private readonly ICompensationService _compensationService;
@@ -83,6 +93,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
                 {
                     var newSession = Guid.NewGuid();
                     _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+                    context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
                     localOrchestration = true;
                 }
             }
@@ -94,6 +105,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
         {
             var newSession = Guid.NewGuid();
             _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+            context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
             localOrchestration = true;
         }
 

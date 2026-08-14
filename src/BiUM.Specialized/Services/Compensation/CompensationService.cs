@@ -189,6 +189,12 @@ public sealed class CompensationService : ICompensationService
     {
         if (_rabbitMQClient is null || _serializer is null)
         {
+            _logger?.LogWarning(
+                "DispatchPendingEventsAsync skipped for session {SessionId}: RabbitMQClient or serializer is not available (RabbitMQClient={HasClient}, Serializer={HasSerializer})",
+                compensationSessionId,
+                _rabbitMQClient is not null,
+                _serializer is not null);
+
             return;
         }
 
@@ -220,6 +226,12 @@ public sealed class CompensationService : ICompensationService
                 if (await _serializer.DeserializeAsync(pendingEvent.Payload, type, cancellationToken) is IBaseEvent message)
                 {
                     await _rabbitMQClient.PublishAsync(message, cancellationToken);
+                }
+                else
+                {
+                    _logger?.LogError(
+                        "Pending event {EventClrTypeName} for compensation session {SessionId} deserialized to null/non-IBaseEvent; marking dispatched without publishing",
+                        pendingEvent.EventClrTypeName, compensationSessionId);
                 }
 
                 pendingEvent.Dispatched = true;

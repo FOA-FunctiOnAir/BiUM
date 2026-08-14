@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Middlewares;
@@ -64,9 +65,18 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                     {
                         var compensationService = context.RequestServices.GetService<ICompensationService>();
 
-                        if (compensationService is not null)
+                        if (compensationService is null)
                         {
-                            await compensationService.DispatchPendingEventsAsync(sessionId, context.RequestAborted);
+                            logger.LogWarning(
+                                "Cannot dispatch pending events after commit for compensation session {SessionId}: ICompensationService is not resolvable from RequestServices.",
+                                sessionId);
+                        }
+                        else
+                        {
+                            // context.RequestAborted KULLANILMAZ: bu, client bağlantısına bağlı bir token —
+                            // response client'a ulaşır ulaşmaz (özellikle uzun süren isteklerde) iptal
+                            // olabilir. Dispatch, client hâlâ bağlı olsun ya da olmasın tamamlanmalı.
+                            await compensationService.DispatchPendingEventsAsync(sessionId, CancellationToken.None);
                         }
                     }
                     catch (Exception ex)

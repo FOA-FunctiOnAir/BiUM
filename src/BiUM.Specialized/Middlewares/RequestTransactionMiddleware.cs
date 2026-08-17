@@ -49,13 +49,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
             {
                 await next(context);
 
-                // ÖNEMLİ: session id'yi ICorrelationContextAccessor'dan DEĞİL, HttpContext.Items'tan okuyoruz.
-                // CorrelationContextAccessor'ın AsyncLocal holder'ı, next() içinde CompensatableApiActionFilter'ın
-                // yeni bir session id set etmesi sırasında (holder'ı null'layıp yenisiyle değiştirme deseni,
-                // bkz. CompensatableApiActionFilter.CompensationSessionIdItemsKey yorumu) bu middleware'in
-                // (next()'i çağıran ancestor) hâlâ işaret ettiği ESKİ holder'ı null'lıyor — next() dönünce
-                // CorrelationContext.CompensationSessionId burada HER ZAMAN null okunuyordu, event buffer
-                // edilse bile asla dispatch edilemiyordu. HttpContext.Items bu indirection'dan etkilenmez.
                 var compensationSessionId =
                     context.Items.TryGetValue(CompensatableApiActionFilter.CompensationSessionIdItemsKey, out var sessionIdObj) &&
                     sessionIdObj is Guid sid
@@ -64,9 +57,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
 
                 await transaction.CommitAsync(context.RequestAborted);
 
-                // Dış transaction GERÇEKTEN commit olduktan sonra — PublishAfterCommitAsync ile
-                // ertelenen event'ler ancak burada güvenle publish edilebilir. Dispatch hatası,
-                // zaten commit edilmiş bir transaction'ı etkilememeli — sadece loglanır.
                 if (compensationSessionId is { } sessionId && sessionId != Guid.Empty)
                 {
                     try
@@ -81,9 +71,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         }
                         else
                         {
-                            // context.RequestAborted KULLANILMAZ: bu, client bağlantısına bağlı bir token —
-                            // response client'a ulaşır ulaşmaz (özellikle uzun süren isteklerde) iptal
-                            // olabilir. Dispatch, client hâlâ bağlı olsun ya da olmasın tamamlanmalı.
                             await compensationService.DispatchPendingEventsAsync(sessionId, CancellationToken.None);
                         }
                     }

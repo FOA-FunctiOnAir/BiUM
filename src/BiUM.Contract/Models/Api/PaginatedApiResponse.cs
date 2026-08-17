@@ -30,9 +30,9 @@ public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
 
     public PaginatedApiResponse(IBaseQuery baseQuery, IList<TType> items, int count)
     {
-        var (pageNumber, pageSize) = GetQueryParameters(baseQuery);
+        var (pageStart, pageSize) = GetQueryParameters(baseQuery);
 
-        PageNumber = pageNumber;
+        PageNumber = pageSize > 0 ? (pageStart / pageSize) + 1 : 1;
         TotalPages = (int)Math.Ceiling((double)count / pageSize);
         TotalCount = count;
         Value = new ReadOnlyCollection<TType>(items);

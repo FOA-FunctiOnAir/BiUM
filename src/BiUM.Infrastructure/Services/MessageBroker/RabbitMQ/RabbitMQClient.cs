@@ -88,9 +88,6 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         where T : IBaseEvent
         => PublishCoreAsync(message, cancellationToken);
 
-    // Runtime-typed publish — message.GetType() (not a compile-time T) drives serialization and
-    // routing, so this also works for callers that only hold an IBaseEvent instance (e.g. a
-    // pending event deserialized from IPendingEventStore).
     public Task PublishAsync(IBaseEvent message, CancellationToken cancellationToken = default)
         => PublishCoreAsync(message, cancellationToken);
 
@@ -108,8 +105,6 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var typeName = message.GetType().Name;
 
-        // IPendingEventStore, IDbContext'e (Scoped) bağımlı — Singleton olan bu client
-        // constructor'ında değil, her çağrıda kendi kısa ömürlü scope'undan resolve edilir.
         using var scope = _serviceScopeFactory.CreateScope();
 
         var pendingEventStore = scope.ServiceProvider.GetService<IPendingEventStore>();

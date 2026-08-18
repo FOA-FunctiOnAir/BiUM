@@ -14,6 +14,7 @@ Etkinlik: ilgili profilde **`RabbitMqOptions.Enable`** false ise `PublishAsync` 
 
 - Olay gövdesi: **`IRabbitMQSerializer`** (MemoryPack tabanlı kullanım; içerik tipi varsayılan **`application/x-memorypack`**, kodlama **`brotli`**).
 - **`IBaseEvent`** türevleri; `EventAttribute` ile exchange / dallanma bilgisi.
+- **Zorunlu**: her somut `[Event]` sınıfı ayrıca **`[MemoryPackable]`** ve **`partial`** olmalı. `BaseEvent` kendisi `[MemoryPackable] partial` ama ara sınıflar **`BaseEntityEvent`/`TenantBaseEntityEvent` DEĞİL** — bu yüzden inherit etmek yetmez, her somut tip kendi formatter'ını üretmeli. Eksikse `PublishAsync`/`SavedChangesAsync` sırasında `System.InvalidOperationException: Type implements IMemoryPackFormatterRegister but can not found RegisterFormatter` hatası alınır (bkz. Bölüm 3 örnekleri).
 
 ## 3. Üç seçenek: `PublishAsync` + `StartConsumingAsync`
 

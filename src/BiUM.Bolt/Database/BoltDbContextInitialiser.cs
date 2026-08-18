@@ -1,6 +1,7 @@
 using BiUM.Bolt.Database.Entities;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
+using BiUM.Core.Database;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
@@ -187,7 +188,7 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
                     }
                 }
 
-                _ = await DbContext.SaveChangesAsync(cancellationToken);
+                await SaveChangesTransactionallyAsync(cancellationToken);
 
                 lastTransactionId = transactionId;
 
@@ -219,7 +220,7 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
 
             _ = DbContext.Add(newBoltStatus);
 
-            _ = await DbContext.SaveChangesAsync(cancellationToken);
+            await SaveChangesTransactionallyAsync(cancellationToken);
         }
         finally
         {
@@ -248,8 +249,22 @@ public abstract class BoltDbContextInitialiser<TBoltDbContext, TDbContext> : DbC
 
                 _ = DbContext.Add(newBoltStatus);
 
-                _ = await DbContext.SaveChangesAsync(cancellationToken);
+                await SaveChangesTransactionallyAsync(cancellationToken);
             }
+        }
+    }
+
+    private async Task SaveChangesTransactionallyAsync(CancellationToken cancellationToken)
+    {
+        var runner = ServiceProvider.GetService<ITransactionalUnitOfWorkRunner>();
+
+        if (runner is not null)
+        {
+            await runner.RunAsync(() => DbContext.SaveChangesAsync(cancellationToken), cancellationToken);
+        }
+        else
+        {
+            _ = await DbContext.SaveChangesAsync(cancellationToken);
         }
     }
 

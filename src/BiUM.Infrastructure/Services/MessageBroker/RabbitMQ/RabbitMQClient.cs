@@ -4,6 +4,7 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
+using BiUM.Core.Database;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
@@ -461,7 +462,16 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                 dynamic handler = scopedServiceProvider.GetRequiredService(handlerType);
                 dynamic typedMessage = message;
 
-                await handler.HandleAsync(typedMessage, scopeCancellationToken);
+                var unitOfWorkRunner = scopedServiceProvider.GetService<ITransactionalUnitOfWorkRunner>();
+
+                if (unitOfWorkRunner is not null)
+                {
+                    await unitOfWorkRunner.RunAsync(() => handler.HandleAsync(typedMessage, scopeCancellationToken), scopeCancellationToken);
+                }
+                else
+                {
+                    await handler.HandleAsync(typedMessage, scopeCancellationToken);
+                }
 
                 await channel.BasicAckAsync(args.DeliveryTag, multiple: false, cancellationToken: scopeCancellationToken);
             }

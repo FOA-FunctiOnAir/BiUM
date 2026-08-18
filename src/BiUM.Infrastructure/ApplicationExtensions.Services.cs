@@ -206,6 +206,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddSingleton<IMagicOnionSerializerProvider>(magicOnionSerializerProvider);
 
         builder.Services.AddSingleton<GlobalApiResponseFilter>();
+        builder.Services.AddSingleton<TransactionalUnitOfWorkFilter>();
 
         builder.Services.AddMagicOnion(options =>
         {
@@ -214,6 +215,7 @@ public static partial class ApplicationExtensions
             options.EnableCurrentContext = true;
 
             options.GlobalFilters.Add<GlobalApiResponseFilter>();
+            options.GlobalFilters.Add<TransactionalUnitOfWorkFilter>();
         });
 
         builder.Services.AddBiUMRedisClients(builder.Configuration);

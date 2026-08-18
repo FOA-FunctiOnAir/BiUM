@@ -47,13 +47,28 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
             {
                 await next(context);
 
+                var transaction = db.Database.CurrentTransaction;
+
+                var rollbackRequested =
+                    context.Items.TryGetValue(ApiResponseTransactionRollbackFilter.RollbackRequestedKey, out var rollbackFlag) &&
+                    rollbackFlag is true;
+
+                if (rollbackRequested)
+                {
+                    if (transaction is not null)
+                    {
+                        await transaction.RollbackAsync(context.RequestAborted);
+                        await transaction.DisposeAsync();
+                    }
+
+                    return;
+                }
+
                 var compensationSessionId =
                     context.Items.TryGetValue(CompensatableApiActionFilter.CompensationSessionIdItemsKey, out var sessionIdObj) &&
                     sessionIdObj is Guid sid
                         ? sid
                         : (Guid?)null;
-
-                var transaction = db.Database.CurrentTransaction;
 
                 if (transaction is not null)
                 {

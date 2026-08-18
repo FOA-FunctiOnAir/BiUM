@@ -7,7 +7,7 @@ Bu belge, ASP.NET Core pipeline’da BiUM’un eklediği middleware ve filtreler
 - **Swagger / SwaggerUI**: `BiAppOptions.Environment` üretim benzeri (`Production`, `Sandbox`, `Staging`, `QA`) ise kapalı; `Development` / `PreDevelopment` ise açık (host `ASPNETCORE_ENVIRONMENT` yalnızca `BiAppOptions` belirtilmemişse devreye girer). Ortak mantık: `IHostEnvironment.IsSwaggerEnabled` / `IsSwaggerUiEnabled` (`BiUM.Core/Extensions/HostEnvironmentExtensions.cs`). Gateway `SwaggerForOcelot` aynı kuralları kullanır.
 - **Exception handling**
   - **gRPC** (`application/grpc`): `GrpcGlobalExceptionHandlerMiddleware` — yakalanan istisnalar **`LogError`** ile yazılır.
-  - **REST**: `UseExceptionHandler` — `ApiResponse` JSON (`application/problem+json`); işlenmemiş istisna **`LogError`**; **`ApiResponseRollbackException`** için `application/json`, taşınan status ve `ApiResponse` gövdesi; yanıt yazılmadan önce taşınan mesajlar **`LogError`** ile özetlenir (`ApiResponseLogSummary`).
+  - **REST**: `UseExceptionHandler` — `ApiResponse` JSON (`application/problem+json`); işlenmemiş istisna **`LogError`**.
 - **Domain**: `AppDomain.UnhandledException` ve `TaskScheduler.UnobservedTaskException` loglama.
 - **Middleware zinciri**: `CorrelationContextExtractorMiddleware` → `CorrelationContextActivityMiddleware` → `ServiceCallMetricsMiddleware`
 - **`UseRouting`**
@@ -33,7 +33,7 @@ Bu belge, ASP.NET Core pipeline’da BiUM’un eklediği middleware ve filtreler
 
 `BiUM.Specialized/ApplicationExtensions.Services.cs` içinde:
 
-- **`ApiResponseTransactionRollbackFilter`**: `ApiResponse.Success == false` → `ApiResponseRollbackException` → REST handler + DB transaction rollback.
+- **`ApiResponseTransactionRollbackFilter`**: `ApiResponse.Success == false` → `HttpContext.Items[ApiResponseTransactionRollbackFilter.RollbackRequestedKey] = true` → `RequestTransactionMiddleware`, `next()` sonrası bu bayrağı görürse exception atmadan (normal response akışını bozmadan) DB transaction'ı rollback eder.
 - **`ApiResponseLoggingFilter`**: `ObjectResult` içindeki `ApiResponse` / `ApiResponse<T>` için her `ResponseMessage` şiddetine göre log (`Error` → **`LogError`**); istek yolu log alanına eklenir.
 - **`CompensatableApiActionFilter`**: Telafi oturumu; bkz. [Agents.Compensation.md](Agents.Compensation.md).
 

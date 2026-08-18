@@ -1,3 +1,4 @@
+using BiUM.Core.Database;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Middlewares;
 using Microsoft.AspNetCore.Builder;
@@ -33,7 +34,8 @@ public static partial class ApplicationExtensions
     public static Task SyncDatabase(this IServiceProvider serviceProvider)
     {
         var initialiser = serviceProvider.GetRequiredService<IDbContextInitialiser>();
+        var runner = serviceProvider.GetRequiredService<ITransactionalUnitOfWorkRunner>();
 
-        return initialiser.SeedAsync();
+        return runner.RunAsync(() => initialiser.SeedAsync());
     }
 }

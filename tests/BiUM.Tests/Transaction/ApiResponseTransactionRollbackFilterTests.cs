@@ -14,7 +14,7 @@ namespace BiUM.Tests.Transaction;
 public sealed class ApiResponseTransactionRollbackFilterTests
 {
     [Fact]
-    public async Task OnResultExecutionAsync_failure_ObjectResult_throws_with_status_and_response()
+    public async Task OnResultExecutionAsync_failure_ObjectResult_sets_rollback_flag_and_invokes_next()
     {
         var filter = new ApiResponseTransactionRollbackFilter();
 
@@ -24,19 +24,23 @@ public sealed class ApiResponseTransactionRollbackFilterTests
         var objectResult = new ObjectResult(apiResponse) { StatusCode = 422 };
         var executingContext = CreateResultExecutingContext(objectResult);
 
-        var ex = await Assert.ThrowsAsync<ApiResponseRollbackException>(() =>
-            filter.OnResultExecutionAsync(executingContext, () => Task.FromResult(new ResultExecutedContext(
+        var nextCalled = false;
+        await filter.OnResultExecutionAsync(executingContext, () =>
+        {
+            nextCalled = true;
+            return Task.FromResult(new ResultExecutedContext(
                 executingContext,
                 executingContext.Filters,
                 executingContext.Result,
-                executingContext.Controller))));
+                executingContext.Controller));
+        });
 
-        ex.StatusCode.Should().Be(422);
-        ex.ApiResponse.Should().BeSameAs(apiResponse);
+        nextCalled.Should().BeTrue();
+        executingContext.HttpContext.Items[ApiResponseTransactionRollbackFilter.RollbackRequestedKey].Should().Be(true);
     }
 
     [Fact]
-    public async Task OnResultExecutionAsync_success_invokes_next()
+    public async Task OnResultExecutionAsync_success_invokes_next_without_rollback_flag()
     {
         var filter = new ApiResponseTransactionRollbackFilter();
 
@@ -56,6 +60,7 @@ public sealed class ApiResponseTransactionRollbackFilterTests
         });
 
         nextCalled.Should().BeTrue();
+        executingContext.HttpContext.Items.ContainsKey(ApiResponseTransactionRollbackFilter.RollbackRequestedKey).Should().BeFalse();
     }
 
     [Fact]
@@ -69,12 +74,13 @@ public sealed class ApiResponseTransactionRollbackFilterTests
         var objectResult = new ObjectResult(apiResponse);
         var executingContext = CreateResultExecutingContext(objectResult);
 
-        await Assert.ThrowsAsync<ApiResponseRollbackException>(() =>
-            filter.OnResultExecutionAsync(executingContext, () => Task.FromResult(new ResultExecutedContext(
-                executingContext,
-                executingContext.Filters,
-                executingContext.Result,
-                executingContext.Controller))));
+        await filter.OnResultExecutionAsync(executingContext, () => Task.FromResult(new ResultExecutedContext(
+            executingContext,
+            executingContext.Filters,
+            executingContext.Result,
+            executingContext.Controller)));
+
+        executingContext.HttpContext.Items[ApiResponseTransactionRollbackFilter.RollbackRequestedKey].Should().Be(true);
     }
 
     private static ResultExecutingContext CreateResultExecutingContext(IActionResult result)

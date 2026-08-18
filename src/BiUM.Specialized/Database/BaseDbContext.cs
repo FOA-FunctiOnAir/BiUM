@@ -5,12 +5,15 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Infrastructure.Persistence.Extensions;
 using BiUM.Specialized.Interceptors;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Database;
 
@@ -18,10 +21,10 @@ public class BaseDbContext : DbContext, IDbContext
 {
     private bool _hardDeleteEnabled;
 
-    private readonly IServiceProvider _serviceProvider;
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
     private readonly ICorrelationContextAccessor? _correlationContextAccessor;
+    private readonly ILogger<BaseDbContext>? _logger;
     protected BiAppOptions BiAppOptions { get; }
 
     // L-5: compiled open delegates per entity type replace MakeGenericMethod().Invoke() on every model build.
@@ -40,9 +43,9 @@ public class BaseDbContext : DbContext, IDbContext
         EntitySaveChangesInterceptor entitySaveChangesInterceptor
     ) : base(options)
     {
-        _serviceProvider = serviceProvider;
         _entitySaveChangesInterceptor = entitySaveChangesInterceptor;
         _correlationContextAccessor = serviceProvider.GetService<ICorrelationContextAccessor>();
+        _logger = serviceProvider.GetService<ILogger<BaseDbContext>>();
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
@@ -53,9 +56,9 @@ public class BaseDbContext : DbContext, IDbContext
         BoltEntitySaveChangesInterceptor boltEntitySaveChangesInterceptor
     ) : base(options)
     {
-        _serviceProvider = serviceProvider;
         _boltEntitySaveChangesInterceptor = boltEntitySaveChangesInterceptor;
         _correlationContextAccessor = serviceProvider.GetService<ICorrelationContextAccessor>();
+        _logger = serviceProvider.GetService<ILogger<BaseDbContext>>();
 
         BiAppOptions = serviceProvider.GetRequiredService<IOptions<BiAppOptions>>().Value;
     }
@@ -206,5 +209,42 @@ public class BaseDbContext : DbContext, IDbContext
         optionsBuilder.AddInterceptors(new LazyTransactionBeginInterceptor());
 
         base.OnConfiguring(optionsBuilder);
+    }
+
+    public override void Dispose()
+    {
+        WarnIfTransactionLeaked();
+
+        base.Dispose();
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        WarnIfTransactionLeaked();
+
+        await base.DisposeAsync();
+    }
+
+    private void WarnIfTransactionLeaked()
+    {
+        IDbContextTransaction? transaction;
+
+        try
+        {
+            transaction = Database.CurrentTransaction;
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+
+        if (transaction is null)
+        {
+            return;
+        }
+
+        _logger?.LogError(
+            "DbContext of type {DbContextType} was disposed with an open, uncommitted transaction. This indicates a missing commit/rollback wrapper on the code path that triggered this SaveChanges.",
+            GetType().Name);
     }
 }

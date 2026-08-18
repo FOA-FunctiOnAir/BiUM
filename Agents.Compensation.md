@@ -4,9 +4,9 @@ Bu belge, dağıtık senaryolarda **telafi oturumu** (`CompensationSessionId`), 
 
 ## 1. İstek işlemi ve veritabanı işlemi
 
-- **`RequestTransactionMiddleware`** (`BiUM.Specialized/Middlewares/RequestTransactionMiddleware.cs`): Scoped `IDbContext` için `IExecutionStrategy.ExecuteAsync` içinde `BeginTransactionAsync` → pipeline → başarılıysa commit, hata varsa rollback. EF `EnableRetryOnFailure` ile uyumludur.
+- **`RequestTransactionMiddleware`** (`BiUM.Specialized/Middlewares/RequestTransactionMiddleware.cs`): Scoped `IDbContext` için `IExecutionStrategy.ExecuteAsync` içinde pipeline çalışır (transaction `LazyTransactionBeginInterceptor` ile ilk `SaveChanges`'te lazy açılır) → başarılıysa commit, hata varsa rollback. EF `EnableRetryOnFailure` ile uyumludur.
 - Salt-okuma istekleri bu sarmalayıcıdan hariç tutulur; ayrıntılar: [Agents.RequestPipeline.md](Agents.RequestPipeline.md).
-- Başarısız **`ApiResponse`** (HTTP 200 + `Success == false`) durumunda **`ApiResponseTransactionRollbackFilter`** `ApiResponseRollbackException` fırlatır; REST exception handler bunu JSON olarak yazar ve istek transaction’ı geri alınır.
+- Başarısız **`ApiResponse`** (HTTP 200 + `Success == false`) durumunda **`ApiResponseTransactionRollbackFilter`**, `HttpContext.Items`'a bir rollback bayrağı bırakır (exception fırlatmadan); `RequestTransactionMiddleware` bunu görüp transaction'ı geri alır, response normal akışında değişmeden yazılır.
 
 ## 2. Olay tabanlı sonlandırma (RabbitMQ)
 
@@ -48,7 +48,7 @@ Yerel commit/rollback yalnızca **Pending** anlık görüntü satırlarında iş
 ## 6. İlgili kod konumları
 
 - Middleware politikaları: `RequestTransactionMiddlewarePolicies.cs`
-- Rollback sinyali: `BiUM.Contract/Models/Api/ApiResponseRollbackException.cs`, `ApiResponseTransactionRollbackFilter.cs`
+- Rollback sinyali: `ApiResponseTransactionRollbackFilter.cs` (`HttpContext.Items[RollbackRequestedKey]`)
 - Olay yayını: `RabbitMQClient` içinde `CompensationSessionFinalizedEvent` fanout yolu
 
 ## 7. AI ajanları için

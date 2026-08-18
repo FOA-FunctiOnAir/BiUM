@@ -203,6 +203,8 @@ public class BaseDbContext : DbContext, IDbContext
             optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
         }
 
+        optionsBuilder.AddInterceptors(new LazyTransactionBeginInterceptor());
+
         base.OnConfiguring(optionsBuilder);
     }
 }

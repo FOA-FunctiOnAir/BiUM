@@ -43,8 +43,6 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
 
         await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(context.RequestAborted);
-
             try
             {
                 await next(context);
@@ -55,7 +53,13 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         ? sid
                         : (Guid?)null;
 
-                await transaction.CommitAsync(context.RequestAborted);
+                var transaction = db.Database.CurrentTransaction;
+
+                if (transaction is not null)
+                {
+                    await transaction.CommitAsync(context.RequestAborted);
+                    await transaction.DisposeAsync();
+                }
 
                 if (compensationSessionId is { } sessionId && sessionId != Guid.Empty)
                 {
@@ -82,7 +86,13 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
             }
             catch
             {
-                await transaction.RollbackAsync(context.RequestAborted);
+                var transaction = db.Database.CurrentTransaction;
+
+                if (transaction is not null)
+                {
+                    await transaction.RollbackAsync(context.RequestAborted);
+                    await transaction.DisposeAsync();
+                }
 
                 throw;
             }

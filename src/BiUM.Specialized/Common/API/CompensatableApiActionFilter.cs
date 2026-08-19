@@ -1,6 +1,5 @@
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
-using BiUM.Core.Compensation;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +15,6 @@ namespace BiUM.Specialized.Common.API;
 
 public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 {
-    // M-2: cache attribute presence per MemberInfo — reflection runs at most once per endpoint.
     private static readonly ConcurrentDictionary<MemberInfo, bool> _compensatableAttrCache = new();
 
     private static bool HasCompensatableAttribute(MemberInfo member)
@@ -26,21 +24,20 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 
     internal const string CompensationSessionIdItemsKey = "BiUM.Compensation.SessionId";
 
+    internal const string PendingFinalizeEventKey = "BiUM.Compensation.PendingFinalizeEvent";
+
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICrudService _crudService;
     private readonly ICompensationService _compensationService;
-    private readonly ICompensationSessionFinalizedPublisher _compensationSessionFinalizedPublisher;
 
     public CompensatableApiActionFilter(
         ICorrelationContextAccessor correlationContextAccessor,
         ICrudService crudService,
-        ICompensationService compensationService,
-        ICompensationSessionFinalizedPublisher compensationSessionFinalizedPublisher)
+        ICompensationService compensationService)
     {
         _correlationContextAccessor = correlationContextAccessor;
         _crudService = crudService;
         _compensationService = compensationService;
-        _compensationSessionFinalizedPublisher = compensationSessionFinalizedPublisher;
     }
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -91,8 +88,6 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             }
         }
 
-        // Custom endpoint [CompensatableApi] varsa ve dışarıdan session gelmemişse
-        // API kendi session'ını başlatır ve finalizer olur.
         if (!isCrudMutation && incomingWasEmpty && ctx is not null)
         {
             var newSession = Guid.NewGuid();
@@ -118,12 +113,12 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
         }
         catch
         {
-            await TryFinalizeAsync(rollback: true, context.HttpContext.RequestAborted);
+            await TryFinalizeAsync(context, rollback: true, context.HttpContext.RequestAborted);
 
             throw;
         }
 
-        await TryFinalizeAsync(rollback: IsFailureResult(executedContext?.Result), context.HttpContext.RequestAborted);
+        await TryFinalizeAsync(context, rollback: IsFailureResult(executedContext?.Result), context.HttpContext.RequestAborted);
     }
 
     private static bool IsFailureResult(IActionResult? result)
@@ -149,7 +144,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
         return false;
     }
 
-    private async Task TryFinalizeAsync(bool rollback, CancellationToken cancellationToken)
+    private async Task TryFinalizeAsync(ActionExecutingContext context, bool rollback, CancellationToken cancellationToken)
     {
         var sessionId = _correlationContextAccessor.CorrelationContext?.CompensationSessionId;
 
@@ -167,6 +162,6 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             await _compensationService.CommitSessionAsync(sessionId.Value, cancellationToken);
         }
 
-        await _compensationSessionFinalizedPublisher.PublishAsync(sessionId.Value, success: !rollback, cancellationToken);
+        context.HttpContext.Items[PendingFinalizeEventKey] = (sessionId.Value, !rollback);
     }
 }

@@ -1,3 +1,4 @@
+using BiUM.Core.Compensation;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Services.Compensation;
@@ -20,6 +21,7 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
         if (RequestTransactionMiddlewarePolicies.ShouldSkipTransaction(context))
         {
             await next(context);
+
             return;
         }
 
@@ -57,9 +59,11 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                 {
                     if (transaction is not null)
                     {
-                        await transaction.RollbackAsync(context.RequestAborted);
+                        await transaction.RollbackAsync(CancellationToken.None);
                         await transaction.DisposeAsync();
                     }
+
+                    await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
                     return;
                 }
@@ -75,6 +79,8 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                     await transaction.CommitAsync(context.RequestAborted);
                     await transaction.DisposeAsync();
                 }
+
+                await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
                 if (compensationSessionId is { } sessionId && sessionId != Guid.Empty)
                 {
@@ -105,12 +111,45 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
 
                 if (transaction is not null)
                 {
-                    await transaction.RollbackAsync(context.RequestAborted);
+                    await transaction.RollbackAsync(CancellationToken.None);
                     await transaction.DisposeAsync();
                 }
+
+                await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
                 throw;
             }
         });
+    }
+
+    private static async Task PublishPendingCompensationFinalizedEventAsync(HttpContext context, ILogger logger)
+    {
+        if (!context.Items.TryGetValue(CompensatableApiActionFilter.PendingFinalizeEventKey, out var pending) ||
+            pending is not (Guid sessionId, bool success))
+        {
+            return;
+        }
+
+        context.Items.Remove(CompensatableApiActionFilter.PendingFinalizeEventKey);
+
+        try
+        {
+            var publisher = context.RequestServices.GetService<ICompensationSessionFinalizedPublisher>();
+
+            if (publisher is null)
+            {
+                logger.LogWarning(
+                    "Cannot publish CompensationSessionFinalizedEvent for session {SessionId}: ICompensationSessionFinalizedPublisher is not resolvable from RequestServices.",
+                    sessionId);
+
+                return;
+            }
+
+            await publisher.PublishAsync(sessionId, success, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to publish CompensationSessionFinalizedEvent for session {SessionId}", sessionId);
+        }
     }
 }

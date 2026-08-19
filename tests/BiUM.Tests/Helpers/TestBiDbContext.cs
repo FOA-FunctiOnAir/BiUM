@@ -13,4 +13,6 @@ public sealed class TestBiDbContext : BaseDbContext
         : base(serviceProvider, options, entitySaveChangesInterceptor)
     {
     }
+
+    public DbSet<TestCompensatableEntity> TestCompensatableEntities => Set<TestCompensatableEntity>();
 }

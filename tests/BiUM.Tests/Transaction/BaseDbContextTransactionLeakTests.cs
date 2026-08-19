@@ -1,7 +1,6 @@
 using BiUM.Specialized.Database;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;

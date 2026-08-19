@@ -20,8 +20,6 @@ namespace BiUM.Specialized.Compensation;
 
 public static class CompensationEntityProcessor
 {
-    // Compiled open delegate replaces MethodInfo.Invoke — reflection runs once per DbContext type,
-    // subsequent sibling-context creations are a native delegate call.
     private static readonly ConcurrentDictionary<Type, (Type FactoryType, Func<object, DbContext?> InvokeCreate)?> FactoryMetadataCache = new();
 
     public static void Apply(DbContext context, ICorrelationContextProvider correlationContextProvider, IServiceProvider serviceProvider, IDateTimeService dateTimeService)
@@ -33,7 +31,6 @@ public static class CompensationEntityProcessor
             return;
         }
 
-        // Yeni bir DI scope: sibling context'in kendi EntitySaveChangesInterceptor instance'ını alması için.
         using var siblingScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
         using var sibling = TryCreateSiblingContext(context, siblingScope.ServiceProvider);
 
@@ -43,10 +40,33 @@ public static class CompensationEntityProcessor
         }
 
         AttachToSibling(sibling, context, toCommitEarly);
-        sibling.SaveChanges();
+
+        try
+        {
+            sibling.SaveChanges();
+
+            var transaction = sibling.Database.CurrentTransaction;
+
+            if (transaction is not null)
+            {
+                transaction.Commit();
+                transaction.Dispose();
+            }
+        }
+        catch
+        {
+            var transaction = sibling.Database.CurrentTransaction;
+
+            if (transaction is not null)
+            {
+                transaction.Rollback();
+                transaction.Dispose();
+            }
+
+            throw;
+        }
     }
 
-    // M-3: async path uses SaveChangesAsync to avoid sync-over-async blocking.
     public static async Task ApplyAsync(DbContext context, ICorrelationContextProvider correlationContextProvider, IServiceProvider serviceProvider, IDateTimeService dateTimeService, CancellationToken cancellationToken)
     {
         var toCommitEarly = PrepareSnapshots(context, correlationContextProvider, dateTimeService);
@@ -65,11 +85,33 @@ public static class CompensationEntityProcessor
         }
 
         AttachToSibling(sibling, context, toCommitEarly);
-        await sibling.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await sibling.SaveChangesAsync(cancellationToken);
+
+            var transaction = sibling.Database.CurrentTransaction;
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                await transaction.DisposeAsync();
+            }
+        }
+        catch
+        {
+            var transaction = sibling.Database.CurrentTransaction;
+
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                await transaction.DisposeAsync();
+            }
+
+            throw;
+        }
     }
 
-    // H-1 + H-2: candidate collection, single batch conflict check, single batch version lookup.
-    // Returns null when there is nothing to commit early.
     private static List<(EntityEntry<ICompensatableEntity> Entry, DomainCompensationSnapshot Snapshot)>? PrepareSnapshots(
         DbContext context,
         ICorrelationContextProvider correlationContextProvider,
@@ -78,7 +120,6 @@ public static class CompensationEntityProcessor
         var correlation = correlationContextProvider.Get() ?? CorrelationContext.Empty;
         var sessionId = correlation.CompensationSessionId;
 
-        // First pass: separate no-session entries (committed inline) from session candidates.
         var sessionCandidates = new List<EntityEntry<ICompensatableEntity>>();
 
         foreach (var entry in context.ChangeTracker.Entries<ICompensatableEntity>().ToList())
@@ -99,7 +140,6 @@ public static class CompensationEntityProcessor
 
             var currentSession = sessionId.Value;
 
-            // Bu session için zaten işlenmiş — tekrar işlenmez.
             if (entity.CStatus is not null && entity.CompensationSessionId == currentSession)
             {
                 continue;
@@ -115,7 +155,6 @@ public static class CompensationEntityProcessor
 
         var currentSession2 = sessionId.Value;
 
-        // H-1: one conflict check query for all entity IDs instead of one per entity.
         var allEntityIds = sessionCandidates
             .Where(e => e.Entity is IBaseEntity)
             .Select(e => ((IBaseEntity)e.Entity).Id)
@@ -138,7 +177,6 @@ public static class CompensationEntityProcessor
             }
         }
 
-        // Only Added/Modified produce snapshots; Deleted is a no-op in this processor.
         var snapshotCandidates = sessionCandidates
             .Where(e => e.State is EntityState.Added or EntityState.Modified)
             .ToList();
@@ -155,7 +193,6 @@ public static class CompensationEntityProcessor
             .Distinct()
             .ToList();
 
-        // H-2: one GROUP BY query for DB max versions instead of one per entity.
         Dictionary<Guid, int> dbMaxVersions = snapshotEntityIds.Count > 0
             ? context.Set<DomainCompensationSnapshot>()
                 .AsNoTracking()
@@ -165,7 +202,6 @@ public static class CompensationEntityProcessor
                 .ToDictionary(x => x.EntityId, x => x.MaxVersion)
             : [];
 
-        // Pre-scan the local ChangeTracker for snapshots added in previous calls on this context instance.
         Dictionary<Guid, int> ctMaxVersions = snapshotEntityIds.Count > 0
             ? context.ChangeTracker.Entries<DomainCompensationSnapshot>()
                 .Where(e => e.Entity.CompensationSessionId == currentSession2 &&
@@ -174,8 +210,8 @@ public static class CompensationEntityProcessor
                 .ToDictionary(g => g.Key, g => g.Max(e => e.Entity.Version))
             : [];
 
-        // Version tracker per entity: starts from max(DB, ChangeTracker), increments with each snapshot added.
         var versionTracker = new Dictionary<Guid, int>();
+
         foreach (var id in snapshotEntityIds)
         {
             versionTracker[id] = Math.Max(
@@ -240,14 +276,11 @@ public static class CompensationEntityProcessor
             entry.State = EntityState.Detached;
             context.Entry(snap).State = EntityState.Detached;
 
-            // Entry(...).State = Added targets only this single entity, not the navigation graph —
-            // prevents duplicate-key errors from non-compensatable related entities.
             sibling.Entry(entry.Entity).State = EntityState.Added;
             sibling.Entry(snap).State = EntityState.Added;
         }
     }
 
-    // context.GetType() başına bir kez: expression tree compile edilip delegate olarak cache'lenir.
     private static DbContext? TryCreateSiblingContext(DbContext context, IServiceProvider serviceProvider)
     {
         var contextType = context.GetType();
@@ -262,7 +295,6 @@ public static class CompensationEntityProcessor
                 return null;
             }
 
-            // Compile: (object factory) => ((IDbContextFactory<T>)factory).CreateDbContext()
             var param = Expression.Parameter(typeof(object), "factory");
             var cast = Expression.Convert(param, factoryType);
             var call = Expression.Call(cast, createMethod);

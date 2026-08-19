@@ -1,4 +1,3 @@
-using BiUM.Core.Compensation;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
@@ -24,9 +23,8 @@ public sealed class CompensatableApiActionFilterTests
         var accessor = new TestCorrelationContextAccessor();
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
-        var publisher = new Mock<ICompensationSessionFinalizedPublisher>(MockBehavior.Strict);
 
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object, publisher.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
 
         var httpContext = new DefaultHttpContext();
         var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
@@ -60,9 +58,8 @@ public sealed class CompensatableApiActionFilterTests
 
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
-        var publisher = new Mock<ICompensationSessionFinalizedPublisher>(MockBehavior.Strict);
 
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object, publisher.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
 
         var t = typeof(MarkedCompensatableController);
         var cad = new ControllerActionDescriptor
@@ -99,17 +96,12 @@ public sealed class CompensatableApiActionFilterTests
 
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
-        var publisher = new Mock<ICompensationSessionFinalizedPublisher>(MockBehavior.Strict);
 
         compensation
             .Setup(c => c.CommitSessionAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        publisher
-            .Setup(p => p.PublishAsync(It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object, publisher.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
 
         var t = typeof(MarkedCompensatableController);
         var cad = new ControllerActionDescriptor
@@ -133,7 +125,11 @@ public sealed class CompensatableApiActionFilterTests
             Task.FromResult(new ActionExecutedContext(actionContext, [], controllerStub)));
 
         compensation.Verify(c => c.CommitSessionAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
-        publisher.Verify(p => p.PublishAsync(It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()), Times.Once);
+
+        // Publish artık burada değil — filtre sadece işareti bırakır, asıl publish DB commit'inden
+        // sonra RequestTransactionMiddleware tarafından yapılır (bkz. RequestTransactionMiddlewareCompensationEventTests).
+        httpContext.Items.Should().ContainKey(CompensatableApiActionFilter.PendingFinalizeEventKey);
+        httpContext.Items[CompensatableApiActionFilter.PendingFinalizeEventKey].Should().Be((accessor.CorrelationContext!.CompensationSessionId!.Value, true));
     }
 
     [CompensatableApi]

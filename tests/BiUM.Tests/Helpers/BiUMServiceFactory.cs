@@ -53,7 +53,8 @@ public static class BiUMServiceFactory
         TestCorrelationContextProvider correlationProvider,
         string sqliteDatabasePath,
         Action<IServiceCollection>? configure = null,
-        bool registerRealTranslation = false)
+        bool registerRealTranslation = false,
+        bool withDbContextFactory = false)
     {
         var services = new ServiceCollection();
         AddCore(services, correlationProvider, registerRealTranslation);
@@ -65,6 +66,14 @@ public static class BiUMServiceFactory
                 .Options;
             return new TestBiDbContext(sp, opts, sp.GetRequiredService<EntitySaveChangesInterceptor>());
         });
+
+        // CompensationEntityProcessor'ın sibling-context oluşturabilmesi (IDbContextFactory<TestBiDbContext>)
+        // için sadece bunu ihtiyaç duyan testler bunu opt-in etsin — diğer testleri etkilemesin.
+        if (withDbContextFactory)
+        {
+            services.AddDbContextFactory<TestBiDbContext>(options =>
+                options.UseSqlite($"Data Source={sqliteDatabasePath}"));
+        }
 
         configure?.Invoke(services);
 

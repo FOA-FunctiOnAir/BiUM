@@ -27,7 +27,6 @@ namespace BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
 
 internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 {
-    // M-1: cache EventAttribute per message type — GetCustomAttribute reflection runs at most once per type.
     private static readonly ConcurrentDictionary<Type, EventAttribute?> _eventAttrCache = new();
 
     private static EventAttribute? GetEventAttribute(Type type)
@@ -128,11 +127,21 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var payload = await _serializer.SerializeAsync(message!, type, cancellationToken);
 
-        await pendingEventStore.AddAsync(
-            sessionId.Value,
-            type.AssemblyQualifiedName ?? type.FullName!,
-            payload.ToArray(),
-            cancellationToken);
+        var eventClrTypeName = type.AssemblyQualifiedName ?? type.FullName!;
+        var payloadArray = payload.ToArray();
+
+        var unitOfWorkRunner = scope.ServiceProvider.GetService<ITransactionalUnitOfWorkRunner>();
+
+        if (unitOfWorkRunner is not null)
+        {
+            await unitOfWorkRunner.RunAsync(
+                () => pendingEventStore.AddAsync(sessionId.Value, eventClrTypeName, payloadArray, cancellationToken),
+                cancellationToken);
+        }
+        else
+        {
+            await pendingEventStore.AddAsync(sessionId.Value, eventClrTypeName, payloadArray, cancellationToken);
+        }
     }
 
     private async Task PublishCoreAsync(IBaseEvent message, CancellationToken cancellationToken)
@@ -446,12 +455,6 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
                             }
                             : CorrelationContext.Empty);
 
-                // Yayıncının aktif compensation session'ı, asenkron event tüketicilerine örtük olarak
-                // miras kalmamalı: tüketici publisher'ın senkron request ömrüyle senkronize değil, ve
-                // publisher'ın [CompensatableApi] session'ı bu event işlenmeden önce zaten finalize edilmiş
-                // olabilir — bu durumda tüketicinin yazdığı entity hiçbir zaman commit sinyali almaz ve
-                // sonsuza kadar "I" (pending) durumunda kalır. Sadece CompensationSessionFinalizedEvent'in
-                // kendisi (zaten hangi session'ı finalize edeceğini bu id ile taşıyor) bunu korumalı.
                 if (message is not CompensationSessionFinalizedEvent)
                 {
                     correlationContext = correlationContext?.WithoutCompensationSessionId();

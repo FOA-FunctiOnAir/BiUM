@@ -1,4 +1,5 @@
 using BiUM.Core.Compensation;
+using BiUM.Core.Database;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Services.Compensation;
@@ -96,7 +97,18 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         }
                         else
                         {
-                            await compensationService.DispatchPendingEventsAsync(sessionId, CancellationToken.None);
+                            var unitOfWorkRunner = context.RequestServices.GetService<ITransactionalUnitOfWorkRunner>();
+
+                            if (unitOfWorkRunner is not null)
+                            {
+                                await unitOfWorkRunner.RunAsync(
+                                    () => compensationService.DispatchPendingEventsAsync(sessionId, CancellationToken.None),
+                                    CancellationToken.None);
+                            }
+                            else
+                            {
+                                await compensationService.DispatchPendingEventsAsync(sessionId, CancellationToken.None);
+                            }
                         }
                     }
                     catch (Exception ex)

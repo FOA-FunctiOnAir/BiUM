@@ -105,12 +105,6 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var typeName = message.GetType().Name;
 
-        _logger.LogWarning(
-            "[CorrelationDiag] PublishAfterCommitAsync ENQUEUE {MessageType}: CorrelationId={CorrelationId} SessionId={SessionId}",
-            typeName,
-            _correlationContextAccessor.CorrelationContext?.CorrelationId,
-            sessionId);
-
         using var scope = _serviceScopeFactory.CreateScope();
 
         var pendingEventStore = scope.ServiceProvider.GetService<IPendingEventStore>();

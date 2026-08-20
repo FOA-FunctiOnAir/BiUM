@@ -1,3 +1,4 @@
+using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Compensation;
 using BiUM.Core.MessageBroker;
@@ -82,8 +83,6 @@ public sealed class CompensationService : ICompensationService
 
         var now = DateTime.UtcNow;
 
-        // Pre-load all compensatable entities into EF's L1 (change tracker) cache — one query per
-        // entity type instead of one FindAsync per snapshot.  The loop below then gets L1 hits only.
         await PrefetchEntitiesAsync(pending, cancellationToken);
 
         foreach (var snap in pending)
@@ -100,7 +99,6 @@ public sealed class CompensationService : ICompensationService
                     continue;
                 }
 
-                // L1 cache hit — no DB round-trip after PrefetchEntitiesAsync.
                 var entity = await _dbContext.FindAsync(clr, [snap.EntityId], cancellationToken);
 
                 if (entity is ICompensatableEntity c)
@@ -220,7 +218,7 @@ public sealed class CompensationService : ICompensationService
 
                 if (await _serializer.DeserializeAsync(pendingEvent.Payload, type, cancellationToken) is IBaseEvent message)
                 {
-                    await _rabbitMQClient.PublishAsync(message, cancellationToken);
+                    await PublishWithOriginalCorrelationAsync(message, cancellationToken);
                 }
                 else
                 {
@@ -238,6 +236,31 @@ public sealed class CompensationService : ICompensationService
         catch (Exception ex)
         {
             _logger?.LogError(ex, "Failed to dispatch pending events for compensation session {SessionId}", compensationSessionId);
+        }
+    }
+
+    private async Task PublishWithOriginalCorrelationAsync(IBaseEvent message, CancellationToken cancellationToken)
+    {
+        var originalContext = _correlationContextAccessor.CorrelationContext;
+
+        if (message.CorrelationId != Guid.Empty)
+        {
+            _correlationContextAccessor.CorrelationContext = new CorrelationContext
+            {
+                CorrelationId = message.CorrelationId,
+                ApplicationId = originalContext?.ApplicationId ?? Guid.Empty,
+                TenantId = originalContext?.TenantId,
+                LanguageId = originalContext?.LanguageId ?? CorrelationContext.DefaultLanguageId
+            };
+        }
+
+        try
+        {
+            await _rabbitMQClient!.PublishAsync(message, cancellationToken);
+        }
+        finally
+        {
+            _correlationContextAccessor.CorrelationContext = originalContext;
         }
     }
 

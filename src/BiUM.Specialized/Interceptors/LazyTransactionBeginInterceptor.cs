@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,6 +8,8 @@ namespace BiUM.Specialized.Interceptors;
 
 public sealed class LazyTransactionBeginInterceptor : SaveChangesInterceptor
 {
+    public string? LastBeginStackTrace { get; private set; }
+
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         BeginIfNeeded(eventData.Context);
@@ -24,7 +27,7 @@ public sealed class LazyTransactionBeginInterceptor : SaveChangesInterceptor
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private static void BeginIfNeeded(DbContext? context)
+    private void BeginIfNeeded(DbContext? context)
     {
         if (context is null || context.Database.CurrentTransaction is not null || !context.Database.IsRelational())
         {
@@ -32,9 +35,11 @@ public sealed class LazyTransactionBeginInterceptor : SaveChangesInterceptor
         }
 
         context.Database.BeginTransaction();
+
+        LastBeginStackTrace = Environment.StackTrace;
     }
 
-    private static async Task BeginIfNeededAsync(DbContext? context, CancellationToken cancellationToken)
+    private async Task BeginIfNeededAsync(DbContext? context, CancellationToken cancellationToken)
     {
         if (context is null || context.Database.CurrentTransaction is not null || !context.Database.IsRelational())
         {
@@ -42,5 +47,7 @@ public sealed class LazyTransactionBeginInterceptor : SaveChangesInterceptor
         }
 
         await context.Database.BeginTransactionAsync(cancellationToken);
+
+        LastBeginStackTrace = Environment.StackTrace;
     }
 }

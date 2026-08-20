@@ -38,7 +38,6 @@ public sealed class RequestTransactionMiddlewareCompensationEventTests
                 db.DomainCruds.Add(new DomainCrud { Id = Guid.NewGuid(), Name = "t", Code = "T", TableName = "T" });
                 await db.SaveChangesAsync();
 
-                // CompensatableApiActionFilter'ın next() içinde bırakacağı işareti simüle ediyoruz.
                 ctx.Items[CompensatableApiActionFilter.PendingFinalizeEventKey] = (sessionId, true);
             });
 
@@ -51,8 +50,6 @@ public sealed class RequestTransactionMiddlewareCompensationEventTests
             publisher.Calls.Should().ContainSingle();
             publisher.Calls[0].SessionId.Should().Be(sessionId);
             publisher.Calls[0].Success.Should().BeTrue();
-            // Asıl regresyon kontrolü: publish anında transaction zaten commit edilmiş olmalı
-            // (eski davranışta bu publish next() içinde, yani commit'ten ÖNCE çalışıyordu).
             publisher.Calls[0].TransactionWasAlreadyCommitted.Should().BeTrue();
         }
         finally

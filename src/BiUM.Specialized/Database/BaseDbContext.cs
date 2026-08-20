@@ -23,11 +23,11 @@ public class BaseDbContext : DbContext, IDbContext
 
     private readonly EntitySaveChangesInterceptor? _entitySaveChangesInterceptor;
     private readonly BoltEntitySaveChangesInterceptor? _boltEntitySaveChangesInterceptor;
+    private readonly LazyTransactionBeginInterceptor _lazyTransactionBeginInterceptor = new();
     private readonly ICorrelationContextAccessor? _correlationContextAccessor;
     private readonly ILogger<BaseDbContext>? _logger;
     protected BiAppOptions BiAppOptions { get; }
 
-    // L-5: compiled open delegates per entity type replace MakeGenericMethod().Invoke() on every model build.
     private static readonly MethodInfo _applyCompensationMethodDef =
         typeof(BaseDbContext).GetMethod(nameof(ApplyCompensationFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
@@ -94,10 +94,6 @@ public class BaseDbContext : DbContext, IDbContext
         _hardDeleteEnabled = false;
     }
 
-    // Çağrıldığı anda AsyncLocal'dan aktif session ID'yi okur.
-    // Global query filter expression'larında 'this.GetCurrentCompensationSessionId()' olarak
-    // referans edilir; EF Core her sorgu çevrimiyle DbContext instance'ına karşı değerlendirir.
-    // _correlationContextAccessor constructor'da cache'lendi — her sorgu için DI lookup yapılmaz.
     private Guid? GetCurrentCompensationSessionId()
         => _correlationContextAccessor?.CorrelationContext?.CompensationSessionId;
 
@@ -114,13 +110,6 @@ public class BaseDbContext : DbContext, IDbContext
         modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
-
-        // DomainDynamicApi* CLR types remain in Infrastructure; excluded from migrations until DbSets + IDbContext are re-enabled above.
-        //modelBuilder.Ignore<DomainDynamicApi>();
-        //modelBuilder.Ignore<DomainDynamicApiParameter>();
-        //modelBuilder.Ignore<DomainDynamicApiTranslation>();
-        //modelBuilder.Ignore<DomainDynamicApiVersion>();
-        //modelBuilder.Ignore<DomainDynamicApiVersionParameter>();
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -140,6 +129,7 @@ public class BaseDbContext : DbContext, IDbContext
                     var selfParam = Expression.Parameter(typeof(BaseDbContext), "self");
                     var mbParam = Expression.Parameter(typeof(ModelBuilder), "mb");
                     var call = Expression.Call(selfParam, m.MakeGenericMethod(t), mbParam);
+
                     return Expression.Lambda<Action<BaseDbContext, ModelBuilder>>(call, selfParam, mbParam).Compile();
                 }, _applyCompensationMethodDef);
                 del(this, modelBuilder);
@@ -151,6 +141,7 @@ public class BaseDbContext : DbContext, IDbContext
                     var selfParam = Expression.Parameter(typeof(BaseDbContext), "self");
                     var mbParam = Expression.Parameter(typeof(ModelBuilder), "mb");
                     var call = Expression.Call(selfParam, m.MakeGenericMethod(t), mbParam);
+
                     return Expression.Lambda<Action<BaseDbContext, ModelBuilder>>(call, selfParam, mbParam).Compile();
                 }, _applyReadableMethodDef);
                 del(this, modelBuilder);
@@ -206,7 +197,7 @@ public class BaseDbContext : DbContext, IDbContext
             optionsBuilder.AddInterceptors(_boltEntitySaveChangesInterceptor);
         }
 
-        optionsBuilder.AddInterceptors(new LazyTransactionBeginInterceptor());
+        optionsBuilder.AddInterceptors(_lazyTransactionBeginInterceptor);
 
         base.OnConfiguring(optionsBuilder);
     }
@@ -244,7 +235,8 @@ public class BaseDbContext : DbContext, IDbContext
         }
 
         _logger?.LogError(
-            "DbContext of type {DbContextType} was disposed with an open, uncommitted transaction. This indicates a missing commit/rollback wrapper on the code path that triggered this SaveChanges.",
-            GetType().Name);
+            "DbContext of type {DbContextType} was disposed with an open, uncommitted transaction. This indicates a missing commit/rollback wrapper on the code path that triggered this SaveChanges. Transaction was begun at: {BeginStackTrace}",
+            GetType().Name,
+            _lazyTransactionBeginInterceptor.LastBeginStackTrace);
     }
 }

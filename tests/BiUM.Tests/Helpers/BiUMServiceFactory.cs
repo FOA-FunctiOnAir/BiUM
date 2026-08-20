@@ -67,8 +67,6 @@ public static class BiUMServiceFactory
             return new TestBiDbContext(sp, opts, sp.GetRequiredService<EntitySaveChangesInterceptor>());
         });
 
-        // CompensationEntityProcessor'ın sibling-context oluşturabilmesi (IDbContextFactory<TestBiDbContext>)
-        // için sadece bunu ihtiyaç duyan testler bunu opt-in etsin — diğer testleri etkilemesin.
         if (withDbContextFactory)
         {
             services.AddDbContextFactory<TestBiDbContext>(options =>

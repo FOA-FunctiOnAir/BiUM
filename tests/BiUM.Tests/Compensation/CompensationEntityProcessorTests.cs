@@ -32,9 +32,6 @@ public sealed class CompensationEntityProcessorTests
 
             await db.SaveChangesAsync();
 
-            // Bu ayrı, taze bir context/bağlantı üzerinden doğrulanıyor — bu testin koruduğu asıl
-            // regresyon tam olarak bu: fix'ten önce sibling context'in transaction'ı hiç commit
-            // edilmiyordu ve insert, context dispose olurken sessizce rollback oluyordu.
             await using var verifySp = BiUMServiceFactory.BuildSqlite(correlation, path);
             await using var verifyScope = verifySp.CreateAsyncScope();
             var verifyDb = verifyScope.ServiceProvider.GetRequiredService<TestBiDbContext>();

@@ -105,6 +105,12 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var typeName = message.GetType().Name;
 
+        _logger.LogWarning(
+            "[CorrelationDiag] PublishAfterCommitAsync ENQUEUE {MessageType}: CorrelationId={CorrelationId} SessionId={SessionId}",
+            typeName,
+            _correlationContextAccessor.CorrelationContext?.CorrelationId,
+            sessionId);
+
         using var scope = _serviceScopeFactory.CreateScope();
 
         var pendingEventStore = scope.ServiceProvider.GetService<IPendingEventStore>();
@@ -806,6 +812,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     {
         message.Created = _dateTimeService.Today;
         message.CreatedTime = _dateTimeService.TimeNow;
+
+        if (message.CorrelationId == Guid.Empty)
+        {
+            message.CorrelationId = _correlationContextAccessor.CorrelationContext?.CorrelationId ?? Guid.Empty;
+        }
     }
 
     private static byte[]? GetHeaderValue(IDictionary<string, object?>? headers, string key)

@@ -206,10 +206,20 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             if (entry.State == EntityState.Added)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
+
+                if (correlationContext.CorrelationId == Guid.Empty)
+                {
+                    _logger.LogWarning(
+                        "Entity {EntityType} added to {DbContextType} with an empty CorrelationId — CorrelationContext was not available at save time.",
+                        entry.Entity.GetType().Name,
+                        baseDbContext.GetType().Name);
+                }
+
                 if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
+
                 entry.Entity.CreatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Created = _dateTimeService.Today;
                 entry.Entity.CreatedTime = _dateTimeService.TimeNow;
@@ -217,10 +227,12 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             else if (entry.State == EntityState.Modified || ownedChanged)
             {
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
+
                 if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
+
                 entry.Entity.UpdatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Updated = _dateTimeService.Today;
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
@@ -232,17 +244,17 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                 isSoftDelete = true;
 
                 entry.Entity.CorrelationId = correlationContext.CorrelationId;
+
                 if (entry.Entity is ITenantBaseEntity tenantEntity && tenantEntity.TenantId == Guid.Empty && correlationContext.TenantId.HasValue)
                 {
                     tenantEntity.TenantId = correlationContext.TenantId.Value;
                 }
+
                 entry.Entity.UpdatedBy = correlationContext.User?.Id ?? correlationContext.ClientId;
                 entry.Entity.Updated = _dateTimeService.Today;
                 entry.Entity.UpdatedTime = _dateTimeService.TimeNow;
             }
 
-            // For soft-deletes, entry.State is now Modified but the domain intent is Deleted;
-            // pass the original semantic state so the correct domain event (Deleted) is raised.
             CollectEntityEvents(entry, isSoftDelete ? EntityState.Deleted : entry.State, ownedChanged);
         }
     }
@@ -257,8 +269,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         }
         else if (effectiveState == EntityState.Deleted)
         {
-            // Checked before Modified so that a soft-delete (effectiveState=Deleted, ownedChanged=true)
-            // correctly raises the Deleted event rather than Updated.
             baseEvent = entry.Entity.AddDeletedEvent(_mapper, null);
         }
         else if (effectiveState == EntityState.Modified || ownedChanged)
@@ -351,7 +361,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
                     }
 
                 case EntityState.Deleted:
-                    // Use runtime type to include all derived-class properties in the snapshot.
                     beforeJson = JsonSerializer.Serialize(entry.Entity, entry.Entity.GetType());
                     changeCount = 1;
 
@@ -426,9 +435,6 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             return;
         }
 
-        // Snapshot + clear before any await so that a concurrent SavingChanges call
-        // (e.g. from a re-entrant save or the sibling context's own SavedChanges hook)
-        // cannot modify the list while we iterate it.
         var snapshot = _entityEventBuffer.ToList();
         _entityEventBuffer.Clear();
 

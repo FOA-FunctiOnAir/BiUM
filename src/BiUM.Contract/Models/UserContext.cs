@@ -19,4 +19,5 @@ public sealed partial class UserContext
     public string? EmailAddress { get; init; }
     public string? WorkgroupName { get; init; }
     public string? RoleName { get; init; }
+    public Guid? RoleType { get; init; }
 }

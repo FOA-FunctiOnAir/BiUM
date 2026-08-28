@@ -79,6 +79,18 @@ public sealed partial class TranslationService : ITranslationService
         return FindAndSetMessage(response, code, exception.ToString(), severity, cancellationToken);
     }
 
+    public async Task<string?> GetValueAsync(string code, CancellationToken cancellationToken)
+    {
+        var translation = await GetTranslation(code, cancellationToken);
+
+        if (translation is null || translation.DomainTranslationDetails.Count == 0)
+        {
+            return null;
+        }
+
+        return translation.DomainTranslationDetails.First().Text;
+    }
+
     private async Task<ApiResponse> FindAndSetMessage(
         ApiResponse response,
         string code,

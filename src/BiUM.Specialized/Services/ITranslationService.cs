@@ -59,4 +59,8 @@ public interface ITranslationService
         int? pageStart,
         int? pageSize,
         CancellationToken cancellationToken);
+
+    Task<string?> GetValueAsync(
+        string code,
+        CancellationToken cancellationToken);
 }

@@ -28,7 +28,14 @@ public partial class CrudService
 
     public async Task<ApiResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
     {
-        var version = await GetVersionByCodeAsync(code, cancellationToken);
+        var (version, error) = await TryGetPublishedVersionAsync(code, cancellationToken);
+
+        if (error is not null)
+        {
+            return error;
+        }
+
+        var publishedVersion = version!;
 
         if (TryGetGuid(data, "Id", out var id))
         {
@@ -36,16 +43,16 @@ public partial class CrudService
 
             if (existing.Keys.Count > 0)
             {
-                await UpdateInternalAsync(version, id, data, cancellationToken);
+                await UpdateInternalAsync(publishedVersion, id, data, cancellationToken);
             }
             else
             {
-                await CreateInternalAsync(version, id, data, cancellationToken);
+                await CreateInternalAsync(publishedVersion, id, data, cancellationToken);
             }
         }
         else
         {
-            await CreateInternalAsync(version, null, data, cancellationToken);
+            await CreateInternalAsync(publishedVersion, null, data, cancellationToken);
         }
 
         return new ApiResponse();
@@ -58,35 +65,48 @@ public partial class CrudService
         Dictionary<string, object?> data,
         CancellationToken cancellationToken)
     {
-        var version = await GetVersionByCodeAsync(code, cancellationToken);
+        var (version, error) = await TryGetPublishedVersionAsync(code, cancellationToken);
+
+        if (error is not null)
+        {
+            return error;
+        }
 
         var partial = await DbContext.DomainCrudVersionPartialUpdates
             .Include(p => p.Columns).ThenInclude(c => c.CrudVersionColumn)
-            .FirstOrDefaultAsync(p => p.CrudVersionId == version.Id && p.Code == partialCode, cancellationToken);
+            .FirstOrDefaultAsync(p => p.CrudVersionId == version!.Id && p.Code == partialCode, cancellationToken);
 
         if (partial is null)
         {
-            return new ApiResponse();
+            var response = new ApiResponse();
+            await AddMessage(response, "crud_partial_not_found", cancellationToken);
+            return response;
         }
 
         var allowed = partial.Columns.Select(c => c.CrudVersionColumn.PropertyName).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var filtered = data.Where(kv => allowed.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        _ = await UpdateInternalAsync(version, id, filtered, cancellationToken);
+        _ = await UpdateInternalAsync(version!, id, filtered, cancellationToken);
 
         return new ApiResponse();
     }
 
     public async Task<ApiResponse> DeleteAsync(string code, Guid id, bool hardDelete, CancellationToken cancellationToken)
     {
-        var version = await GetVersionByCodeAsync(code, cancellationToken);
-        var (api2db, _) = BuildMaps(version, version.DomainCrud?.Compensatible == true);
+        var (version, error) = await TryGetPublishedVersionAsync(code, cancellationToken);
+
+        if (error is not null)
+        {
+            return error;
+        }
+
+        var (api2db, _) = BuildMaps(version!, version!.DomainCrud?.Compensatible == true);
 
         var dbType = _dbType;
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
-        var compensatible = version.DomainCrud?.Compensatible == true;
+        var compensatible = version!.DomainCrud?.Compensatible == true;
         string? oldJson = null;
 
         if (compensatible && CorrelationContext.CompensationSessionId is { } sx && sx != Guid.Empty)
@@ -170,8 +190,16 @@ public partial class CrudService
 
     public async Task<PaginatedApiResponse<IDictionary<string, object?>>> GetListAsync(string code, Dictionary<string, string> query, CancellationToken ct)
     {
-        var version = await GetVersionByCodeAsync(code, ct);
-        var compensatible = version.DomainCrud?.Compensatible == true;
+        var (version, error) = await TryGetPublishedVersionAsync(code, ct);
+
+        if (error is not null)
+        {
+            var response = new PaginatedApiResponse<IDictionary<string, object?>>();
+            response.AddMessage(error.Messages);
+            return response;
+        }
+
+        var compensatible = version!.DomainCrud?.Compensatible == true;
         var (api2db, db2api) = BuildMaps(version, compensatible);
 
         var dbType = _dbType;

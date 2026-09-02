@@ -2,6 +2,7 @@ using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
+using BiUM.Specialized.Services.DynamicApi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -28,15 +29,18 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
 
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
     private readonly ICrudService _crudService;
+    private readonly IDynamicApiService _dynamicApiService;
     private readonly ICompensationService _compensationService;
 
     public CompensatableApiActionFilter(
         ICorrelationContextAccessor correlationContextAccessor,
         ICrudService crudService,
+        IDynamicApiService dynamicApiService,
         ICompensationService compensationService)
     {
         _correlationContextAccessor = correlationContextAccessor;
         _crudService = crudService;
+        _dynamicApiService = dynamicApiService;
         _compensationService = compensationService;
     }
 
@@ -68,6 +72,10 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             cad.ControllerTypeInfo.Name == nameof(CrudController) &&
             cad.ActionName is nameof(CrudController.SaveAsync) or nameof(CrudController.SavePartialAsync) or nameof(CrudController.DeleteAsync);
 
+        var isDynamicApiMutation =
+            cad.ControllerTypeInfo.Name == nameof(DynamicApiController) &&
+            cad.ActionName is nameof(DynamicApiController.Post) or nameof(DynamicApiController.Put) or nameof(DynamicApiController.Patch) or nameof(DynamicApiController.Delete);
+
         var localOrchestration = false;
 
         if (isCrudMutation && context.RouteData.Values.TryGetValue("code", out var codeObj))
@@ -88,7 +96,25 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
             }
         }
 
-        if (!isCrudMutation && incomingWasEmpty && ctx is not null)
+        if (isDynamicApiMutation && context.RouteData.Values.TryGetValue("code", out var dynamicCodeObj))
+        {
+            var code = dynamicCodeObj?.ToString();
+
+            if (!string.IsNullOrEmpty(code))
+            {
+                var compensatible = await _dynamicApiService.IsDynamicApiMutationCompensatibleByCodeAsync(code, context.HttpContext.RequestAborted);
+
+                if (compensatible && incomingWasEmpty && ctx is not null)
+                {
+                    var newSession = Guid.NewGuid();
+                    _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+                    context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
+                    localOrchestration = true;
+                }
+            }
+        }
+
+        if (!isCrudMutation && !isDynamicApiMutation && incomingWasEmpty && ctx is not null)
         {
             var newSession = Guid.NewGuid();
             _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);

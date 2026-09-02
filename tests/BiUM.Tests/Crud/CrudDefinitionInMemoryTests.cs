@@ -114,4 +114,49 @@ public sealed class CrudDefinitionInMemoryTests
             gone.Value.Should().BeNull();
         }
     }
+
+    [Fact]
+    public async Task DeleteDomainCrud_when_published_returns_blocked_message()
+    {
+        var correlation = new TestCorrelationContextProvider
+        {
+            Context = CorrelationTestHelper.CreateBpmnLike(Guid.NewGuid(), Guid.NewGuid())
+        };
+
+        var appId = Guid.NewGuid();
+        var msId = Guid.NewGuid();
+        var crudId = Guid.NewGuid();
+
+        await using var sp = BiUMServiceFactory.BuildInMemory(correlation, Guid.NewGuid().ToString("N"), services =>
+        {
+            var translationMock = new Moq.Mock<BiUM.Specialized.Services.ITranslationService>();
+            CrudTestHelper.WireTranslationMockToEchoCodes(translationMock);
+            services.AddSingleton(translationMock.Object);
+        });
+
+        using (var scope = sp.CreateScope())
+        {
+            correlation.Context = CorrelationTestHelper.CreateBpmnLike(
+                correlation.Context.TenantId!.Value,
+                appId,
+                correlation.Context.LanguageId);
+
+            var db = scope.ServiceProvider.GetRequiredService<BiUM.Specialized.Database.IDbContext>();
+            _ = await CrudTestHelper.SeedPublishedCrudAsync(db, correlation.Context, appId, msId, "PUB", crudId: crudId);
+        }
+
+        using (var scope = sp.CreateScope())
+        {
+            correlation.Context = CorrelationTestHelper.CreateBpmnLike(
+                correlation.Context.TenantId!.Value,
+                appId,
+                correlation.Context.LanguageId);
+
+            var crud = scope.ServiceProvider.GetRequiredService<ICrudService>();
+            var delete = await crud.DeleteDomainCrudAsync(crudId, CancellationToken.None);
+
+            delete.Success.Should().BeFalse();
+            delete.Messages.Should().Contain(m => m.Code == "crud_definition_can_not_delete_that_published");
+        }
+    }
 }

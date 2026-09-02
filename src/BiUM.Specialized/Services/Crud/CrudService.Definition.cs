@@ -497,6 +497,31 @@ public partial class CrudService
             return response;
         }
 
+        var crudSchema = CrudSchemaHelper.ResolveSchema(domainCrud.ApplicationId, domainCrud.TenantId);
+        var blockingDynamicApis = await DbContext.DomainDynamicApiTables
+            .AsNoTracking()
+            .Where(t => t.Schema == crudSchema && t.TableName == domainCrud.TableName)
+            .Join(
+                DbContext.DomainDynamicApis.AsNoTracking(),
+                table => table.DynamicApiId,
+                api => api.Id,
+                (table, api) => api.Code)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (blockingDynamicApis.Count > 0)
+        {
+            await AddMessage(response, "crud_delete_blocked_by_dynamic_api", cancellationToken);
+            response.AddMessage(new BiUM.Contract.Models.Api.ResponseMessage
+            {
+                Code = "crud_delete_blocked_by_dynamic_api_codes",
+                Message = string.Join(", ", blockingDynamicApis),
+                Severity = BiUM.Contract.Enums.MessageSeverity.Error
+            });
+
+            return response;
+        }
+
         var domainCrudVersions = await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
             .WhereToListAsync(x => x.CrudId == domainCrud.Id, cancellationToken);

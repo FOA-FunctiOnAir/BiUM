@@ -21,12 +21,14 @@ public interface IDbContext
     DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns { get; }
     DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates { get; }
     DbSet<DomainCrudVersionPartialUpdateColumn> DomainCrudVersionPartialUpdateColumns { get; }
-    // DomainDynamicApi* — EF modelden çıkarıldı (BaseDbContext’te DbSet’ler yorum satırı); model hazır olunca açılır.
-    // DbSet<DomainDynamicApi> DomainDynamicApis { get; }
-    // DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters { get; }
-    // DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations { get; }
-    // DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions { get; }
-    // DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters { get; }
+    DbSet<DomainDynamicApi> DomainDynamicApis { get; }
+    DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters { get; }
+    DbSet<DomainDynamicApiTable> DomainDynamicApiTables { get; }
+    DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations { get; }
+    DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions { get; }
+    DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters { get; }
+    DbSet<DomainDynamicExportRequest> DomainDynamicExportRequests { get; }
+    DbSet<DomainDynamicExportFile> DomainDynamicExportFiles { get; }
     DbSet<DomainTranslation> DomainTranslations { get; }
     DbSet<DomainTranslationDetail> DomainTranslationDetails { get; }
 

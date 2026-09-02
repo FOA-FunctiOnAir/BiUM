@@ -50,6 +50,42 @@ public partial class Ids
             }
         }
 
+        public static class DynamicExportRequestStatus
+        {
+            public static Guid Id = Guid.Parse("01a05545-57fd-7c15-a905-1139f5df44b2");
+
+            public static class Values
+            {
+                public static Guid Pending = Guid.Parse("01a05545-60cd-7209-85d9-1d39b2989781");
+                public static Guid Processing = Guid.Parse("01a05545-5ed4-77ef-87df-1e2b4d804d89");
+                public static Guid Ready = Guid.Parse("01a05545-610f-7352-b235-bf328c90edaa");
+                public static Guid Failed = Guid.Parse("01a05545-6160-791c-a09c-6f392fe37253");
+                public static Guid Expired = Guid.Parse("01a05545-6164-7dfa-b139-4f9fb96f6141");
+            }
+        }
+
+        public static class DynamicApiCompileStatus
+        {
+            public static Guid Id = Guid.Parse("01a05cf8-e803-7891-b88c-0fcab4f5329c");
+
+            public static class Values
+            {
+                public static Guid Draft = Guid.Parse("01a05cf8-e992-7a70-bfee-c7a63f094136");
+                public static Guid Success = Guid.Parse("01a05cf8-e980-717d-8287-f2fe1bfdfec7");
+                public static Guid Failed = Guid.Parse("01a05cf8-e99b-7aec-aa86-525d4e00742a");
+            }
+        }
+
+        public static class DynamicApiExecutionType
+        {
+            public static Guid Id = Guid.Parse("01a05cfa-56fb-707e-bac5-97833e42e2c3");
+
+            public static class Values
+            {
+                public static Guid CSharpEf = Guid.Parse("01a05cfb-3080-7358-be4c-f197c68c2ed6");
+            }
+        }
+
         public static class ServiceAuthType
         {
             public static Guid Id = Guid.Parse("e23d3ee6-8f81-4b67-b368-a87b2fe69d52");

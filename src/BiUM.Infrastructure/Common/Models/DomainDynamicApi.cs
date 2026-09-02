@@ -8,6 +8,12 @@ namespace BiUM.Infrastructure.Common.Models;
 [Table("__DYNAMIC_API", Schema = "dbo")]
 public class DomainDynamicApi : TenantBaseEntity
 {
+    [Column("APPLICATION_ID")]
+    public Guid ApplicationId { get; set; }
+
+    [Column("COMPENSATIBLE")]
+    public bool Compensatible { get; set; }
+
     [Column("CODE")]
     public required string Code { get; set; }
 
@@ -36,5 +42,11 @@ public class DomainDynamicApi : TenantBaseEntity
     public string? CompileError { get; set; }
 
     [JsonIgnore]
+    public ICollection<DomainDynamicApiTranslation> DomainDynamicApiTranslations { get; } = [];
+
+    [JsonIgnore]
     public ICollection<DomainDynamicApiParameter> DynamicApiParameters { get; } = [];
+
+    [JsonIgnore]
+    public ICollection<DomainDynamicApiTable> DynamicApiTables { get; } = [];
 }

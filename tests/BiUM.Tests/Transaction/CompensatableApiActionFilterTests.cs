@@ -1,6 +1,7 @@
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
+using BiUM.Specialized.Services.DynamicApi;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -22,9 +23,10 @@ public sealed class CompensatableApiActionFilterTests
     {
         var accessor = new TestCorrelationContextAccessor();
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
+        var dynamicApi = new Mock<IDynamicApiService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
 
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, dynamicApi.Object, compensation.Object);
 
         var httpContext = new DefaultHttpContext();
         var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
@@ -57,9 +59,10 @@ public sealed class CompensatableApiActionFilterTests
         };
 
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
+        var dynamicApi = new Mock<IDynamicApiService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
 
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, dynamicApi.Object, compensation.Object);
 
         var t = typeof(MarkedCompensatableController);
         var cad = new ControllerActionDescriptor
@@ -95,13 +98,14 @@ public sealed class CompensatableApiActionFilterTests
         };
 
         var crud = new Mock<ICrudService>(MockBehavior.Strict);
+        var dynamicApi = new Mock<IDynamicApiService>(MockBehavior.Strict);
         var compensation = new Mock<ICompensationService>(MockBehavior.Strict);
 
         compensation
             .Setup(c => c.CommitSessionAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var filter = new CompensatableApiActionFilter(accessor, crud.Object, compensation.Object);
+        var filter = new CompensatableApiActionFilter(accessor, crud.Object, dynamicApi.Object, compensation.Object);
 
         var t = typeof(MarkedCompensatableController);
         var cad = new ControllerActionDescriptor

@@ -9,7 +9,7 @@ Bu belge, BiUM içindeki **DomainCrud** (tanım/metadata) ile **runtime CRUD** (
 | **Tanım (metadata)** | `DomainCrud` oluşturma, kolonlar, çeviri, yayın (`PublishDomainCrud`), DDL ile tablo üretimi | `SaveDomainCrudAsync`, `DeleteDomainCrudAsync`, `GetDomainCrud*`, `GetDomainCrudsAsync`, `PublishDomainCrudAsync` |
 | **Çalışma zamanı (data)** | Yayınlanmış `code` ile satır insert/update/delete/list | `CrudController` → `SaveAsync`, `SavePartialAsync`, `DeleteAsync`, `Get` (`ICrudService`) |
 
-**`DomainDynamicApi*` (planlı):** `BiUM.Infrastructure` içindeki varlık sınıfları duruyor; `BaseDbContext` / `IDbContext` üzerindeki `DbSet`’ler ve `IDbContext` üyeleri yorum satırı, modelde `Ignore` ile tamamen kapalı. Kalıcı tablolar ve katalog/HTTP yüzeyi bu model netleşene kadar oluşturulmaz. Açılınca: `IDbContext` + `BaseDbContext` DbSet yorumlarını kaldır, `OnModelCreating` içindeki `Ignore` satırlarını sil, `HttpClientService` iç çağrılarında `DynamicApi` servis tipini Crud ile aynı URL kuralına tekrar bağla.
+**`DomainDynamicApi*`:** Tanım + runtime yüzeyi etkin; bkz. [Agents.DynamicApi.md](Agents.DynamicApi.md). **`DomainDynamicExport*`:** bkz. [Agents.DynamicExporter.md](Agents.DynamicExporter.md).
 
 **Kısmi güncelleme (HTTP):** `CrudController` — `POST {code}/{partialCode}` (gövdede `Id`). Telafi: `AddSpecializedServices` ile eklenen global `CompensatableApiActionFilter` (telafiye uygun `code` ve gelen istekte boş oturumda yerel `CompensationSessionId`). Ayrıntı: [Agents.Compensation.md](Agents.Compensation.md).
 
@@ -44,6 +44,7 @@ Hata kodu (yetki yok): `crud_definition_access_denied`.
 
 - `GetDomainCrudAsync`, `GetDomainCrudByCodeAsync`, `GetDomainCrudsAsync`: okuma filtresi yukarıdaki System / kiracı kuralına göre uygulanır.
 - `SaveDomainCrudAsync`, `DeleteDomainCrudAsync`, `PublishDomainCrudAsync`: mutasyon kuralları yukarıdaki gibi uygulanır.
+- **`DeleteDomainCrudAsync` engeli:** `DomainDynamicApiTable` içinde aynı `ResolveSchema(ApplicationId, TenantId)` + `TableName` kombinasyonunu kullanan Dynamic API varsa silme reddedilir. Mesaj: `crud_delete_blocked_by_dynamic_api`; ek mesaj `crud_delete_blocked_by_dynamic_api_codes` (engelleyen API `Code` listesi).
 
 **BiApp.Configuration servis kataloğu (dinamik CRUD):** `PublishDomainCrudAsync` sırasında `SaveCrudServicesAsync`, Configuration’daki `SaveCrudServices` komutunu çağırır. Bu komut, ilgili mikroservis için standart CRUD yüzeyini katalogda temsil eden servisleri yazar/günceller: **`Save`**, **`Delete`**, **`Get`**, **`GetList`** (BiUM `CrudController` ile uyumlu action adları ve route şablonları). Tanımda **partial update** kodları varsa, her kod için ek bir **`SavePartial`** `POST` servisi üretilir (`/api/base/Crud/SavePartial/{code}/{partialCode}`; gövde alanları servis parametreleriyle eşlenir). Komutta artık yer almayan partial kodlarına ait `Dynamic_Crud-{code}-SavePartial-*` adlı servisler **pasifleştirilir** (`Active = false`).
 
@@ -52,6 +53,8 @@ Hata kodu (yetki yok): `crud_definition_access_denied`.
 - Tanım yayınında DDL, `SaveCrudServicesAsync` ile API kaydı, versiyonlama.
 - `code` → şema/tablo, SQL ile CRUD; insert’te satır `TENANT_ID` = `CorrelationContext.TenantId`.
 - Kısmen telafi (compensation) ve `C_STATUS` ile uyumlu okuma/yazma (ilgili bayraklar açıksa).
+- **`SaveAsync`**, **`DeleteAsync`**, **`GetListAsync`**, **`SavePartialAsync`**: yayınlanmış versiyon yoksa exception yerine `ApiResponse` / `PaginatedApiResponse` ile **`crud_not_published`** döner (`TryGetPublishedVersionAsync`).
+- **`SavePartialAsync`**: partial kod tanımda yoksa **`crud_partial_not_found`**.
 
 **Hâlâ host/policy ile tamamlanması beklenen (runtime):**
 
@@ -62,8 +65,9 @@ Hata kodu (yetki yok): `crud_definition_access_denied`.
 ## 7. İlgili kod konumları
 
 - Tanım: `BiUM.Specialized/Services/Crud/CrudService.Definition.cs`
-- Runtime SQL: `CrudService.ddl.cs` (`GetVersionByCodeAsync`, `CreateInternalAsync`, `ResolveSchema`), `CrudService.Api.cs`
+- Runtime SQL: `CrudService.ddl.cs` (`GetVersionByCodeAsync`, `TryGetPublishedVersionAsync`, `CreateInternalAsync`, `ResolveSchema`), `CrudService.Api.cs`
 - HTTP: `BiUM.Specialized/Common/API/CrudController.cs`
+- InMemory runtime testleri: `tests/BiUM.Tests/Crud/CrudRuntimeInMemoryTests.cs` (yayın yok / partial bulunamadı mesaj kodları; SQL pipeline InMemory’de çalışmaz)
 
 ## 8. AI ajanları için
 

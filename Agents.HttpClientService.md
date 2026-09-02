@@ -16,7 +16,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 - Bölüm adı: `HttpClientsOptions` (`BiUM.Core/Common/Configs/HttpClientsOptions.cs`).
 - **`BaseUrl`**, **`Environment`**, isteğe bağlı **`Domains`**: `/api/{servisAnahtarı}/...` biçimindeki iç URL’ler, `Domains` sözlüğüyle gerçek taban adreslere çözülür.
 - **`LogSuccessfulHttpRequests`** (varsayılan `false`): `true` iken başarılı outbound çağrılarda `LogInformation` ile operasyon adı, HTTP metodu, URL (512 karaktere kadar, sonra kısaltılır) ve süre (ms) yazılır (`Get`, `Post`, `CallService`, `GetServiceInfoAsync`).
-- İç servis tipi **Crud** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. **`DynamicApi`** aynı kuralı paylaşacak şekilde tasarlanmıştır; `DomainDynamicApi` modeli hazır olana kadar `HttpClientService` iç çağrılarında bu dal kapalıdır (yalnızca **Crud** kök yol kullanır).
+- İç servis tipi **Crud** veya **DynamicApi** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. Bkz. [Agents.DynamicApi.md](Agents.DynamicApi.md).
 - Eşleşmeyen servis anahtarı: `InvalidOperationException`.
 
 ## 3. API yüzeyi

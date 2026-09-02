@@ -29,6 +29,15 @@ public class DomainDynamicApiVersion : BaseEntity
     [Column("SOURCE_CODE")]
     public required string SourceCode { get; set; }
 
+    [Column("COMPILED_ASSEMBLY")]
+    public byte[]? CompiledAssembly { get; set; }
+
+    [Column("ASSEMBLY_HASH")]
+    public string? AssemblyHash { get; set; }
+
+    [Column("ENTRY_POINT_TYPE_NAME")]
+    public string? EntryPointTypeName { get; set; }
+
     [ForeignKey(nameof(DynamicApiId))]
     [JsonIgnore]
     public DomainDynamicApi DynamicApi { get; private set; } = null!;

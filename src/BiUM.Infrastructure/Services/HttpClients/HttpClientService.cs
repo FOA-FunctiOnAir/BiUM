@@ -496,8 +496,8 @@ public class HttpClientService : IHttpClientsService
         string? url;
         string? finalUrl;
 
-        // DynamicApi reuses Crud URL rules when enabled: add || service.Type == Ids.Parameter.ServiceType.Values.DynamicApi
-        if (service.Type == Ids.Parameter.ServiceType.Values.Crud)
+        if (service.Type == Ids.Parameter.ServiceType.Values.Crud ||
+            service.Type == Ids.Parameter.ServiceType.Values.DynamicApi)
         {
             if (string.IsNullOrEmpty(service.MicroserviceRootPath))
             {

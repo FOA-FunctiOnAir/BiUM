@@ -74,11 +74,14 @@ public class BaseDbContext : DbContext, IDbContext
     public DbSet<DomainCrudVersionColumn> DomainCrudVersionColumns => Set<DomainCrudVersionColumn>();
     public DbSet<DomainCrudVersionPartialUpdate> DomainCrudVersionPartialUpdates => Set<DomainCrudVersionPartialUpdate>();
     public DbSet<DomainCrudVersionPartialUpdateColumn> DomainCrudVersionPartialUpdateColumns => Set<DomainCrudVersionPartialUpdateColumn>();
-    //public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
-    //public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
-    //public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
-    //public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
-    //public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
+    public DbSet<DomainDynamicApi> DomainDynamicApis => Set<DomainDynamicApi>();
+    public DbSet<DomainDynamicApiParameter> DomainDynamicApiParameters => Set<DomainDynamicApiParameter>();
+    public DbSet<DomainDynamicApiTable> DomainDynamicApiTables => Set<DomainDynamicApiTable>();
+    public DbSet<DomainDynamicApiTranslation> DomainDynamicApiTranslations => Set<DomainDynamicApiTranslation>();
+    public DbSet<DomainDynamicApiVersion> DomainDynamicApiVersions => Set<DomainDynamicApiVersion>();
+    public DbSet<DomainDynamicApiVersionParameter> DomainDynamicApiVersionParameters => Set<DomainDynamicApiVersionParameter>();
+    public DbSet<DomainDynamicExportRequest> DomainDynamicExportRequests => Set<DomainDynamicExportRequest>();
+    public DbSet<DomainDynamicExportFile> DomainDynamicExportFiles => Set<DomainDynamicExportFile>();
     public DbSet<DomainTranslation> DomainTranslations => Set<DomainTranslation>();
     public DbSet<DomainTranslationDetail> DomainTranslationDetails => Set<DomainTranslationDetail>();
 
@@ -108,6 +111,18 @@ public class BaseDbContext : DbContext, IDbContext
         modelBuilder.Entity<DomainCrudVersionPartialUpdate>().HasIndex(c => new { c.CrudVersionId, c.Code }).IsUnique();
         modelBuilder.Entity<DomainCrudVersion>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainCrudVersionColumn>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicApi>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicApi>().HasIndex(c => new { c.TenantId, c.Code }).IsUnique();
+        modelBuilder.Entity<DomainDynamicApiParameter>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicApiTable>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicApiTable>().HasIndex(c => new { c.Schema, c.TableName });
+        modelBuilder.Entity<DomainDynamicApiTable>().HasIndex(c => new { c.DynamicApiId, c.Schema, c.TableName }).IsUnique();
+        modelBuilder.Entity<DomainDynamicApiVersion>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicApiVersionParameter>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicExportRequest>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicExportRequest>().HasIndex(c => new { c.TenantId, c.CreatedBy });
+        modelBuilder.Entity<DomainDynamicExportFile>().HasIndex(c => c.Deleted);
+        modelBuilder.Entity<DomainDynamicExportFile>().HasIndex(c => c.ExportRequestId).IsUnique();
         modelBuilder.Entity<DomainTranslation>().HasIndex(c => c.Deleted);
         modelBuilder.Entity<DomainTranslationDetail>().HasIndex(c => c.Deleted);
 

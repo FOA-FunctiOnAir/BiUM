@@ -13,6 +13,8 @@ using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
+using BiUM.Specialized.Services.DynamicApi;
+using BiUM.Specialized.Services.DynamicExporter;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -56,6 +58,14 @@ public static partial class ApplicationExtensions
         builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 
         builder.Services.AddHttpClient();
+
+        builder.Services.Configure<DynamicExporterOptions>(builder.Configuration.GetSection(DynamicExporterOptions.Name));
+
+        builder.Services.AddMemoryCache();
+        builder.Services.AddSingleton<DynamicApiRuntimeCache>();
+        builder.Services.AddScoped<IDynamicApiService, DynamicApiService>();
+        builder.Services.AddScoped<IDynamicExporterService, DynamicExporterService>();
+        builder.Services.AddHostedService<DynamicExportBackgroundService>();
 
         builder.Services.AddScoped<ICrudService, CrudService>();
         builder.Services.AddScoped<ICompensationService, CompensationService>();

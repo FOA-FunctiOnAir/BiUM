@@ -1,3 +1,4 @@
+using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
@@ -377,14 +378,8 @@ public partial class CrudService
 
     private static string NowTimeSql(string db) => db == DbTypePostgresql ? "now()::time" : "CAST(GETDATE() AS time)";
 
-    private static string ResolveSchema(Guid applicationId, Guid tenantId)
-    {
-        var applicationIdString = applicationId.ToString("N");
-        var tenantIdString = tenantId.ToString("N");
-        var shorty = $"{applicationIdString[..16]}_{tenantIdString[..16]}";
-
-        return $"t_{shorty}";
-    }
+    private static string ResolveSchema(Guid applicationId, Guid tenantId) =>
+        CrudSchemaHelper.ResolveSchema(applicationId, tenantId);
 
     private static string GenerateEnsureSchemaPgSql(string schema) => $"CREATE SCHEMA IF NOT EXISTS {Q(schema)};";
 
@@ -549,9 +544,9 @@ END;
         return value;
     }
 
-    private async Task<DomainCrudVersion> GetVersionByCodeAsync(string code, CancellationToken ct)
+    private async Task<DomainCrudVersion?> FindPublishedVersionAsync(string code, CancellationToken ct)
     {
-        var version = await DbContext.DomainCrudVersions
+        return await DbContext.DomainCrudVersions
             .Include(s => s.DomainCrudVersionColumns)
             .Include(s => s.DomainCrud)
             .Include(s => s.DomainCrudVersionPartialUpdates)
@@ -560,8 +555,28 @@ END;
             .Where(x => DbContext.DomainCruds.Any(dc => dc.Id == x.CrudId && dc.Code == code))
             .OrderByDescending(x => x.Version)
             .FirstOrDefaultAsync(ct);
+    }
+
+    private async Task<DomainCrudVersion> GetVersionByCodeAsync(string code, CancellationToken ct)
+    {
+        var version = await FindPublishedVersionAsync(code, ct);
 
         return version ?? throw new InvalidOperationException("No version published for code");
+    }
+
+    private async Task<(DomainCrudVersion? Version, ApiResponse? Error)> TryGetPublishedVersionAsync(string code, CancellationToken ct)
+    {
+        var version = await FindPublishedVersionAsync(code, ct);
+
+        if (version is not null)
+        {
+            return (version, null);
+        }
+
+        var response = new ApiResponse();
+        await AddMessage(response, "crud_not_published", ct);
+
+        return (null, response);
     }
 
     private async Task<Guid> CreateInternalAsync(DomainCrudVersion version, Guid? id, IDictionary<string, object?> data, CancellationToken ct)

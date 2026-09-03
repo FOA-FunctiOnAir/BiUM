@@ -33,10 +33,63 @@ public class DynamicApiEntityCodegenTests
             new DynamicApiTableReference("dbo", "B")
         };
 
-        var source = DynamicApiEntityCodegen.GenerateDbContextSource(references);
+        var entities = references
+            .Select(r => (r, (IReadOnlyList<DynamicApiColumnMetadata>)[
+                new DynamicApiColumnMetadata
+                {
+                    ColumnName = "ID",
+                    StoreType = "uuid",
+                    IsNullable = false,
+                    ClrTypeName = "System.Guid"
+                }
+            ]))
+            .ToList();
+
+        var source = DynamicApiEntityCodegen.GenerateDbContextSource(entities);
 
         source.Should().Contain("DynamicEntity_dbo_A");
         source.Should().Contain("DynamicEntity_dbo_B");
+    }
+
+    [Fact]
+    public void GenerateDbContextSource_adds_deleted_query_filter_when_column_exists()
+    {
+        var reference = new DynamicApiTableReference("dbo", "Product");
+        var columns = new List<DynamicApiColumnMetadata>
+        {
+            new() { ColumnName = "ID", StoreType = "uuid", IsNullable = false, ClrTypeName = "System.Guid" },
+            new() { ColumnName = "DELETED", StoreType = "boolean", IsNullable = false, ClrTypeName = "bool" }
+        };
+
+        var source = DynamicApiEntityCodegen.GenerateDbContextSource([(reference, columns)]);
+
+        source.Should().Contain("HasQueryFilter(e => !e.Deleted)");
+    }
+
+    [Fact]
+    public void TryGetDeletedPropertyName_returns_false_when_column_missing()
+    {
+        var columns = new List<DynamicApiColumnMetadata>
+        {
+            new() { ColumnName = "ID", StoreType = "uuid", IsNullable = false, ClrTypeName = "System.Guid" }
+        };
+
+        DynamicApiEntityCodegen.TryGetDeletedPropertyName(columns, out var propertyName, out _).Should().BeFalse();
+        propertyName.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void BuildDeletedFilterExpression_uses_bool_negation_for_boolean_columns()
+    {
+        DynamicApiEntityCodegen.BuildDeletedFilterExpression("Deleted", "bool")
+            .Should().Be("!e.Deleted");
+    }
+
+    [Fact]
+    public void BuildDeletedFilterExpression_uses_zero_check_for_numeric_columns()
+    {
+        DynamicApiEntityCodegen.BuildDeletedFilterExpression("Deleted", "long")
+            .Should().Be("e.Deleted == 0");
     }
 
     [Fact]

@@ -33,8 +33,7 @@ public class DynamicApiTableReferenceValidatorTests
         });
         await db.SaveChangesAsync();
 
-        var validator = new DynamicApiTableReferenceValidator();
-        var result = await validator.ValidateAsync(
+        var result = await DynamicApiTableReferenceValidator.ValidateAsync(
             db,
             DynamicApiSchemaRules.DbTypePostgresql,
             appId,
@@ -73,8 +72,7 @@ public class DynamicApiTableReferenceValidatorTests
         });
         await db.SaveChangesAsync();
 
-        var validator = new DynamicApiTableReferenceValidator();
-        var result = await validator.ValidateAsync(
+        var result = await DynamicApiTableReferenceValidator.ValidateAsync(
             db,
             DynamicApiSchemaRules.DbTypePostgresql,
             appId,
@@ -96,8 +94,7 @@ public class DynamicApiTableReferenceValidatorTests
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TestBiDbContext>();
 
-        var validator = new DynamicApiTableReferenceValidator();
-        var result = await validator.ValidateAsync(
+        var result = await DynamicApiTableReferenceValidator.ValidateAsync(
             db,
             DynamicApiSchemaRules.DbTypePostgresql,
             Guid.NewGuid(),

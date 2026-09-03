@@ -35,7 +35,7 @@ public class DynamicApiEntityCompileTests
         var additionalSources = new List<string>
         {
             DynamicApiEntityCodegen.GenerateEntitySource(reference, columns),
-            DynamicApiEntityCodegen.GenerateDbContextSource([reference]),
+            DynamicApiEntityCodegen.GenerateDbContextSource([(reference, columns)]),
             DynamicApiEntityCodegen.GenerateDbContextFactorySource()
         };
 
@@ -83,7 +83,7 @@ public class DynamicApiEntityCompileTests
         var additionalSources = new List<string>
         {
             DynamicApiEntityCodegen.GenerateEntitySource(references[0], columns),
-            DynamicApiEntityCodegen.GenerateDbContextSource(references),
+            DynamicApiEntityCodegen.GenerateDbContextSource([(references[0], columns)]),
             DynamicApiEntityCodegen.GenerateDbContextFactorySource()
         };
 
@@ -113,6 +113,75 @@ public class DynamicApiEntityCompileTests
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 
         ((BiUM.Contract.Models.Api.ApiResponse<int>)result).Value.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Full_pipeline_excludes_deleted_rows_when_table_has_deleted_column()
+    {
+        const string connectionString = "Data Source=DynamicApiEntityDeletedFilterTest;Mode=Memory;Cache=Shared";
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = """
+                CREATE TABLE Sample (
+                    ID INTEGER PRIMARY KEY,
+                    NAME TEXT NULL,
+                    DELETED INTEGER NOT NULL DEFAULT 0
+                );
+                INSERT INTO Sample (ID, NAME, DELETED) VALUES (1, 'active', 0), (2, 'removed', 1);
+                """;
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        const string source = """
+            return new ApiResponse<int>
+            {
+                Value = await ctx.Entity("main", "Sample").CountAsync(cancellationToken)
+            };
+            """;
+
+        var references = DynamicApiEntityParser.Parse(source).TableReferences;
+        var introspector = DynamicApiTableIntrospectorFactory.Create(DynamicApiSchemaRules.DbTypeSqlite, connection);
+        var columns = await introspector.GetColumnsAsync("main", "Sample", CancellationToken.None);
+        var preparedSource = DynamicApiHandlerSourceNormalizer.PrepareForCompile(
+            source,
+            domainDbContextTypeFullName: null,
+            usesDynamicTables: true);
+        var additionalSources = new List<string>
+        {
+            DynamicApiEntityCodegen.GenerateEntitySource(references[0], columns),
+            DynamicApiEntityCodegen.GenerateDbContextSource([(references[0], columns)]),
+            DynamicApiEntityCodegen.GenerateDbContextFactorySource()
+        };
+
+        var transformed = DynamicApiSourceTransformer.Transform(preparedSource, references);
+        var compile = DynamicApiCompiler.Compile(new DynamicApiCompileRequest
+        {
+            HandlerSourceCode = transformed,
+            TypeNameSeed = "sqlite-deleted-filter",
+            UsesDynamicTables = true,
+            AdditionalSourceFiles = additionalSources
+        });
+
+        compile.Success.Should().BeTrue(compile.Error);
+
+        var cache = new DynamicApiRuntimeCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()));
+        var handler = cache.GetOrLoad("deleted-filter", compile.AssemblyBytes!, compile.EntryPointTypeName!);
+
+        var ctx = new DynamicApiExecutionContext(
+            Mock.Of<IDbContext>(),
+            new Dictionary<string, object?>(),
+            null,
+            null,
+            null,
+            connectionString,
+            DynamicApiSchemaRules.DbTypeSqlite);
+
+        var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
+
+        ((BiUM.Contract.Models.Api.ApiResponse<int>)result).Value.Should().Be(1);
     }
 }
 

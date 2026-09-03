@@ -56,4 +56,41 @@ public class DynamicApiCompilerTests
 
         result.Success.Should().BeTrue(result.Error);
     }
+
+    [Fact]
+    public void Compile_succeeds_for_non_generic_PaginatedApiResponse_handler_body()
+    {
+        const string source = """
+            return new PaginatedApiResponse(Array.Empty<object>(), 0, 1, 10);
+            """;
+
+        var prepared = DynamicApiHandlerSourceNormalizer.NormalizeHandlerResponses(source);
+        var result = DynamicApiCompiler.Compile(prepared, "paginated-non-generic");
+
+        result.Success.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public void Compile_succeeds_for_normalized_domain_db_and_non_generic_ApiResponse()
+    {
+        const string source = """
+            var count = await ctx.Db.DomainDynamicApis.CountAsync(cancellationToken);
+            return new ApiResponse { Value = count };
+            """;
+
+        var prepared = DynamicApiHandlerSourceNormalizer.PrepareForCompile(
+            source,
+            typeof(Helpers.TestBiDbContext).FullName,
+            usesDynamicTables: false);
+
+        var result = DynamicApiCompiler.Compile(new DynamicApiCompileRequest
+        {
+            HandlerSourceCode = prepared,
+            TypeNameSeed = "normalized-domain-db",
+            UsesDynamicTables = false,
+            DomainDbContextTypeFullName = typeof(Helpers.TestBiDbContext).FullName
+        });
+
+        result.Success.Should().BeTrue(result.Error);
+    }
 }

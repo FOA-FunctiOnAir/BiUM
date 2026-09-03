@@ -76,6 +76,8 @@ public partial class DynamicApiService
                 return response;
             }
 
+            var entityModels = new List<(DynamicApiTableReference Reference, IReadOnlyList<DynamicApiColumnMetadata> Columns)>();
+
             foreach (var reference in parseResult.TableReferences)
             {
                 var columns = await created.GetColumnsAsync(
@@ -89,22 +91,31 @@ public partial class DynamicApiService
                     return response;
                 }
 
+                entityModels.Add((reference, columns));
                 additionalSources.Add(DynamicApiEntityCodegen.GenerateEntitySource(reference, columns));
             }
 
-            additionalSources.Add(DynamicApiEntityCodegen.GenerateDbContextSource(parseResult.TableReferences));
+            additionalSources.Add(DynamicApiEntityCodegen.GenerateDbContextSource(entityModels));
             additionalSources.Add(DynamicApiEntityCodegen.GenerateDbContextFactorySource());
         }
 
+        var domainDbContextTypeFullName = usesDynamicTables ? null : DbContext.GetType().FullName;
+
+        var preparedSource = DynamicApiHandlerSourceNormalizer.PrepareForCompile(
+            domainDynamicApi.SourceCode,
+            domainDbContextTypeFullName,
+            usesDynamicTables);
+
         var transformedSource = usesDynamicTables
-            ? DynamicApiSourceTransformer.Transform(domainDynamicApi.SourceCode, parseResult.TableReferences)
-            : domainDynamicApi.SourceCode;
+            ? DynamicApiSourceTransformer.Transform(preparedSource, parseResult.TableReferences)
+            : preparedSource;
 
         var compileResult = DynamicApiCompiler.Compile(new DynamicApiCompileRequest
         {
             HandlerSourceCode = transformedSource,
             TypeNameSeed = $"{domainDynamicApi.Code}_{domainDynamicApi.Id:N}",
             UsesDynamicTables = usesDynamicTables,
+            DomainDbContextTypeFullName = domainDbContextTypeFullName,
             AdditionalSourceFiles = additionalSources
         });
 
@@ -184,7 +195,7 @@ public partial class DynamicApiService
         return response;
     }
 
-    private async Task<ApiResponse> SaveDynamicApiServicesAsync(
+    protected virtual async Task<ApiResponse> SaveDynamicApiServicesAsync(
         Guid applicationId,
         Guid microserviceId,
         string code,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -63,7 +64,8 @@ public static partial class DynamicApiEntityCodegen
         return sb.ToString();
     }
 
-    public static string GenerateDbContextSource(IReadOnlyList<DynamicApiTableReference> references)
+    public static string GenerateDbContextSource(
+        IReadOnlyList<(DynamicApiTableReference Reference, IReadOnlyList<DynamicApiColumnMetadata> Columns)> entities)
     {
         var sb = new StringBuilder();
 
@@ -78,10 +80,15 @@ public static partial class DynamicApiEntityCodegen
         sb.AppendLine("    protected override void OnModelCreating(ModelBuilder modelBuilder)");
         sb.AppendLine("    {");
 
-        foreach (var reference in references)
+        foreach (var (reference, columns) in entities)
         {
             var typeName = ToEntityTypeName(reference.Schema, reference.TableName);
             sb.AppendLine($"        modelBuilder.Entity<{typeName}>().ToTable(\"{EscapeString(reference.TableName)}\", \"{EscapeString(reference.Schema)}\");");
+
+            if (TryGetDeletedPropertyName(columns, out var deletedPropertyName, out var deletedClrTypeName))
+            {
+                sb.AppendLine($"        modelBuilder.Entity<{typeName}>().HasQueryFilter(e => {BuildDeletedFilterExpression(deletedPropertyName, deletedClrTypeName)});");
+            }
         }
 
         sb.AppendLine("    }");
@@ -89,6 +96,31 @@ public static partial class DynamicApiEntityCodegen
 
         return sb.ToString();
     }
+
+    public static bool TryGetDeletedPropertyName(
+        IReadOnlyList<DynamicApiColumnMetadata> columns,
+        out string propertyName,
+        out string clrTypeName)
+    {
+        var deletedColumn = columns.FirstOrDefault(c =>
+            string.Equals(c.ColumnName, "DELETED", StringComparison.OrdinalIgnoreCase));
+
+        if (deletedColumn is null)
+        {
+            propertyName = string.Empty;
+            clrTypeName = string.Empty;
+            return false;
+        }
+
+        propertyName = ToPropertyName(deletedColumn.ColumnName);
+        clrTypeName = deletedColumn.ClrTypeName;
+        return true;
+    }
+
+    internal static string BuildDeletedFilterExpression(string propertyName, string clrTypeName) =>
+        clrTypeName is "bool" or "bool?"
+            ? $"!e.{propertyName}"
+            : $"e.{propertyName} == 0";
 
     public static string GenerateDbContextFactorySource()
     {

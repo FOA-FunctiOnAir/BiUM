@@ -27,7 +27,7 @@ Route: `[BiUMBaseRoute]` → `/api/base/[controller]/[action]`. Runtime action a
 
 CRUD ile aynı System / tenant filtresi (`Ids.Customer.System.Id`). Hata kodları: `dynamic_api_definition_access_denied`, `dynamic_api_definition_not_found`, `dynamic_api_compile_failed`.
 
-**Publish:** `DynamicApiCompiler` (Roslyn) kullanıcı `SourceCode` gövdesini `IDynamicApiHandler.ExecuteAsync` içine sarar. Kaynakta `ctx.Entity("schema","TABLE")` varsa: referanslar parse edilir → fiziksel tablo kolonları introspect edilir → EF entity + izole `DynamicTableDbContext` kodu üretilir → `ctx.Entity(...)` çağrıları `__dynamicTables.Set<T>()` ile değiştirilir → derlenir → `DomainDynamicApiVersion` binary assembly → `SaveDynamicApiServicesAsync` (`Ids.Service.SaveDynamicApiServices`) → BiApp.Configuration katalog.
+**Publish:** `DynamicApiCompiler` (Roslyn) kullanıcı `SourceCode` gövdesini `IDynamicApiHandler.ExecuteAsync` içine sarar. Publish öncesi **`DynamicApiHandlerSourceNormalizer`**: `new ApiResponse { … }` → `new ApiResponse<object> { … }`; `new PaginatedApiResponse(` → `new PaginatedApiResponse<object>(`; `ctx.Entity(...)` yoksa servisin gerçek `DbContext` tipine cast (`var __db = (FullTypeName)ctx.Db`) ve kaynakta `ctx.Db` → `__db` (kullanıcı cast yazmaz). Kaynakta `ctx.Entity("schema","TABLE")` varsa: referanslar parse edilir → … fiziksel tablo kolonları introspect edilir → EF entity + izole `DynamicTableDbContext` kodu üretilir → `ctx.Entity(...)` çağrıları `__dynamicTables.Set<T>()` ile değiştirilir → derlenir → `DomainDynamicApiVersion` binary assembly → `SaveDynamicApiServicesAsync` (`Ids.Service.SaveDynamicApiServices`) → BiApp.Configuration katalog.
 
 **Save:** `SaveDomainDynamicApiAsync` kaynak kodu parse eder, tablo referanslarını doğrular ve `DomainDynamicApiTable` satırlarını senkronlar (publish zorunluluğu yok).
 
@@ -61,6 +61,8 @@ var rows = await ctx.Entity("t_a1b2…_b2c3…", "ORDERS").Where(...).ToListAsyn
 | Publish | Tablo DB'de olmalı; kolon metadata introspection (PostgreSQL / SQL Server); codegen + source transform + derleme |
 | Execute | `DynamicTableDbContextFactory` izole `DynamicTableDbContext` oluşturur (aynı connection string); raw SQL gerekmez |
 
+**Soft delete:** Tabloda `DELETED` kolonu introspect edilirse codegen `HasQueryFilter` ekler (`bool` → `!e.Deleted`, sayısal → `e.Deleted == 0`). Handler'da `.Where(… !Deleted …)` yazılmaz.
+
 **İzinli şemalar:** CRUD tenant şeması `t_{16hex}_{16hex}` (`CrudSchemaHelper.ResolveSchema`), katalog şeması (`public` / PostgreSQL, `dbo` / SQL Server), SQLite test/dev için `main`.
 
 **Engellenen tablolar:** `__CRUD*`, `__DYNAMIC*`, `__COMPENSATION*`, `__EF*`, `__TRANSLATION`, `hangfire` şeması.
@@ -73,7 +75,11 @@ var rows = await ctx.Entity("t_a1b2…_b2c3…", "ORDERS").Where(...).ToListAsyn
 
 ### 4.2 `ctx.Db` (mevcut DbSet'ler)
 
-Handler `ctx.Db` üzerinden **o mikroservisin** `IDbContext` bağlantısını kullanır; tanımlı DbSet'ler ve servis domain entity'leri için LINQ / EF uygundur. Başka mikroservisin veritabanına doğrudan erişim yok — HTTP/gRPC ile ilgili servise gidilmeli.
+Handler `ctx.Db` yazar; publish sırasında platform `DbContext.GetType().FullName` ile cast + `__db` alias enjekte eder (`DynamicApiHandlerSourceNormalizer`). Domain DbSet'lere (`Currencies` vb.) doğrudan `ctx.Db.Currencies` ile erişilir; manuel cast gerekmez. `BaseEntity` global query filter (`!Deleted`) otomatik uygulanır — handler'da `.Where(c => !c.Deleted)` yazılmaz.
+
+Handler dönüşü: `return new ApiResponse { Value = … }` veya `return new PaginatedApiResponse(items, total, pageNumber, pageSize)` yeterli (publish sırasında `<object>` eklenir). Sayfalama: `ctx.PageStart` / `ctx.PageSize` query parametreleri.
+
+Başka mikroservisin veritabanına doğrudan erişim yok — HTTP/gRPC ile ilgili servise gidilmeli.
 
 ## 5. Telafi (compensation)
 
@@ -100,3 +106,16 @@ Platform kataloğunda tanımlanır (repo seed değil); ardından `BiUM.Core.Cons
 - `DynamicApiExecutionType`: CSharpEf
 - `Ids.Parameter.ServiceType.Values.DynamicApi` (mevcut sabit)
 - `Ids.Service.SaveDynamicApiServices` (Configuration callback servisi)
+
+**Publish — Configuration callback:** `DynamicApiService.SaveDynamicApiServicesAsync` `protected virtual`dır; yerel/sample ortamda BiApp.Configuration erişilemiyorsa türetilmiş servis bu adımı no-op yapabilir (`sample/Test.Infrastructure/DynamicApi/SampleDynamicApiService.cs`).
+
+## Sample (Test.API) — Currency Dynamic API
+
+| Endpoint | Code | Açıklama |
+|----------|------|----------|
+| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApi` | `currency-list` | Liste — `ApiResponse { Value = items }` |
+| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApiPaged` | `currency-list-paged` | Sayfalı — `PaginatedApiResponse(...)` + `pageStart`/`pageSize` query |
+
+Handler cast ve `!Deleted` filtresi içermez; publish normalizer + EF global filter (`ctx.Db`) veya Entity DSL codegen filter (`ctx.Entity`) uygular.
+
+Yayın sonrası: `GET /api/base/DynamicApi/Get/currency-list` veya `…/currency-list-paged?pageStart=0&pageSize=10`. Endpoint'ler idempotent.

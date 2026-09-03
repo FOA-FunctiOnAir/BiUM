@@ -29,6 +29,8 @@ public sealed class DynamicApiCompileRequest
 
     public bool UsesDynamicTables { get; init; }
 
+    public string? DomainDbContextTypeFullName { get; init; }
+
     public IReadOnlyList<string> AdditionalSourceFiles { get; init; } = [];
 }
 
@@ -46,7 +48,11 @@ public static class DynamicApiCompiler
     {
         var className = $"Handler_{SanitizeTypeSeed(request.TypeNameSeed)}";
         var entryPointTypeName = $"BiUM.DynamicApi.Generated.{className}";
-        var handlerSource = BuildHandlerSource(className, request.HandlerSourceCode, request.UsesDynamicTables);
+        var handlerSource = BuildHandlerSource(
+            className,
+            request.HandlerSourceCode,
+            request.UsesDynamicTables,
+            request.DomainDbContextTypeFullName);
         var syntaxTrees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(handlerSource) };
 
         foreach (var additionalSource in request.AdditionalSourceFiles)
@@ -107,13 +113,21 @@ public static class DynamicApiCompiler
         return sb.Length > 0 ? sb.ToString() : "Handler";
     }
 
-    private static string BuildHandlerSource(string className, string userSource, bool usesDynamicTables)
+    private static string BuildHandlerSource(
+        string className,
+        string userSource,
+        bool usesDynamicTables,
+        string? domainDbContextTypeFullName)
     {
         var preamble = usesDynamicTables
             ? """
                 await using var __dynamicTables = DynamicTableDbContextFactory.Create(ctx);
             """
-            : string.Empty;
+            : string.IsNullOrWhiteSpace(domainDbContextTypeFullName)
+                ? string.Empty
+                : $$"""
+                    var __db = ({{domainDbContextTypeFullName}})ctx.Db;
+                    """;
 
         return $$"""
             using System;

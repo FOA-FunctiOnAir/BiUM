@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Services.DynamicApi;
 
-public sealed class DynamicApiTableReferenceValidator
+public static class DynamicApiTableReferenceValidator
 {
     public sealed class ValidationResult
     {
@@ -20,7 +20,7 @@ public sealed class DynamicApiTableReferenceValidator
         public List<string> Errors { get; } = [];
     }
 
-    public async Task<ValidationResult> ValidateAsync(
+    public static async Task<ValidationResult> ValidateAsync(
         IDbContext dbContext,
         string databaseType,
         Guid applicationId,

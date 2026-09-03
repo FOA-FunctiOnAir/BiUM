@@ -1,8 +1,10 @@
 using BiApp.Test.Application.Repositories;
+using BiApp.Test.Infrastructure.DynamicApi;
 using BiApp.Test.Infrastructure.Persistence;
 using BiApp.Test.Infrastructure.Repositories;
 using BiUM.Core.Common.Exceptions;
 using BiUM.Specialized.Database;
+using BiUM.Specialized.Services.DynamicApi;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Threading.Tasks;
@@ -20,6 +22,7 @@ public static class ConfigureServices
         _ = services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
 
         _ = services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+        _ = services.AddScoped<IDynamicApiService, SampleDynamicApiService>();
 
         return services;
     }

@@ -10,7 +10,6 @@ public partial class DynamicApiService : BaseRepository, IDynamicApiService
 {
     private readonly IHttpClientsService _httpClientsService;
     private readonly DynamicApiRuntimeCache _runtimeCache;
-    private readonly DynamicApiTableReferenceValidator _tableReferenceValidator = new();
     private readonly string _dbType;
 
     public DynamicApiService(

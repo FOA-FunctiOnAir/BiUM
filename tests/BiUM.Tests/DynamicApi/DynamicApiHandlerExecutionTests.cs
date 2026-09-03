@@ -42,6 +42,39 @@ public class DynamicApiHandlerExecutionTests
     }
 
     [Fact]
+    public async Task Compiled_handler_returns_PaginatedApiResponse_with_page_context()
+    {
+        const string source = """
+            var pageStart = ctx.PageStart ?? 0;
+            var pageSize = ctx.PageSize ?? 10;
+            return new PaginatedApiResponse<string>(
+                new List<string> { "a", "b" },
+                2,
+                (pageStart / pageSize) + 1,
+                pageSize);
+            """;
+
+        var compile = DynamicApiCompiler.Compile(source, "paginated-page-context");
+        compile.Success.Should().BeTrue(compile.Error);
+
+        var handler = LoadHandler(compile);
+        var ctx = new DynamicApiExecutionContext(
+            Mock.Of<IDbContext>(),
+            new Dictionary<string, object?>(),
+            pageStart: 10,
+            pageSize: 10,
+            correlation: null,
+            connectionString: "Data Source=:memory:",
+            databaseType: DynamicApiSchemaRules.DbTypePostgresql);
+
+        var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
+
+        var paginated = result.Should().BeOfType<PaginatedApiResponse<string>>().Subject;
+        paginated.PageNumber.Should().Be(2);
+        paginated.TotalCount.Should().Be(2);
+    }
+
+    [Fact]
     public async Task Compiled_handler_returns_PaginatedApiResponse()
     {
         const string source = """

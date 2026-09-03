@@ -192,7 +192,7 @@ public partial class DynamicApiService
             introspector = await CreateIntrospectorAsync(cancellationToken);
         }
 
-        var validation = await _tableReferenceValidator.ValidateAsync(
+        var validation = await DynamicApiTableReferenceValidator.ValidateAsync(
             DbContext,
             _dbType,
             applicationId,

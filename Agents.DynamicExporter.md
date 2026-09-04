@@ -15,11 +15,11 @@ Durum parametreleri: `Ids.Parameter.DynamicExportRequestStatus` (Pending, Proces
 
 | Action | Açıklama |
 |--------|----------|
-| `SaveExportRequest` | Yeni iş (Pending); **`CorrelationContext.User` zorunlu** (`export_user_required`) |
-| `GetExportRequest` | Tek kayıt |
-| `GetExportRequests` | Kullanıcının listesi (sayfalı) |
-| `DeleteExportRequest` | Sil |
-| `Download` | Hazır dosya stream |
+| `SaveExportRequest` | `[FromBody] SaveExportRequestCommand` — yeni iş (Pending); **`CorrelationContext.User` zorunlu** |
+| `GetExportRequest` | `[FromQuery] GetExportRequestQuery` (`BaseQueryDto`, `Id`) |
+| `GetExportRequests` | `[FromQuery] GetExportRequestsQuery` (`BasePaginatedQueryDto`) |
+| `DeleteExportRequest` | `[FromBody] DeleteExportRequestCommand` (`BaseCommandDto`, `Id`) |
+| `Download` | `[FromQuery] DownloadExportRequestQuery` — dosya stream (`IActionResult`); `ApiResponse` değil |
 
 Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == CorrelationContext.TenantId` **ve** `ApplicationId == CorrelationContext.ApplicationId` (`GetExportRequest`, `GetExportRequests`, `Download`, `DeleteExportRequest`).
 

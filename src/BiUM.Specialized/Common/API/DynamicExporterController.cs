@@ -1,8 +1,7 @@
 using BiUM.Contract.Models.Api;
-using BiUM.Specialized.Common.DynamicApi;
+using BiUM.Specialized.Common.DynamicExporter;
 using BiUM.Specialized.Services.DynamicExporter;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,10 +25,9 @@ public class DynamicExporterController : ApiControllerBase
     }
 
     [HttpGet]
-    public Task<ApiResponse<DynamicExportRequestDto>> GetExportRequest(string id, CancellationToken cancellationToken)
+    public Task<ApiResponse<DynamicExportRequestDto>> GetExportRequest([FromQuery] GetExportRequestQuery query, CancellationToken cancellationToken)
     {
-        Guid.TryParse(id, out var guidId);
-        return _dynamicExporterService.GetExportRequestAsync(guidId, cancellationToken);
+        return _dynamicExporterService.GetExportRequestAsync(query, cancellationToken);
     }
 
     [HttpGet]
@@ -41,14 +39,13 @@ public class DynamicExporterController : ApiControllerBase
     [HttpDelete]
     public Task<ApiResponse> DeleteExportRequest([FromBody] DeleteExportRequestCommand command, CancellationToken cancellationToken)
     {
-        return _dynamicExporterService.DeleteExportRequestAsync(command.Id, cancellationToken);
+        return _dynamicExporterService.DeleteExportRequestAsync(command, cancellationToken);
     }
 
     [HttpGet]
-    public async Task<IActionResult> Download(string id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Download([FromQuery] DownloadExportRequestQuery query, CancellationToken cancellationToken)
     {
-        Guid.TryParse(id, out var guidId);
-        var file = await _dynamicExporterService.DownloadAsync(guidId, cancellationToken);
+        var file = await _dynamicExporterService.DownloadAsync(query, cancellationToken);
 
         if (file is null)
         {

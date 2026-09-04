@@ -2,7 +2,7 @@ using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
-using BiUM.Specialized.Common.DynamicApi;
+using BiUM.Specialized.Common.DynamicExporter;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -52,10 +52,10 @@ public partial class DynamicExporterService
         return response;
     }
 
-    public async Task<ApiResponse<DynamicExportRequestDto>> GetExportRequestAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DynamicExportRequestDto>> GetExportRequestAsync(GetExportRequestQuery query, CancellationToken cancellationToken)
     {
         var response = new ApiResponse<DynamicExportRequestDto>();
-        var request = await FindOwnedRequestAsync(id, cancellationToken);
+        var request = await FindOwnedRequestAsync(query.Id ?? Guid.Empty, cancellationToken);
 
         if (request is null)
         {
@@ -86,9 +86,10 @@ public partial class DynamicExporterService
                 cancellationToken);
     }
 
-    public async Task<ApiResponse> DeleteExportRequestAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ApiResponse> DeleteExportRequestAsync(DeleteExportRequestCommand command, CancellationToken cancellationToken)
     {
         var response = new ApiResponse();
+        var id = command.Id ?? Guid.Empty;
         var request = await FindOwnedRequestAsync(id, cancellationToken);
 
         if (request is null)
@@ -112,8 +113,9 @@ public partial class DynamicExporterService
         return response;
     }
 
-    public async Task<(byte[] Content, string FileName, string MimeType)?> DownloadAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<(byte[] Content, string FileName, string MimeType)?> DownloadAsync(DownloadExportRequestQuery query, CancellationToken cancellationToken)
     {
+        var id = query.Id ?? Guid.Empty;
         var request = await FindOwnedRequestAsync(id, cancellationToken);
 
         if (request is null || request.Status != Ids.Parameter.DynamicExportRequestStatus.Values.Ready)

@@ -17,7 +17,7 @@ Durum parametreleri: `Ids.Parameter.DynamicExportRequestStatus` (Pending, Proces
 |--------|----------|
 | `SaveExportRequest` | `[FromBody] SaveExportRequestCommand` — yeni iş (Pending); **`CorrelationContext.User` zorunlu** |
 | `GetExportRequest` | `[FromQuery] GetExportRequestQuery` (`BaseQueryDto`, `Id`) |
-| `GetExportRequests` | `[FromQuery] GetExportRequestsQuery` (`BasePaginatedQueryDto`) |
+| `GetExportRequests` | `[FromQuery] GetExportRequestsQuery` (`BasePaginatedQueryDto`, opsiyonel `StatusId`) |
 | `DeleteExportRequest` | `[FromBody] DeleteExportRequestCommand` (`BaseCommandDto`, `Id`) |
 | `Download` | `[FromQuery] DownloadExportRequestQuery` — dosya stream (`IActionResult`); `ApiResponse` değil |
 

@@ -78,7 +78,14 @@ public partial class DynamicExporterService
             return new PaginatedApiResponse<DynamicExportRequestDto>();
         }
 
-        return await OwnedExportRequests()
+        var requests = OwnedExportRequests();
+
+        if (query.StatusId is Guid statusId && statusId != Guid.Empty)
+        {
+            requests = requests.Where(r => r.Status == statusId);
+        }
+
+        return await requests
             .OrderByDescending(r => r.Created)
             .ToPaginatedListAsync<DomainDynamicExportRequest, DynamicExportRequestDto>(
                 PaginationQuery.ToPageBaseQuery(query.PageStart, query.PageSize),

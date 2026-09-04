@@ -238,6 +238,143 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
+    public async Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var originalUrl = url;
+        string? finalUrl = null;
+        var httpMethod = HttpMethod.Get;
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        TimeSpan? elapsed = null;
+
+        try
+        {
+            url = _httpClientOptions.GetFullUrl(url);
+
+            var httpClient = GetHttpClient(url);
+
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
+
+            finalUrl = AppendParametersAsQueryString(url, parameters);
+
+            var request = CreateRequestMessage(httpMethod, url);
+
+            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
+            var result =
+                await TryDeserializePaginatedApiResponse<TResponse>(
+                    response,
+                    external: external,
+                    isSuccessful: response.IsSuccessStatusCode,
+                    cancellationToken: cancellationToken);
+
+            LogHttpClientFailureIfNeeded(nameof(GetPaginated), httpMethod, finalUrl, response, result, null, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters));
+
+            LogHttpClientSuccessIfEnabled(nameof(GetPaginated), httpMethod, finalUrl, elapsed, response, result);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(GetPaginated), ex, finalUrl ?? originalUrl, httpMethod, null, FormatOutboundRequestForLog(httpMethod, finalUrl ?? originalUrl, parameters));
+
+            var result = new PaginatedApiResponse<TResponse>();
+
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
+
+            return result;
+        }
+    }
+
+    public async Task<ApiResponse<string>> GetContent(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var originalUrl = url;
+        string? finalUrl = null;
+        var httpMethod = HttpMethod.Get;
+
+        var startTimestamp = Stopwatch.GetTimestamp();
+        TimeSpan? elapsed = null;
+
+        try
+        {
+            url = _httpClientOptions.GetFullUrl(url);
+
+            var httpClient = GetHttpClient(url);
+
+            parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
+
+            finalUrl = AppendParametersAsQueryString(url, parameters);
+
+            var request = CreateRequestMessage(httpMethod, url);
+
+            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+
+            TryAddCorrelationContext(request);
+
+            var response = await httpClient.SendAsync(request, cancellationToken);
+
+            elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
+            var result = await TryReadApiResponseContent(
+                response,
+                external: external,
+                isSuccessful: response.IsSuccessStatusCode,
+                cancellationToken: cancellationToken);
+
+            LogHttpClientFailureIfNeeded(nameof(GetContent), httpMethod, finalUrl, response, result, null, FormatOutboundRequestForLog(httpMethod, finalUrl, parameters));
+
+            LogHttpClientSuccessIfEnabled(nameof(GetContent), httpMethod, finalUrl, elapsed, response, result);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            elapsed ??= Stopwatch.GetElapsedTime(startTimestamp);
+
+            LogHttpClientException(nameof(GetContent), ex, finalUrl ?? originalUrl, httpMethod, null, FormatOutboundRequestForLog(httpMethod, finalUrl ?? originalUrl, parameters));
+
+            var result = new ApiResponse<string>();
+
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
+
+            return result;
+        }
+    }
+
     public async Task<ApiResponse> Post(
         string url,
         Dictionary<string, dynamic>? parameters = null,
@@ -1343,6 +1480,128 @@ public class HttpClientService : IHttpClientsService
             });
 
             return result;
+        }
+    }
+
+    private async ValueTask<ApiResponse<string>> TryReadApiResponseContent(
+        HttpResponseMessage response,
+        bool external,
+        bool isSuccessful,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (external)
+            {
+                var externalResult = new ApiResponse<string> { Value = body };
+
+                if (!isSuccessful)
+                {
+                    externalResult.AddMessage(new ResponseMessage()
+                    {
+                        Code = UnexpectedSuccessErrorCode,
+                        Message = "The response was expected to be an error, but indicates success.",
+                        Severity = MessageSeverity.Warning
+                    });
+                }
+
+                return externalResult;
+            }
+
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return CreateContentReadError("Empty response body");
+            }
+
+            if (!isSuccessful)
+            {
+                return CreateContentReadErrorFromBody(body, "Unable to read the response");
+            }
+
+            if (!IsApiResponseBodySuccessful(body))
+            {
+                return CreateContentReadErrorFromBody(body, "Unable to read the response");
+            }
+
+            return new ApiResponse<string> { Value = body };
+        }
+        catch (Exception ex)
+        {
+            var result = new ApiResponse<string>();
+
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = ex.ToErrorCode(),
+                Message = ex.Message,
+                Exception = _isProductionLike ? ex.Message : ex.ToString(),
+                Severity = MessageSeverity.Error
+            });
+
+            return result;
+        }
+    }
+
+    private static ApiResponse<string> CreateContentReadError(string message)
+    {
+        var result = new ApiResponse<string>();
+
+        result.AddMessage(new ResponseMessage()
+        {
+            Code = DeserializationFailedErrorCode,
+            Message = message,
+            Severity = MessageSeverity.Error
+        });
+
+        return result;
+    }
+
+    private ApiResponse<string> CreateContentReadErrorFromBody(string body, string fallbackMessage)
+    {
+        var result = new ApiResponse<string>();
+
+        TryAddMessagesFromJsonBody(result, body);
+
+        if (result.Messages.Count == 0)
+        {
+            result.AddMessage(new ResponseMessage()
+            {
+                Code = DeserializationFailedErrorCode,
+                Message = fallbackMessage,
+                Severity = MessageSeverity.Error
+            });
+        }
+
+        return result;
+    }
+
+    private static bool IsApiResponseBodySuccessful(string body)
+    {
+        using var doc = JsonDocument.Parse(body);
+
+        if (doc.RootElement.TryGetProperty("success", out var successEl)
+            && successEl.ValueKind == JsonValueKind.False)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void TryAddMessagesFromJsonBody(ApiResponse target, string body)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<ApiResponse>(body, _jsonSerializerOptions);
+
+            if (parsed is not null && parsed.Messages.Count > 0)
+            {
+                target.AddMessage(parsed);
+            }
+        }
+        catch (JsonException)
+        {
         }
     }
 

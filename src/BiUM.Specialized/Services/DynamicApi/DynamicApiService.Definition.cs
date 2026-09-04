@@ -57,7 +57,6 @@ public partial class DynamicApiService
             {
                 Id = command.Id ?? GuidGenerator.New(),
                 ApplicationId = command.ApplicationId,
-                TenantId = CorrelationContext.TenantId ?? Guid.Empty,
                 MicroserviceId = command.MicroserviceId,
                 Name = command.NameTr!.ToTranslationString(),
                 Code = command.Code.Trim(),

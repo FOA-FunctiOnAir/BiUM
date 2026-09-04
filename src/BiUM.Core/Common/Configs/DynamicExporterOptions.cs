@@ -10,8 +10,6 @@ public class DynamicExporterOptions
 
     public int MaxFetchPages { get; set; } = 500;
 
-    public int PerPageTimeoutSeconds { get; set; } = 60;
-
     public int TotalJobTimeoutMinutes { get; set; } = 60;
 
     public int TtlDays { get; set; } = 3;

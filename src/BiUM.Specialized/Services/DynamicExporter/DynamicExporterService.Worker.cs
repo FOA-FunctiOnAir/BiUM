@@ -88,14 +88,14 @@ public partial class DynamicExporterService
 
         if (expired.Count > 0)
         {
-            _ = await DbContext.SaveChangesAsync(cancellationToken);
+            await SaveChangesInUnitOfWorkAsync(cancellationToken);
         }
     }
 
     private async Task ProcessSingleExportAsync(DomainDynamicExportRequest request, CancellationToken cancellationToken)
     {
         request.Status = Ids.Parameter.DynamicExportRequestStatus.Values.Processing;
-        _ = await DbContext.SaveChangesAsync(cancellationToken);
+        await SaveChangesInUnitOfWorkAsync(cancellationToken);
 
         try
         {
@@ -107,12 +107,18 @@ public partial class DynamicExporterService
             var truncated = false;
             int? sourceTotal = null;
 
+            var sourceParameters = BuildSourceParameters(request.SourceParameters);
+
             for (var page = 0; page < _options.MaxFetchPages; page++)
             {
                 timeoutCts.Token.ThrowIfCancellationRequested();
 
-                var pageParameters = BuildPageParameters(request.SourceParameters, pageStart, _options.FetchPageSize);
-                var responseJson = await FetchSourcePageAsync(request.SourceUrl, pageParameters, timeoutCts.Token);
+                var responseJson = await FetchSourcePageAsync(
+                    request.SourceUrl,
+                    sourceParameters,
+                    pageStart,
+                    _options.FetchPageSize,
+                    timeoutCts.Token);
                 var pageRows = DynamicExportExcelWriter.ExtractRowsFromApiResponse(responseJson);
 
                 if (page == 0)
@@ -179,38 +185,51 @@ public partial class DynamicExporterService
             request.ErrorMessage = ex.Message;
         }
 
-        _ = await DbContext.SaveChangesAsync(cancellationToken);
+        await SaveChangesInUnitOfWorkAsync(cancellationToken);
     }
+
+    private Task SaveChangesInUnitOfWorkAsync(CancellationToken cancellationToken) =>
+        _unitOfWorkRunner.RunAsync(() => DbContext.SaveChangesAsync(cancellationToken), cancellationToken);
 
     private async Task<string> FetchSourcePageAsync(
         string sourceUrl,
         Dictionary<string, dynamic> parameters,
+        int pageStart,
+        int pageSize,
         CancellationToken cancellationToken)
     {
-        using var perPageCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        perPageCts.CancelAfter(TimeSpan.FromSeconds(_options.PerPageTimeoutSeconds));
-
-        var pageStart = parameters.TryGetValue("pageStart", out var ps) ? Convert.ToInt32(ps) : (int?)null;
-        var pageSize = parameters.TryGetValue("pageSize", out var psz) ? Convert.ToInt32(psz) : (int?)null;
-
-        var response = await _httpClientsService.Get<ApiResponse>(
+        var response = await _httpClientsService.GetContent(
             sourceUrl,
             parameters,
             external: false,
             pageStart: pageStart,
             pageSize: pageSize,
-            cancellationToken: perPageCts.Token);
+            cancellationToken: cancellationToken);
 
         if (!response.Success)
         {
-            var message = response.Messages.FirstOrDefault()?.Message ?? "export_fetch_failed";
-            throw new InvalidOperationException(message);
+            throw new InvalidOperationException(GetExportFetchErrorMessage(response));
         }
 
-        return JsonSerializer.Serialize(response);
+        if (string.IsNullOrWhiteSpace(response.Value))
+        {
+            throw new InvalidOperationException("export_fetch_failed");
+        }
+
+        return response.Value;
     }
 
-    private static Dictionary<string, dynamic> BuildPageParameters(string? sourceParametersJson, int pageStart, int pageSize)
+    private static string GetExportFetchErrorMessage(ApiResponse response)
+    {
+        if (response.Messages.Count == 0)
+        {
+            return "export_fetch_failed";
+        }
+
+        return response.Messages[0].Message ?? "export_fetch_failed";
+    }
+
+    private static Dictionary<string, dynamic> BuildSourceParameters(string? sourceParametersJson)
     {
         var parameters = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
 
@@ -222,6 +241,11 @@ public partial class DynamicExporterService
             {
                 foreach (var (key, value) in parsed)
                 {
+                    if (IsPaginationParameterKey(key))
+                    {
+                        continue;
+                    }
+
                     parameters[key] = value.ValueKind switch
                     {
                         JsonValueKind.String => value.GetString()!,
@@ -234,11 +258,12 @@ public partial class DynamicExporterService
             }
         }
 
-        parameters["pageStart"] = pageStart;
-        parameters["pageSize"] = pageSize;
-
         return parameters;
     }
+
+    private static bool IsPaginationParameterKey(string key) =>
+        key.Equals("pageStart", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("pageSize", StringComparison.OrdinalIgnoreCase);
 
     private static int? TryReadTotalCount(string responseJson)
     {

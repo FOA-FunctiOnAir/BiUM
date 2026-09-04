@@ -30,10 +30,12 @@ public static partial class BoltDatabaseExtensions
                     npgsqlOptions =>
                     {
                         var boltMigrationsAssembly = EfMigrationsAssemblyResolver.GetActiveMigrationsAssemblyName(configuration, bolt: true);
+
                         if (boltMigrationsAssembly is not null)
                         {
                             _ = npgsqlOptions.MigrationsAssembly(boltMigrationsAssembly);
                         }
+
                         npgsqlOptions.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
@@ -48,10 +50,12 @@ public static partial class BoltDatabaseExtensions
                     sql =>
                     {
                         var boltMigrationsAssembly = EfMigrationsAssemblyResolver.GetActiveMigrationsAssemblyName(configuration, bolt: true);
+
                         if (boltMigrationsAssembly is not null)
                         {
                             _ = sql.MigrationsAssembly(boltMigrationsAssembly);
                         }
+
                         _ = sql.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),

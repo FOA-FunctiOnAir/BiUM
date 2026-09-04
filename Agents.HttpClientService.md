@@ -25,7 +25,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
   Önce Configuration üzerinden servis tanımı alınır: `GET .../api/configuration/Service/GetService?Id=...` (`GetServiceInfoAsync`).  Ardından **`ServiceDto`**: iç mi dış mı (`Ids.Parameter.ServiceType`), HTTP metodu (`Ids.Parameter.HttpType`), URL, kimlik doğrulama, zaman aşımı ile istek yürütülür. İmza: `serviceId`, `parameters`, **`selectedIds`**, **`excludedIds`**, `q`, `pageStart`, `pageSize`, `cancellationToken`. Çağrı tarafında **`serviceId:`**, **`parameters:`**, **`cancellationToken:`** gibi adlandırılmış argümanlar kullanın; yeni opsiyonel parametreler eklendiğinde positional kullanım kırılmasın.
 - **`CallPaginatedService<TResponse>(Guid serviceId, ...)`**  
   `CallService` ile aynı imza ve çağrı akışı; yanıt gövdesi **`PaginatedApiResponse<TResponse>`** olarak deserialize edilir (`totalCount`, `pageNumber`, `totalPages` korunur). Parametre proxy’si gibi downstream sayfalı uçları iletmek için kullanın (ör. **BiApp.Parameters** `GetFwParameterValues` endpoint dalı).
-- **`Get` / `Post` / `Post<TResponse>(string url, ...)`**  
+- **`Get` / `GetPaginated<TResponse>` / `GetContent` / `Post` / `Post<TResponse>(string url, ...)`**  
   Doğrudan URL; `external` bayrağı yanıtın `ApiResponse` JSON’u mu yoksa ham T mi olduğunu ayırt etmek için kullanılır.
 
 **Ortak davranış**

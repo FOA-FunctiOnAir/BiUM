@@ -7,6 +7,7 @@ using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,14 +27,13 @@ public partial class DynamicExporterService
         if (userId is null || userId == Guid.Empty)
         {
             await AddMessage(response, "export_user_required", cancellationToken);
+
             return response;
         }
 
         var request = new DomainDynamicExportRequest
         {
             Id = GuidGenerator.New(),
-            CorrelationId = CorrelationContext.CorrelationId,
-            TenantId = CorrelationContext.TenantId ?? Guid.Empty,
             ApplicationId = command.ApplicationId ?? (CorrelationContext.ApplicationId != Guid.Empty ? CorrelationContext.ApplicationId : Guid.Empty),
             Name = command.Name,
             Status = Ids.Parameter.DynamicExportRequestStatus.Values.Pending,
@@ -41,8 +41,7 @@ public partial class DynamicExporterService
             SourceMicroserviceId = command.SourceMicroserviceId,
             SourceParameters = command.SourceParameters is null ? null : JsonSerializer.Serialize(command.SourceParameters),
             Format = string.IsNullOrWhiteSpace(command.Format) ? "xlsx" : command.Format.Trim().ToLowerInvariant(),
-            ExpiresAt = DateTime.UtcNow.AddDays(_options.TtlDays),
-            CreatedBy = userId.Value
+            ExpiresAt = DateTime.UtcNow.AddDays(_options.TtlDays)
         };
 
         _ = DbContext.DomainDynamicExportRequests.Add(request);
@@ -61,10 +60,12 @@ public partial class DynamicExporterService
         if (request is null)
         {
             await AddMessage(response, "export_request_not_found", cancellationToken);
+
             return response;
         }
 
         response.Value = MapRequest(request);
+
         return response;
     }
 
@@ -72,11 +73,12 @@ public partial class DynamicExporterService
         GetExportRequestsQuery query,
         CancellationToken cancellationToken)
     {
-        var userId = CorrelationContext.User?.Id;
+        if (!TryGetOwnedExportScope(out _))
+        {
+            return new PaginatedApiResponse<DynamicExportRequestDto>();
+        }
 
-        return await DbContext.DomainDynamicExportRequests
-            .AsNoTracking()
-            .Where(r => userId != null && r.CreatedBy == userId)
+        return await OwnedExportRequests()
             .OrderByDescending(r => r.Created)
             .ToPaginatedListAsync<DomainDynamicExportRequest, DynamicExportRequestDto>(
                 PaginationQuery.ToPageBaseQuery(query.PageStart, query.PageSize),
@@ -92,6 +94,7 @@ public partial class DynamicExporterService
         if (request is null)
         {
             await AddMessage(response, "export_request_not_found", cancellationToken);
+
             return response;
         }
 
@@ -132,15 +135,39 @@ public partial class DynamicExporterService
 
     private async Task<DomainDynamicExportRequest?> FindOwnedRequestAsync(Guid id, CancellationToken cancellationToken)
     {
-        var userId = CorrelationContext.User?.Id;
-
-        if (userId is null)
+        if (!TryGetOwnedExportScope(out _))
         {
             return null;
         }
 
-        return await DbContext.DomainDynamicExportRequests
-            .FirstOrDefaultAsync(r => r.Id == id && r.CreatedBy == userId, cancellationToken);
+        return await OwnedExportRequests()
+           .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+    }
+
+    private IQueryable<DomainDynamicExportRequest> OwnedExportRequests()
+    {
+        var scope = BuildOwnedExportScopeFilter();
+
+        return DbContext.DomainDynamicExportRequests.Where(scope);
+    }
+
+    private bool TryGetOwnedExportScope(out Guid userId)
+    {
+        userId = CorrelationContext.User?.Id ?? Guid.Empty;
+
+        return userId != Guid.Empty;
+    }
+
+    private Expression<Func<DomainDynamicExportRequest, bool>> BuildOwnedExportScopeFilter()
+    {
+        var userId = CorrelationContext.User?.Id ?? Guid.Empty;
+        var tenantId = CorrelationContext.TenantId ?? Guid.Empty;
+        var applicationId = CorrelationContext.ApplicationId;
+
+        return r =>
+            r.CreatedBy == userId &&
+            r.TenantId == tenantId &&
+            r.ApplicationId == applicationId;
     }
 
     private static DynamicExportRequestDto MapRequest(DomainDynamicExportRequest request)

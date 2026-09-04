@@ -4,7 +4,7 @@ BiUM içinde kullanıcıya ait **asenkron Excel dışa aktarma** işleri. Kaynak
 
 ## 1. Varlıklar
 
-- **`DomainDynamicExportRequest`** (`__DYNAMIC_EXPORT_REQUEST`, `TenantBaseEntity`): `ApplicationId`, `Name`, `Status`, `SourceUrl`, `SourceMicroserviceId`, `SourceParameters` (JSON), `Format`, `FileName`, `MimeType`, `RowCount`, `SourceTotalCount`, `Truncated`, `ErrorMessage`, `ExpiresAt`
+- **`DomainDynamicExportRequest`** (`__DYNAMIC_EXPORT_REQUEST`, `TenantBaseEntity`): `ApplicationId`, `Name`, `Status`, … — `TenantId`, `CorrelationId`, `CreatedBy` insert'te interceptor ile doldurulur; serviste yalnızca domain alanları set edilir.
 - **`DomainDynamicExportFile`**: `ExportRequestId` FK, `Content` (byte[]) veya `StoragePath`
 
 Durum parametreleri: `Ids.Parameter.DynamicExportRequestStatus` (Pending, Processing, Ready, Failed, Expired). Parametre ve değer GUID'leri platform kataloğunda tanımlanır; repo seed kullanılmaz — tanım sonrası `Ids.Parameter` ile hizalanır.
@@ -15,18 +15,18 @@ Durum parametreleri: `Ids.Parameter.DynamicExportRequestStatus` (Pending, Proces
 
 | Action | Açıklama |
 |--------|----------|
-| `SaveExportRequest` | Yeni iş (Pending) |
+| `SaveExportRequest` | Yeni iş (Pending); **`CorrelationContext.User` zorunlu** (`export_user_required`) |
 | `GetExportRequest` | Tek kayıt |
 | `GetExportRequests` | Kullanıcının listesi (sayfalı) |
 | `DeleteExportRequest` | Sil |
 | `Download` | Hazır dosya stream |
 
-Görünürlük: `CreatedBy == CorrelationContext.User.Id`.
+Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == CorrelationContext.TenantId` **ve** `ApplicationId == CorrelationContext.ApplicationId` (`GetExportRequest`, `GetExportRequests`, `Download`, `DeleteExportRequest`).
 
 ## 3. Arka plan işleme
 
 - `DynamicExportBackgroundService` (`IHostedService`): ~5 sn döngü; `ProcessPendingExportsAsync`, `ExpireOldExportsAsync`
-- `DynamicExporterService.Worker`: kaynak URL'den `pageStart`/`pageSize` ile sayfalar; `MaxExportRows`, `MaxFetchPages`, job/page timeout
+- `DynamicExporterService.Worker`: kaynak URL'den `pageStart`/`pageSize` ile sayfalar (`IHttpClientsService.GetContent` — ham JSON; typed `PaginatedApiResponse` deserialize yok); `MaxExportRows`, `MaxFetchPages`, `TotalJobTimeoutMinutes`
 - `DynamicExportExcelWriter`: OpenXML streaming xlsx; `ExtractRowsFromApiResponse` `value` dizisini okur
 
 ## 4. Yapılandırma (`DynamicExporterOptions`)
@@ -38,8 +38,7 @@ Görünürlük: `CreatedBy == CorrelationContext.User.Id`.
 | `FetchPageSize` | 2000 |
 | `MaxExportRows` | 1_000_000 |
 | `MaxFetchPages` | 500 |
-| `PerPageTimeoutSeconds` | 60 |
-| `TotalJobTimeoutMinutes` | 60 |
+| `TotalJobTimeoutMinutes` | 60 (tüm export job; sayfa başına ayrı timeout yok — HTTP istemcisi varsayılan ~5 dk) |
 | `TtlDays` | 3 |
 | `SmallExportRowThreshold` | 50_000 |
 | `ExportStoragePath` | null (bellek içi `Content`) |

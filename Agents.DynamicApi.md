@@ -21,6 +21,8 @@ Route: `[BiUMBaseRoute]` → `/api/base/[controller]/[action]`. Runtime action a
 
 `BaseDbContext` / `IDbContext`: tüm `DomainDynamicApi*` DbSet'leri etkin; `(TenantId, Code)` unique index.
 
+**Insert audit alanları:** `CorrelationId`, `TenantId` (boş ise), `CreatedBy`, `Created` / `CreatedTime` — `EntitySaveChangesInterceptor` tarafından `SaveChanges` öncesinde doldurulur; servis kodunda set etmeyin (domain alanları: `ApplicationId`, `Code`, … hariç).
+
 **Migration:** Her mikroservis kendi EF migration'ını üretmelidir (`__DYNAMIC_API_TABLE` tablosu).
 
 ## 3. Tanım düzlemi — kiracı kuralları
@@ -111,11 +113,38 @@ Platform kataloğunda tanımlanır (repo seed değil); ardından `BiUM.Core.Cons
 
 ## Sample (Test.API) — Currency Dynamic API
 
-| Endpoint | Code | Açıklama |
-|----------|------|----------|
-| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApi` | `currency-list` | Liste — `ApiResponse { Value = items }` |
-| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApiPaged` | `currency-list-paged` | Sayfalı — `PaginatedApiResponse(...)` + `pageStart`/`pageSize` query |
+İki katman örnek vardır: **basit handler** (`ctx.Db`, `ApiResponse` / manuel `PaginatedApiResponse`) ve **repository-style** (`CurrencyRepository.GetCurrencies` / `GetCurrency` ile aynı mantık: `Include` + `CurrencyTranslations`, `ToPaginatedListAsync`, `PaginationQuery`, `id`/`name`/`code`, correlation `LanguageId`).
 
-Handler cast ve `!Deleted` filtresi içermez; publish normalizer + EF global filter (`ctx.Db`) veya Entity DSL codegen filter (`ctx.Entity`) uygular.
+| Endpoint | Açıklama |
+|----------|----------|
+| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApi` | Basit liste (`currency-list`) kaydet + publish |
+| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApiPaged` | Manuel sayfalama (`currency-list-paged`) kaydet + publish |
+| `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApis` | Repository-style iki API kaydet + publish (idempotent) |
+| `POST /api/test/TestDynamicApi/CreateCurrencyExportRequest` | Dynamic Export işi oluşturur (kaynak: `currency-get-currencies`) |
 
-Yayın sonrası: `GET /api/base/DynamicApi/Get/currency-list` veya `…/currency-list-paged?pageStart=0&pageSize=10`. Endpoint'ler idempotent.
+Yayınlanan kodlar:
+
+| Code | Tür | Açıklama |
+|------|-----|----------|
+| `currency-list` | Basit | Tüm kayıtlar, `ApiResponse { Value = items }` |
+| `currency-list-paged` | Basit | Manuel `Skip`/`Take`, `PaginatedApiResponse` |
+| `currency-get-currencies` | Repository-style | `TestCurrencyController.GetCurrencies` / DataGrid + Excel export kaynağı |
+| `currency-get-currency` | Repository-style | `TestCurrencyController.GetCurrency` (query `id`) |
+
+**Datagrid çağrısı** (Configuration servis kataloğunda bu code'a bağlı action):
+
+`GET /api/base/DynamicApi/Get/currency-get-currencies?id=&name=&code=&pageStart=0&pageSize=10`
+
+**Export akışı:**
+
+1. `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApis`
+2. `POST /api/test/TestDynamicApi/CreateCurrencyExportRequest` → `exportRequestId`, `downloadUrl`
+3. Arka plan (`DynamicExportBackgroundService`) sayfalı olarak Dynamic API'den veri çeker
+4. `GET /api/base/DynamicExporter/GetExportRequest?id={exportRequestId}` → `status=Ready`
+5. `GET /api/base/DynamicExporter/Download?id={exportRequestId}` → xlsx
+
+Handler kaynakları: `sample/Test.Infrastructure/DynamicApi/SampleDynamicApiHandlerSources.cs`. Publish normalizer + EF global filter uygulanır; handler'da cast/`!Deleted` yok.
+
+**Publish normalizer — `PaginatedApiResponse`:** Handler kaynağında `new PaginatedApiResponse(...)` yazılabilir; publish sırasında `PaginatedApiResponse<object>`'e çevrilir. İlk argüman `IList<object>` olmalıdır (ör. anonymous projection sonrası `items.Select(x => (object)x).ToList()`).
+
+**Export akışı — kimlik:** `CreateCurrencyExportRequest` / `SaveExportRequest` `CorrelationContext.User.Id` gerektirir. Swagger/curl ile kullanıcı bağlamı olmadan çağrılırsa `export_user_required` döner; Gateway üzerinden JWT veya geçerli `x-correlation-context` ile deneyin.

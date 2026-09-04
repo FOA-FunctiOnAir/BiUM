@@ -60,7 +60,7 @@ public static class DynamicApiCompiler
             syntaxTrees.Add(CSharpSyntaxTree.ParseText(additionalSource));
         }
 
-        var references = CollectReferences();
+        var references = CollectReferences(request);
         var compilation = CSharpCompilation.Create(
             assemblyName: $"DynamicApi_{Guid.NewGuid():N}",
             syntaxTrees: syntaxTrees,
@@ -153,7 +153,7 @@ public static class DynamicApiCompiler
             """;
     }
 
-    private static IEnumerable<MetadataReference> CollectReferences()
+    private static IEnumerable<MetadataReference> CollectReferences(DynamicApiCompileRequest request)
     {
         var assemblies = new HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -169,6 +169,17 @@ public static class DynamicApiCompiler
             typeof(Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions).Assembly
         };
 
+        if (!string.IsNullOrWhiteSpace(request.DomainDbContextTypeFullName))
+        {
+            var domainDbContextType = ResolveType(request.DomainDbContextTypeFullName);
+
+            if (domainDbContextType is not null)
+            {
+                AddAssemblyGraph(domainDbContextType.Assembly, assemblies);
+                AddDbSetEntityAssemblies(domainDbContextType, assemblies);
+            }
+        }
+
         foreach (var assembly in assemblies)
         {
             if (assembly.IsDynamic || string.IsNullOrEmpty(assembly.Location))
@@ -178,5 +189,64 @@ public static class DynamicApiCompiler
 
             yield return MetadataReference.CreateFromFile(assembly.Location);
         }
+    }
+
+    private static void AddDbSetEntityAssemblies(Type domainDbContextType, HashSet<Assembly> assemblies)
+    {
+        foreach (var property in domainDbContextType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (!property.PropertyType.IsGenericType ||
+                property.PropertyType.GetGenericTypeDefinition() != typeof(Microsoft.EntityFrameworkCore.DbSet<>))
+            {
+                continue;
+            }
+
+            var entityType = property.PropertyType.GetGenericArguments()[0];
+            AddAssemblyGraph(entityType.Assembly, assemblies);
+        }
+    }
+
+    private static void AddAssemblyGraph(Assembly assembly, HashSet<Assembly> assemblies)
+    {
+        if (assembly.IsDynamic || string.IsNullOrEmpty(assembly.Location) || !assemblies.Add(assembly))
+        {
+            return;
+        }
+
+        foreach (var reference in assembly.GetReferencedAssemblies())
+        {
+            try
+            {
+                AddAssemblyGraph(Assembly.Load(reference), assemblies);
+            }
+            catch (FileNotFoundException)
+            {
+            }
+            catch (FileLoadException)
+            {
+            }
+        }
+    }
+
+    private static Type? ResolveType(string fullName)
+    {
+        var type = Type.GetType(fullName);
+
+        if (type is not null)
+        {
+            return type;
+        }
+
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            type = assembly.GetType(fullName, throwOnError: false);
+
+            if (type is not null)
+            {
+                return type;
+            }
+        }
+
+        return null;
     }
 }

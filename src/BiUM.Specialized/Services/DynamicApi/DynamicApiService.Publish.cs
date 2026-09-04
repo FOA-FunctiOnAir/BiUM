@@ -144,7 +144,6 @@ public partial class DynamicApiService
 
         var version = new DomainDynamicApiVersion
         {
-            CorrelationId = CorrelationContext.CorrelationId,
             DynamicApiId = domainDynamicApi.Id,
             Code = domainDynamicApi.Code,
             Version = newVersionNumber,
@@ -161,7 +160,6 @@ public partial class DynamicApiService
         {
             DbContext.DomainDynamicApiVersionParameters.Add(new DomainDynamicApiVersionParameter
             {
-                CorrelationId = CorrelationContext.CorrelationId,
                 DynamicApiVersionId = version.Id,
                 DirectionType = param.DirectionType,
                 Property = param.Property,

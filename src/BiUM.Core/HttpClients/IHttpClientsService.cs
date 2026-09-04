@@ -47,6 +47,24 @@ public interface IHttpClientsService
         int? pageSize = null,
         CancellationToken cancellationToken = default);
 
+    Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<string>> GetContent(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
     Task<ApiResponse> Post(
         string url,
         Dictionary<string, dynamic>? parameters = null,

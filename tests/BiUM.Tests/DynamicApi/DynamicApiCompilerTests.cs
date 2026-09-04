@@ -1,3 +1,5 @@
+using BiApp.Test.Infrastructure.DynamicApi;
+using BiApp.Test.Infrastructure.Persistence;
 using BiUM.Specialized.Services.DynamicApi;
 using FluentAssertions;
 using Xunit;
@@ -66,6 +68,44 @@ public class DynamicApiCompilerTests
 
         var prepared = DynamicApiHandlerSourceNormalizer.NormalizeHandlerResponses(source);
         var result = DynamicApiCompiler.Compile(prepared, "paginated-non-generic");
+
+        result.Success.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public void Compile_succeeds_for_CurrencyListPaged_handler_body()
+    {
+        _ = typeof(TestDbContext).Assembly;
+
+        var prepared = DynamicApiHandlerSourceNormalizer.PrepareForCompile(
+            SampleDynamicApiHandlerSources.CurrencyListPaged,
+            typeof(TestDbContext).FullName!,
+            usesDynamicTables: false);
+        var result = DynamicApiCompiler.Compile(new DynamicApiCompileRequest
+        {
+            HandlerSourceCode = prepared,
+            TypeNameSeed = "currency-list-paged",
+            DomainDbContextTypeFullName = typeof(TestDbContext).FullName
+        });
+
+        result.Success.Should().BeTrue(result.Error);
+    }
+
+    [Fact]
+    public void Compile_succeeds_for_repository_style_GetCurrencies_handler_body()
+    {
+        _ = typeof(TestDbContext).Assembly;
+
+        var prepared = DynamicApiHandlerSourceNormalizer.PrepareForCompile(
+            SampleDynamicApiHandlerSources.GetCurrencies,
+            typeof(TestDbContext).FullName!,
+            usesDynamicTables: false);
+        var result = DynamicApiCompiler.Compile(new DynamicApiCompileRequest
+        {
+            HandlerSourceCode = prepared,
+            TypeNameSeed = "repo-style-get-currencies",
+            DomainDbContextTypeFullName = typeof(TestDbContext).FullName
+        });
 
         result.Success.Should().BeTrue(result.Error);
     }

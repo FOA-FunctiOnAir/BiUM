@@ -5,8 +5,10 @@ using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.DynamicApi;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Services.DynamicApi;
+using BiUM.Specialized.Services.DynamicExporter;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,10 +18,14 @@ namespace BiApp.Test.API.Controllers;
 public class TestDynamicApiController : ApiControllerBase
 {
     private readonly IDynamicApiService _dynamicApiService;
+    private readonly IDynamicExporterService _dynamicExporterService;
 
-    public TestDynamicApiController(IDynamicApiService dynamicApiService)
+    public TestDynamicApiController(
+        IDynamicApiService dynamicApiService,
+        IDynamicExporterService dynamicExporterService)
     {
         _dynamicApiService = dynamicApiService;
+        _dynamicExporterService = dynamicExporterService;
     }
 
     [HttpPost]
@@ -27,13 +33,8 @@ public class TestDynamicApiController : ApiControllerBase
         SetupDynamicApiAsync(
             SampleDynamicApiConstants.CurrencyListApiId,
             SampleDynamicApiConstants.CurrencyListCode,
-            """
-            var items = await ctx.Db.Currencies
-                .OrderBy(c => c.Code)
-                .Select(c => new { c.Id, c.Name, c.Code })
-                .ToListAsync(cancellationToken);
-            return new ApiResponse { Value = items };
-            """,
+            "Currency list (simple)",
+            SampleDynamicApiHandlerSources.CurrencyList,
             cancellationToken);
 
     [HttpPost]
@@ -41,23 +42,87 @@ public class TestDynamicApiController : ApiControllerBase
         SetupDynamicApiAsync(
             SampleDynamicApiConstants.CurrencyListPagedApiId,
             SampleDynamicApiConstants.CurrencyListPagedCode,
-            """
-            var pageStart = ctx.PageStart ?? 0;
-            var pageSize = ctx.PageSize ?? 10;
-            var query = ctx.Db.Currencies.OrderBy(c => c.Code);
-            var total = await query.CountAsync(cancellationToken);
-            var items = await query
-                .Skip(pageStart)
-                .Take(pageSize)
-                .Select(c => new { c.Id, c.Name, c.Code })
-                .ToListAsync(cancellationToken);
-            return new PaginatedApiResponse(items, total, (pageStart / pageSize) + 1, pageSize);
-            """,
+            "Currency list (manual paging)",
+            SampleDynamicApiHandlerSources.CurrencyListPaged,
             cancellationToken);
+
+    [HttpPost]
+    public async Task<ApiResponse<SetupCurrencyDynamicApisResult>> SetupCurrencyDynamicApis(CancellationToken cancellationToken)
+    {
+        var response = new ApiResponse<SetupCurrencyDynamicApisResult>
+        {
+            Value = new SetupCurrencyDynamicApisResult()
+        };
+
+        var getCurrencies = await SetupDynamicApiAsync(
+            SampleDynamicApiConstants.CurrencyGetCurrenciesApiId,
+            SampleDynamicApiConstants.CurrencyGetCurrenciesCode,
+            "Currency list (datagrid)",
+            SampleDynamicApiHandlerSources.GetCurrencies,
+            cancellationToken);
+
+        if (!getCurrencies.Success)
+        {
+            response.AddMessage(getCurrencies);
+            return response;
+        }
+
+        response.Value!.Apis.Add(getCurrencies.Value!);
+
+        var getCurrency = await SetupDynamicApiAsync(
+            SampleDynamicApiConstants.CurrencyGetCurrencyApiId,
+            SampleDynamicApiConstants.CurrencyGetCurrencyCode,
+            "Currency by id",
+            SampleDynamicApiHandlerSources.GetCurrency,
+            cancellationToken);
+
+        if (!getCurrency.Success)
+        {
+            response.AddMessage(getCurrency);
+            return response;
+        }
+
+        response.Value.Apis.Add(getCurrency.Value!);
+
+        return response;
+    }
+
+    [HttpPost]
+    public async Task<ApiResponse<CreateCurrencyExportResult>> CreateCurrencyExportRequest(CancellationToken cancellationToken)
+    {
+        var export = await _dynamicExporterService.SaveExportRequestAsync(new SaveExportRequestCommand
+        {
+            ApplicationId = SampleDynamicApiConstants.ApplicationId,
+            SourceMicroserviceId = SampleDynamicApiConstants.MicroserviceId,
+            Name = "Currency list export",
+            SourceUrl = SampleDynamicApiConstants.CurrencyGetCurrenciesCallUrl,
+            SourceParameters = new Dictionary<string, object?>(),
+            Format = "xlsx"
+        }, cancellationToken);
+
+        if (!export.Success || export.Value is null)
+        {
+            var response = new ApiResponse<CreateCurrencyExportResult>();
+            response.AddMessage(export);
+            return response;
+        }
+
+        return new ApiResponse<CreateCurrencyExportResult>
+        {
+            Value = new CreateCurrencyExportResult
+            {
+                ExportRequestId = export.Value.Id,
+                SourceUrl = SampleDynamicApiConstants.CurrencyGetCurrenciesCallUrl,
+                StatusPollUrl = $"/api/base/DynamicExporter/GetExportRequest?id={export.Value.Id}",
+                DownloadUrl = $"/api/base/DynamicExporter/Download?id={export.Value.Id}"
+            }
+        };
+    }
 
     private async Task<ApiResponse<SetupCurrencyDynamicApiResult>> SetupDynamicApiAsync(
         Guid apiId,
         string code,
+        string displayName,
         string sourceCode,
         CancellationToken cancellationToken)
     {
@@ -67,7 +132,7 @@ public class TestDynamicApiController : ApiControllerBase
             ApplicationId = SampleDynamicApiConstants.ApplicationId,
             MicroserviceId = SampleDynamicApiConstants.MicroserviceId,
             Code = code,
-            NameTr = [new BaseEntityTranslationDto { LanguageId = Ids.Language.English.Id, Translation = "Currency list" }],
+            NameTr = [new BaseEntityTranslationDto { LanguageId = Ids.Language.English.Id, Translation = displayName }],
             HttpType = Ids.Parameter.HttpType.Values.Get,
             ExecutionType = Ids.Parameter.DynamicApiExecutionType.Values.CSharpEf,
             RuntimePlatformType = SampleDynamicApiConstants.RuntimePlatformType,
@@ -97,10 +162,21 @@ public class TestDynamicApiController : ApiControllerBase
             {
                 ApiId = apiId,
                 Code = code,
-                CallUrl = $"/api/base/DynamicApi/Get/{code}"
+                CallUrl = $"/api/base/DynamicApi/Get/{code}",
+                Mirrors = code switch
+                {
+                    SampleDynamicApiConstants.CurrencyGetCurrenciesCode => "TestCurrencyController.GetCurrencies / CurrencyRepository.GetCurrencies",
+                    SampleDynamicApiConstants.CurrencyGetCurrencyCode => "TestCurrencyController.GetCurrency / CurrencyRepository.GetCurrency",
+                    _ => null
+                }
             }
         };
     }
+}
+
+public class SetupCurrencyDynamicApisResult
+{
+    public IList<SetupCurrencyDynamicApiResult> Apis { get; set; } = [];
 }
 
 public class SetupCurrencyDynamicApiResult
@@ -110,4 +186,17 @@ public class SetupCurrencyDynamicApiResult
     public required string Code { get; set; }
 
     public required string CallUrl { get; set; }
+
+    public string? Mirrors { get; set; }
+}
+
+public class CreateCurrencyExportResult
+{
+    public Guid ExportRequestId { get; set; }
+
+    public required string SourceUrl { get; set; }
+
+    public required string StatusPollUrl { get; set; }
+
+    public required string DownloadUrl { get; set; }
 }

@@ -195,9 +195,7 @@ public class HttpClientService : IHttpClientsService
 
             finalUrl = AppendParametersAsQueryString(url, parameters);
 
-            var request = CreateRequestMessage(httpMethod, url);
-
-            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+            var request = CreateRequestMessage(httpMethod, finalUrl);
 
             TryAddCorrelationContext(request);
 
@@ -264,9 +262,7 @@ public class HttpClientService : IHttpClientsService
 
             finalUrl = AppendParametersAsQueryString(url, parameters);
 
-            var request = CreateRequestMessage(httpMethod, url);
-
-            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+            var request = CreateRequestMessage(httpMethod, finalUrl);
 
             TryAddCorrelationContext(request);
 
@@ -333,9 +329,7 @@ public class HttpClientService : IHttpClientsService
 
             finalUrl = AppendParametersAsQueryString(url, parameters);
 
-            var request = CreateRequestMessage(httpMethod, url);
-
-            request.Content = JsonContent.Create(parameters, JsonMediaTypeHeaderValue, _jsonSerializerOptions);
+            var request = CreateRequestMessage(httpMethod, finalUrl);
 
             TryAddCorrelationContext(request);
 

@@ -28,7 +28,7 @@ Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == Co
 ## 3. Arka plan işleme
 
 - `DynamicExportBackgroundService` (`IHostedService`): ~5 sn döngü; `ProcessPendingExportsAsync`, `ExpireOldExportsAsync`
-- `DynamicExporterService.Worker`: kaynak URL'den `pageStart`/`pageSize` ile sayfalar (`IHttpClientsService.GetContent` — ham JSON; typed `PaginatedApiResponse` deserialize yok); `MaxExportRows`, `MaxFetchPages`, `TotalJobTimeoutMinutes`
+- `DynamicExporterService.Worker`: kaynak URL'den `pageStart`/`pageSize` ile sayfalar (`IHttpClientsService.GetContent` — ham JSON; typed `PaginatedApiResponse` deserialize yok); döngü `totalCount` dolana kadar devam eder (`pageStart` her sayfada alınan satır sayısı kadar artar); `MaxExportRows`, `MaxFetchPages`, `TotalJobTimeoutMinutes`
 - `DynamicExportExcelWriter`: OpenXML streaming xlsx; `ExtractRowsFromApiResponse` `value` dizisini okur
 
 ## 4. Yapılandırma (`DynamicExporterOptions`)

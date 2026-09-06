@@ -32,7 +32,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 - Varsayılan HTTP zaman aşımı: 5 dakika; servis kaydındaki `TimeoutMs` varsa named client için o kullanılır.
 - **`IHttpClientFactory`**: named client anahtarı iç çağrılarda çoğunlukla `service.Id`; URL tabanlı çağrılarda `host:port` veya path segmenti türetilir.
-- İstek gövdesi JSON (`application/json`); GET/DELETE tarafında parametreler sorgu string’ine dönüşür; `SelectedIds`, **`ExcludedIds`**, `Q`, `PageStart`, `PageSize` desteği.
+- İstek gövdesi JSON (`application/json`); **`CallService` iç GET/DELETE** ve **`Get` / `GetPaginated` / `GetContent`** URL tabanlı çağrılarda parametreler sorgu string’ine eklenir (GET gövdesi yok); `SelectedIds`, **`ExcludedIds`**, `Q`, `PageStart`, `PageSize` desteği.
 - Dış servis kimlik doğrulama türleri: NoAuth, Basic, BearerStatic, ApiKeyHeader, ApiKeyQuery, CustomHeader (JSON header sözlüğü), OAuth2 client credentials, OAuth2 password (token uçları ayrı HTTP çağrıları).
 
 ## 4. Correlation (bağlam) yayılımı

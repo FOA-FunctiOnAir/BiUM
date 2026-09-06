@@ -142,12 +142,22 @@ public partial class DynamicExporterService
                     rows.Add(row);
                 }
 
-                if (truncated || pageRows.Count < _options.FetchPageSize)
+                if (truncated)
                 {
                     break;
                 }
 
-                pageStart += _options.FetchPageSize;
+                if (sourceTotal is int total && rows.Count >= total)
+                {
+                    break;
+                }
+
+                if (!sourceTotal.HasValue && pageRows.Count < _options.FetchPageSize)
+                {
+                    break;
+                }
+
+                pageStart += pageRows.Count;
             }
 
             var bytes = DynamicExportExcelWriter.WriteRows(rows);

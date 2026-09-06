@@ -3,6 +3,8 @@ using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.DynamicExporter;
+using BiUM.Specialized.Common.Models;
+using BiUM.Specialized.Common.Utils;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -120,14 +122,24 @@ public partial class DynamicExporterService
         return response;
     }
 
-    public async Task<(byte[] Content, string FileName, string MimeType)?> DownloadAsync(DownloadExportRequestQuery query, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ExportDto>> DownloadAsync(DownloadExportRequestQuery query, CancellationToken cancellationToken)
     {
+        var response = new ApiResponse<ExportDto>();
         var id = query.Id ?? Guid.Empty;
         var request = await FindOwnedRequestAsync(id, cancellationToken);
 
-        if (request is null || request.Status != Ids.Parameter.DynamicExportRequestStatus.Values.Ready)
+        if (request is null)
         {
-            return null;
+            await AddMessage(response, "export_request_not_found", cancellationToken);
+
+            return response;
+        }
+
+        if (request.Status != Ids.Parameter.DynamicExportRequestStatus.Values.Ready)
+        {
+            await AddMessage(response, "export_not_ready", cancellationToken);
+
+            return response;
         }
 
         var file = await DbContext.DomainDynamicExportFiles
@@ -136,10 +148,17 @@ public partial class DynamicExporterService
 
         if (file?.Content is null || file.Content.Length == 0)
         {
-            return null;
+            await AddMessage(response, "export_file_not_found", cancellationToken);
+
+            return response;
         }
 
-        return (file.Content, request.FileName ?? $"{request.Name}.xlsx", request.MimeType ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        var fileName = request.FileName ?? $"{request.Name}.xlsx";
+        var mimeType = request.MimeType ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        response.Value = ExportHelper.Export(fileName, mimeType, file.Content);
+
+        return response;
     }
 
     private async Task<DomainDynamicExportRequest?> FindOwnedRequestAsync(Guid id, CancellationToken cancellationToken)

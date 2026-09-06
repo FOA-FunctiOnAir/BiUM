@@ -1,5 +1,6 @@
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.DynamicExporter;
+using BiUM.Specialized.Common.Models;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,7 +16,7 @@ public interface IDynamicExporterService
 
     Task<ApiResponse> DeleteExportRequestAsync(DeleteExportRequestCommand command, CancellationToken cancellationToken);
 
-    Task<(byte[] Content, string FileName, string MimeType)?> DownloadAsync(DownloadExportRequestQuery query, CancellationToken cancellationToken);
+    Task<ApiResponse<ExportDto>> DownloadAsync(DownloadExportRequestQuery query, CancellationToken cancellationToken);
 
     Task ProcessPendingExportsAsync(CancellationToken cancellationToken);
 

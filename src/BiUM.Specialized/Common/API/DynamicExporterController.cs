@@ -1,5 +1,6 @@
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Common.DynamicExporter;
+using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Services.DynamicExporter;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
@@ -43,15 +44,8 @@ public class DynamicExporterController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Download([FromQuery] DownloadExportRequestQuery query, CancellationToken cancellationToken)
+    public Task<ApiResponse<ExportDto>> Download([FromQuery] DownloadExportRequestQuery query, CancellationToken cancellationToken)
     {
-        var file = await _dynamicExporterService.DownloadAsync(query, cancellationToken);
-
-        if (file is null)
-        {
-            return NotFound();
-        }
-
-        return File(file.Value.Content, file.Value.MimeType, file.Value.FileName);
+        return _dynamicExporterService.DownloadAsync(query, cancellationToken);
     }
 }

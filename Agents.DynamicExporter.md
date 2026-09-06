@@ -19,9 +19,11 @@ Durum parametreleri: `Ids.Parameter.DynamicExportRequestStatus` (Pending, Proces
 | `GetExportRequest` | `[FromQuery] GetExportRequestQuery` (`BaseQueryDto`, `Id`) |
 | `GetExportRequests` | `[FromQuery] GetExportRequestsQuery` (`BasePaginatedQueryDto`, opsiyonel `StatusId`) |
 | `DeleteExportRequest` | `[FromBody] DeleteExportRequestCommand` (`BaseCommandDto`, `Id`) |
-| `Download` | `[FromQuery] DownloadExportRequestQuery` — dosya stream (`IActionResult`); `ApiResponse` değil |
+| `Download` | `[FromQuery] DownloadExportRequestQuery` — `ApiResponse<ExportDto>` (`Name`, `MimeType`, base64 `Content`); BiDynamic **Export** actionType ile uyumlu |
 
 Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == CorrelationContext.TenantId` **ve** `ApplicationId == CorrelationContext.ApplicationId` (`GetExportRequest`, `GetExportRequests`, `Download`, `DeleteExportRequest`).
+
+**BiDynamic Export actionType:** `operationType = Export` (31) ile tanımlanan aksiyonlar GET çağrısı yapar ve yanıtta `ApiResponse<ExportDto>` bekler (`success`, `value.name`, `value.mimeType`, `value.content` base64). İstemci `downloadFile(value)` ile dosyayı indirir. Örnek servis URL: `api/base/DynamicExporter/Download`; `requestMapping` ile satır `id` → query `id` eşlenir (Coach `DownloadResourceUploadTemplate` ile aynı sözleşme).
 
 ## 3. Arka plan işleme
 

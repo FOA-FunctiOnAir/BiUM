@@ -7,6 +7,7 @@ using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Services.HttpClients;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Mapper;
+using BiUM.Specialized.Common.MediatR;
 using BiUM.Specialized.Compensation;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Interceptors;
@@ -83,7 +84,11 @@ public static partial class ApplicationExtensions
 
         services.AddAutoMapper(cfg => cfg.Internal().MethodMappingEnabled = false, assembly);
         services.AddValidatorsFromAssembly(assembly);
-        services.AddMediatR(config => config.RegisterServicesFromAssembly(assembly));
+        services.AddMediatR(config =>
+        {
+            config.RegisterServicesFromAssembly(assembly);
+            config.AddOpenBehavior(typeof(TracingBehavior<,>));
+        });
 
         return services;
     }

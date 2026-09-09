@@ -29,6 +29,8 @@ public sealed class DynamicExportBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -43,7 +45,7 @@ public sealed class DynamicExportBackgroundService : BackgroundService
                 _logger.LogError(ex, "Dynamic export background loop failed");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
         }
     }
 }

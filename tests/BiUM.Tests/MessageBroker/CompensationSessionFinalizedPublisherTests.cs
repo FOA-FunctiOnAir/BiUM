@@ -4,6 +4,7 @@ using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Services.Compensation;
 using BiUM.Tests.Helpers;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -34,7 +35,10 @@ public sealed class CompensationSessionFinalizedPublisherTests
             }
         };
 
-        var publisher = new CompensationSessionFinalizedPublisher(rabbit.Object, accessor);
+        var publisher = new CompensationSessionFinalizedPublisher(
+            rabbit.Object,
+            accessor,
+            NullLogger<CompensationSessionFinalizedPublisher>.Instance);
 
         await publisher.PublishAsync(sessionId, success: true, CancellationToken.None);
 

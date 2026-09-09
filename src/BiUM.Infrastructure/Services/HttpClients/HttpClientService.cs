@@ -866,6 +866,8 @@ public class HttpClientService : IHttpClientsService
 
                 var request = CreateRequestMessage(httpMethod, finalUrl);
 
+                TryAddCorrelationContext(request);
+
                 var httpClient = GetHttpClient(finalUrl);
 
                 var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);

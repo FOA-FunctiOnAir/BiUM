@@ -19,7 +19,7 @@ public sealed class CompensationSessionFinalizedHandler : IEventHandler<Compensa
         _correlationContextAccessor = correlationContextAccessor;
     }
 
-    public Task HandleAsync(CompensationSessionFinalizedEvent @event, CancellationToken cancellationToken = default)
+    public async Task HandleAsync(CompensationSessionFinalizedEvent @event, CancellationToken cancellationToken = default)
     {
         var ctx = _correlationContextAccessor.CorrelationContext;
 
@@ -30,9 +30,12 @@ public sealed class CompensationSessionFinalizedHandler : IEventHandler<Compensa
 
         if (@event.Success)
         {
-            return _compensationService.CommitSessionAsync(@event.CompensationSessionId, cancellationToken);
+            await _compensationService.CommitSessionAsync(@event.CompensationSessionId, cancellationToken);
+            await _compensationService.DispatchPendingEventsAsync(@event.CompensationSessionId, cancellationToken);
+
+            return;
         }
 
-        return _compensationService.RollbackSessionAsync(@event.CompensationSessionId, cancellationToken);
+        await _compensationService.RollbackSessionAsync(@event.CompensationSessionId, cancellationToken);
     }
 }

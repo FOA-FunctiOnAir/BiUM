@@ -194,7 +194,7 @@ public sealed class CompensationService : ICompensationService
         try
         {
             var pendingEvents = await _dbContext.DomainPendingEvents
-                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched)
+                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched && e.Active)
                 .OrderBy(e => e.Created).ThenBy(e => e.CreatedTime)
                 .ToListAsync(cancellationToken);
 
@@ -269,7 +269,7 @@ public sealed class CompensationService : ICompensationService
         try
         {
             var pendingEvents = await _dbContext.DomainPendingEvents
-                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched)
+                .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched && e.Active)
                 .ToListAsync(cancellationToken);
 
             if (pendingEvents.Count == 0)
@@ -277,7 +277,10 @@ public sealed class CompensationService : ICompensationService
                 return;
             }
 
-            _dbContext.DomainPendingEvents.RemoveRange(pendingEvents);
+            foreach (var pendingEvent in pendingEvents)
+            {
+                pendingEvent.Active = false;
+            }
 
             await SaveChangesWithoutReprocessingAsync(cancellationToken);
         }

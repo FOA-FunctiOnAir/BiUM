@@ -196,6 +196,7 @@ public sealed class CompensationService : ICompensationService
             var pendingEvents = await _dbContext.DomainPendingEvents
                 .Where(e => e.CompensationSessionId == compensationSessionId && !e.Dispatched && e.Active)
                 .OrderBy(e => e.Created).ThenBy(e => e.CreatedTime)
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
             if (pendingEvents.Count == 0)
@@ -203,8 +204,29 @@ public sealed class CompensationService : ICompensationService
                 return;
             }
 
+            var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+            var table = dbType == DbTypePostgresql ? $"{QuotePg("dbo")}.{QuotePg("__PENDING_EVENT")}" : "[dbo].[__PENDING_EVENT]";
+            var idCol = dbType == DbTypePostgresql ? QuotePg("ID") : QuoteMs("ID");
+            var dispatchedCol = dbType == DbTypePostgresql ? QuotePg("DISPATCHED") : QuoteMs("DISPATCHED");
+            var dispatchedAtCol = dbType == DbTypePostgresql ? QuotePg("DISPATCHED_AT") : QuoteMs("DISPATCHED_AT");
+
             foreach (var pendingEvent in pendingEvents)
             {
+                // Atomically claim this single row (compare-and-swap via WHERE DISPATCHED = false) so two
+                // concurrent dispatch calls for the same session (e.g. the originator's synchronous
+                // RequestTransactionMiddleware dispatch racing a self-consumed CompensationSessionFinalizedEvent)
+                // can never both see the same row as undispatched and publish it twice.
+                var claimSql = $"UPDATE {table} SET {dispatchedCol} = {{1}}, {dispatchedAtCol} = {{2}} WHERE {idCol} = {{0}} AND {dispatchedCol} = {{3}}";
+                var claimed = await _dbContext.Database.ExecuteSqlRawAsync(
+                    claimSql,
+                    [pendingEvent.Id, true, DateTime.UtcNow, false],
+                    cancellationToken);
+
+                if (claimed == 0)
+                {
+                    continue;
+                }
+
                 var type = ResolveEntityType(pendingEvent.EventClrTypeName);
 
                 if (type is null)
@@ -226,12 +248,7 @@ public sealed class CompensationService : ICompensationService
                         "Pending event {EventClrTypeName} for compensation session {SessionId} deserialized to null/non-IBaseEvent; marking dispatched without publishing",
                         pendingEvent.EventClrTypeName, compensationSessionId);
                 }
-
-                pendingEvent.Dispatched = true;
-                pendingEvent.DispatchedAt = DateTime.UtcNow;
             }
-
-            await SaveChangesWithoutReprocessingAsync(cancellationToken);
         }
         catch (Exception ex)
         {

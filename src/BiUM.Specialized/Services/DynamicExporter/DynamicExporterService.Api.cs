@@ -33,6 +33,17 @@ public partial class DynamicExporterService
             return response;
         }
 
+        var sourceMicroserviceId = command.SourceMicroserviceId;
+
+        if ((sourceMicroserviceId is null || sourceMicroserviceId == Guid.Empty)
+            && command.SourceParameters?.TryGetValue("microserviceId", out var microserviceIdValue) == true)
+        {
+            _ = Guid.TryParse(microserviceIdValue?.ToString(), out var parsedMicroserviceId);
+            sourceMicroserviceId = parsedMicroserviceId == Guid.Empty ? null : parsedMicroserviceId;
+        }
+
+        var sanitizedSourceParameters = SanitizeSourceParametersForStorage(command.SourceParameters);
+
         var request = new DomainDynamicExportRequest
         {
             Id = GuidGenerator.New(),
@@ -40,8 +51,8 @@ public partial class DynamicExporterService
             Name = command.Name,
             Status = Ids.Parameter.DynamicExportRequestStatus.Values.Pending,
             SourceUrl = command.SourceUrl,
-            SourceMicroserviceId = command.SourceMicroserviceId,
-            SourceParameters = command.SourceParameters is null ? null : JsonSerializer.Serialize(command.SourceParameters),
+            SourceMicroserviceId = sourceMicroserviceId,
+            SourceParameters = sanitizedSourceParameters.Count == 0 ? null : JsonSerializer.Serialize(sanitizedSourceParameters),
             Format = string.IsNullOrWhiteSpace(command.Format) ? "xlsx" : command.Format.Trim().ToLowerInvariant(),
             ExpiresAt = DateTime.UtcNow.AddDays(_options.TtlDays)
         };

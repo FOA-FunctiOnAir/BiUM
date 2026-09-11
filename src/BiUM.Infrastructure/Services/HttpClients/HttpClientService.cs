@@ -191,6 +191,8 @@ public class HttpClientService : IHttpClientsService
 
             var httpClient = GetHttpClient(url);
 
+            parameters = CloneParameters(parameters);
+
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
             finalUrl = AppendParametersAsQueryString(url, parameters);
@@ -258,6 +260,8 @@ public class HttpClientService : IHttpClientsService
 
             var httpClient = GetHttpClient(url);
 
+            parameters = CloneParameters(parameters);
+
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
             finalUrl = AppendParametersAsQueryString(url, parameters);
@@ -324,6 +328,8 @@ public class HttpClientService : IHttpClientsService
             url = _httpClientOptions.GetFullUrl(url);
 
             var httpClient = GetHttpClient(url);
+
+            parameters = CloneParameters(parameters);
 
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize);
 
@@ -557,6 +563,8 @@ public class HttpClientService : IHttpClientsService
             serviceUrl = service.Url;
 
             var isExternal = service.Type == Ids.Parameter.ServiceType.Values.External;
+
+            parameters = CloneParameters(parameters);
 
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize, selectedIds, excludedIds);
 
@@ -941,14 +949,25 @@ public class HttpClientService : IHttpClientsService
                 return sb.ToString();
             }
 
-            if (!url.Contains('?'))
+            var hasQuery = url.Contains('?');
+
+            if (!hasQuery)
             {
                 sb.Append('?');
+            }
+            else if (!url.EndsWith('?') && !url.EndsWith('&'))
+            {
+                sb.Append('&');
             }
 
             foreach (var parameter in parameters)
             {
                 if (parameter.Value is null)
+                {
+                    continue;
+                }
+
+                if (parameter.Value is string stringValue && string.IsNullOrWhiteSpace(stringValue))
                 {
                     continue;
                 }
@@ -991,6 +1010,11 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
+    private static Dictionary<string, dynamic> CloneParameters(Dictionary<string, dynamic>? parameters) =>
+        parameters is null or { Count: 0 }
+            ? new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, dynamic>(parameters, StringComparer.OrdinalIgnoreCase);
+
     private static Dictionary<string, dynamic> AddSearchAndPagination(
         Dictionary<string, dynamic>? parameters,
         string? q = null,
@@ -999,31 +1023,31 @@ public class HttpClientService : IHttpClientsService
         IReadOnlyList<Guid>? selectedIds = null,
         IReadOnlyList<Guid>? excludedIds = null)
     {
-        parameters ??= [];
+        parameters ??= new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
 
         if (!string.IsNullOrEmpty(q))
         {
-            parameters.Add("Q", q);
+            parameters["Q"] = q;
         }
 
         if (pageStart.HasValue)
         {
-            parameters.Add("PageStart", pageStart.Value.ToString());
+            parameters["PageStart"] = pageStart.Value.ToString();
         }
 
         if (pageSize.HasValue)
         {
-            parameters.Add("PageSize", pageSize.Value.ToString());
+            parameters["PageSize"] = pageSize.Value.ToString();
         }
 
         if (selectedIds?.Count > 0)
         {
-            parameters.Add("SelectedIds", selectedIds);
+            parameters["SelectedIds"] = selectedIds;
         }
 
         if (excludedIds?.Count > 0)
         {
-            parameters.Add("ExcludedIds", excludedIds);
+            parameters["ExcludedIds"] = excludedIds;
         }
 
         return parameters;

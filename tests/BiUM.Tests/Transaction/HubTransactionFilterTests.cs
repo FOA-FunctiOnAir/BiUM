@@ -106,7 +106,7 @@ public sealed class HubTransactionFilterTests
 
     private sealed class TestHub : Hub
     {
-        public void TestMethod()
+        public static void TestMethod()
         {
         }
     }

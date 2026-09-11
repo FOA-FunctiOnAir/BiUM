@@ -210,10 +210,14 @@ public partial class DynamicExporterService
         int pageSize,
         CancellationToken cancellationToken)
     {
+        var pageParameters = new Dictionary<string, dynamic>(parameters, StringComparer.OrdinalIgnoreCase);
+        var q = TryExtractSearchQuery(pageParameters);
+
         var response = await _httpClientsService.GetContent(
             sourceUrl,
-            parameters,
+            pageParameters,
             external: false,
+            q: q,
             pageStart: pageStart,
             pageSize: pageSize,
             cancellationToken: cancellationToken);
@@ -245,37 +249,157 @@ public partial class DynamicExporterService
     {
         var parameters = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrWhiteSpace(sourceParametersJson))
+        if (string.IsNullOrWhiteSpace(sourceParametersJson))
         {
-            var parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sourceParametersJson);
+            return parameters;
+        }
 
-            if (parsed is not null)
+        var parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sourceParametersJson);
+
+        if (parsed is null)
+        {
+            return parameters;
+        }
+
+        foreach (var (key, value) in parsed)
+        {
+            if (IsReservedSourceParameterKey(key))
             {
-                foreach (var (key, value) in parsed)
-                {
-                    if (IsPaginationParameterKey(key))
-                    {
-                        continue;
-                    }
-
-                    parameters[key] = value.ValueKind switch
-                    {
-                        JsonValueKind.String => value.GetString()!,
-                        JsonValueKind.Number when value.TryGetInt64(out var l) => l,
-                        JsonValueKind.True => true,
-                        JsonValueKind.False => false,
-                        _ => value.GetRawText()
-                    };
-                }
+                continue;
             }
+
+            if (!TryConvertJsonElementToQueryValue(value, out var converted) || !IsNonEmptyQueryValue(converted))
+            {
+                continue;
+            }
+
+            parameters[key] = converted!;
         }
 
         return parameters;
     }
 
-    private static bool IsPaginationParameterKey(string key) =>
+    internal static Dictionary<string, object?> SanitizeSourceParametersForStorage(Dictionary<string, object?>? sourceParameters)
+    {
+        if (sourceParameters is null or { Count: 0 })
+        {
+            return [];
+        }
+
+        var sanitized = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (key, value) in sourceParameters)
+        {
+            if (IsReservedSourceParameterKey(key))
+            {
+                continue;
+            }
+
+            if (!TryNormalizeSourceParameterValue(value, out var normalized) || !IsNonEmptyQueryValue(normalized))
+            {
+                continue;
+            }
+
+            sanitized[key] = normalized;
+        }
+
+        return sanitized;
+    }
+
+    private static bool TryNormalizeSourceParameterValue(object? value, out object? normalized)
+    {
+        normalized = value;
+
+        if (value is null)
+        {
+            return false;
+        }
+
+        if (value is JsonElement element)
+        {
+            if (!TryConvertJsonElementToQueryValue(element, out var converted))
+            {
+                return false;
+            }
+
+            normalized = converted;
+            return true;
+        }
+
+        if (value is string stringValue)
+        {
+            return !string.IsNullOrWhiteSpace(stringValue);
+        }
+
+        return true;
+    }
+
+    private static bool IsReservedSourceParameterKey(string key) =>
         key.Equals("pageStart", StringComparison.OrdinalIgnoreCase)
-        || key.Equals("pageSize", StringComparison.OrdinalIgnoreCase);
+        || key.Equals("pageSize", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("microserviceId", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("MicroserviceId", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("dataTableInstance", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryConvertJsonElementToQueryValue(JsonElement value, out dynamic? converted)
+    {
+        converted = value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Number when value.TryGetInt64(out var l) => l,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null,
+            JsonValueKind.Object => TryExtractScalarFromJsonObject(value),
+            JsonValueKind.Array => value.GetRawText(),
+            _ => value.GetRawText()
+        };
+
+        return converted is not null || value.ValueKind is JsonValueKind.False;
+    }
+
+    private static string? TryExtractScalarFromJsonObject(JsonElement value)
+    {
+        foreach (var propertyName in new[] { "id", "Id", "value", "Value", "key", "Key" })
+        {
+            if (!value.TryGetProperty(propertyName, out var property))
+            {
+                continue;
+            }
+
+            if (property.ValueKind == JsonValueKind.String)
+            {
+                return property.GetString();
+            }
+
+            if (property.ValueKind == JsonValueKind.Number && property.TryGetInt64(out var number))
+            {
+                return number.ToString();
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsNonEmptyQueryValue(dynamic? value) =>
+        value switch
+        {
+            null => false,
+            string stringValue => !string.IsNullOrWhiteSpace(stringValue),
+            _ => true
+        };
+
+    private static string? TryExtractSearchQuery(Dictionary<string, dynamic> parameters)
+    {
+        if (parameters.Remove("q", out var qValue) || parameters.Remove("Q", out qValue))
+        {
+            var q = qValue?.ToString();
+
+            return string.IsNullOrWhiteSpace(q) ? null : q;
+        }
+
+        return null;
+    }
 
     private static int? TryReadTotalCount(string responseJson)
     {

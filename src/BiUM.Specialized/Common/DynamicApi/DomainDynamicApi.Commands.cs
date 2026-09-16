@@ -7,6 +7,7 @@ namespace BiUM.Specialized.Common.DynamicApi;
 public record SaveDomainDynamicApiCommand : BaseCommandDto
 {
     public Guid ApplicationId { get; set; }
+    public Guid TenantId { get; set; }
     public Guid MicroserviceId { get; set; }
     public IReadOnlyList<BaseEntityTranslationDto>? NameTr { get; set; }
     public required string Code { get; set; }

@@ -69,6 +69,16 @@ Hata kodu (yetki yok): `crud_definition_access_denied`.
 - HTTP: `BiUM.Specialized/Common/API/CrudController.cs`
 - InMemory runtime testleri: `tests/BiUM.Tests/Crud/CrudRuntimeInMemoryTests.cs` (yayın yok / partial bulunamadı mesaj kodları; SQL pipeline InMemory’de çalışmaz)
 
-## 8. AI ajanları için
+## 8. Sample (Test.API) — CRUD + Dynamic API
+
+| Endpoint | Açıklama |
+|----------|----------|
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesCrud` | `sample-notes` CRUD tanımı + publish (DDL) |
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesDynamicApi` | `ctx.Entity(schema, SAMPLE_NOTES)` ile liste Dynamic API |
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesCrudAndDynamicApi` | CRUD + Dynamic API + 2 seed satır |
+
+Sabitler: `sample/Test.Infrastructure/Crud/SampleCrudConstants.cs`. Configuration katalog callback’i sample’da no-op: `SampleCrudService` (`SaveCrudServicesAsync` override). **Correlation yoksa** `SampleCrudContextHelper.Ensure` sample `ApplicationId` / `TenantId` ile correlation doldurur; aksi halde CRUD `TenantId = Empty` kalır ve Dynamic API publish `dynamic_api_crud_table_not_found` verir. Dynamic API tarafı: [Agents.DynamicApi.md](Agents.DynamicApi.md) §Sample. REST örnekleri: `sample/http-examples.http`.
+
+## 9. AI ajanları için
 
 Bu belge değiştiğinde ürün tarafında davranış eşleşmesi gerekiyorsa host servislerindeki policy/filtreler gözden geçirilmelidir.

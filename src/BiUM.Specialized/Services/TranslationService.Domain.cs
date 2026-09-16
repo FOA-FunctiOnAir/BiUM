@@ -7,6 +7,7 @@ using BiUM.Specialized.Database;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,6 +62,18 @@ public sealed partial class TranslationService
 
             var translations = command.Translations ?? [];
 
+            var idsToFetch = translations
+                .Where(t => t._rowStatus is RowStatuses.Edited or RowStatuses.Deleted)
+                .Select(t => t.Id)
+                .Distinct()
+                .ToList();
+
+            var prefetched = idsToFetch.Count > 0
+                ? await _baseContext.DomainTranslationDetails
+                    .Where(d => idsToFetch.Contains(d.Id))
+                    .ToDictionaryAsync(d => d.Id, cancellationToken)
+                : new Dictionary<Guid, DomainTranslationDetail>();
+
             foreach (var domainTranslationDetail in translations)
             {
                 switch (domainTranslationDetail._rowStatus)
@@ -81,9 +94,7 @@ public sealed partial class TranslationService
 
                     case RowStatuses.Edited:
                         {
-                            var existingDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
-
-                            if (existingDomainTranslationDetail is null)
+                            if (!prefetched.TryGetValue(domainTranslationDetail.Id, out var existingDomainTranslationDetail))
                             {
                                 break;
                             }
@@ -98,14 +109,12 @@ public sealed partial class TranslationService
 
                     case RowStatuses.Deleted:
                         {
-                            var newDomainTranslationDetail = await _baseContext.DomainTranslationDetails.FirstOrDefaultAsync(f => f.Id == domainTranslationDetail.Id, cancellationToken);
-
-                            if (newDomainTranslationDetail is null)
+                            if (!prefetched.TryGetValue(domainTranslationDetail.Id, out var toDelete))
                             {
                                 break;
                             }
 
-                            _baseContext.DomainTranslationDetails.Remove(newDomainTranslationDetail);
+                            _baseContext.DomainTranslationDetails.Remove(toDelete);
 
                             break;
                         }
@@ -116,6 +125,8 @@ public sealed partial class TranslationService
         }
 
         await _baseContext.SaveChangesAsync(cancellationToken);
+
+        await InvalidateTranslationCacheAsync(command.ApplicationId, command.Code);
 
         return response;
     }
@@ -186,31 +197,112 @@ public sealed partial class TranslationService
 
     private async Task<DomainTranslation?> GetTranslation(string code, CancellationToken cancellationToken)
     {
+        var result = await GetTranslationFromCacheOrDbAsync(code, _correlationContext.ApplicationId, cancellationToken);
+
+        if (result is not null)
+        {
+            return result;
+        }
+
+        if (_correlationContext.ApplicationId == Ids.Application.BiDynamic.Id)
+        {
+            return null;
+        }
+
+        return await GetTranslationFromCacheOrDbAsync(code, Ids.Application.BiDynamic.Id, cancellationToken);
+    }
+
+    private async Task<DomainTranslation?> GetTranslationFromCacheOrDbAsync(string code, Guid applicationId, CancellationToken cancellationToken)
+    {
+        var cacheKey = $"bium:translation:{_biAppOptions.Domain}:{applicationId}:{_correlationContext.LanguageId}:{code}";
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var l1 = await _inMemoryClient.GetAsync<DomainTranslation>(cacheKey);
+
+                if (l1.Value is not null)
+                {
+                    return l1.Value;
+                }
+            }
+            catch { }
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var l2 = await _redisClient.GetAsync<DomainTranslation>(cacheKey);
+
+                if (l2.Value is not null)
+                {
+                    if (_inMemoryClient is not null)
+                    {
+                        try { await _inMemoryClient.AddAsync(cacheKey, l2.Value, _translationCacheL1Ttl); } catch { }
+                    }
+
+                    return l2.Value;
+                }
+            }
+            catch { }
+        }
+
         var translation = await _baseContext.DomainTranslations
             .AsNoTracking()
             .Include(dt => dt.DomainTranslationDetails.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
-            .Where(x => x.Code.Equals(code) && x.ApplicationId == _correlationContext.ApplicationId)
+            .Where(x => x.Code.Equals(code) && x.ApplicationId == applicationId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (translation is null || translation.DomainTranslationDetails.Count == 0)
         {
-            if (_correlationContext.ApplicationId == Ids.Application.BiDynamic.Id)
-            {
-                return null;
-            }
+            return null;
+        }
 
-            translation = await _baseContext.DomainTranslations
-                .AsNoTracking()
-                .Include(dt => dt.DomainTranslationDetails.Where(dtd => dtd.LanguageId == _correlationContext.LanguageId))
-                .Where(x => x.Code.Equals(code) && x.ApplicationId == Ids.Application.BiDynamic.Id)
-                .FirstOrDefaultAsync(cancellationToken);
+        if (_redisClient is not null)
+        {
+            try { await _redisClient.AddAsync(cacheKey, translation, _translationCacheL2Ttl); } catch { }
+        }
 
-            if (translation is null || translation.DomainTranslationDetails.Count == 0)
-            {
-                return null;
-            }
+        if (_inMemoryClient is not null)
+        {
+            try { await _inMemoryClient.AddAsync(cacheKey, translation, _translationCacheL1Ttl); } catch { }
         }
 
         return translation;
+    }
+
+    private async Task InvalidateTranslationCacheAsync(Guid applicationId, string code)
+    {
+        var pattern = $"bium:translation:{_biAppOptions.Domain}:{applicationId}:*:{code}";
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var keys = await _redisClient.ScanKeysAsync(pattern);
+
+                foreach (var key in keys)
+                {
+                    try { await _redisClient.RemoveAsync(key); } catch { }
+                }
+            }
+            catch { }
+        }
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var keys = await _inMemoryClient.ScanKeysAsync(pattern);
+
+                foreach (var key in keys)
+                {
+                    try { await _inMemoryClient.RemoveAsync(key); } catch { }
+                }
+            }
+            catch { }
+        }
     }
 }

@@ -41,6 +41,7 @@ internal sealed class CorrelationContextExtractorMiddleware
             if (correlationContext is not null)
             {
                 correlationContextAccessor.CorrelationContext = correlationContext;
+                context.Items[CorrelationContextHttpItems.PassthroughHeader] = headerValue;
             }
         }
         catch (Exception ex)

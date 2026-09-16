@@ -16,7 +16,11 @@ public interface IDynamicApiExecutionContext
 
     CorrelationContext? Correlation { get; }
 
-    string ConnectionString { get; }
+    IDynamicApiHttp Http { get; }
 
-    string DatabaseType { get; }
+    IDynamicApiCache Cache { get; }
+
+    IDynamicApiMemoryCache MemoryCache { get; }
+
+    IDynamicApiEvents Events { get; }
 }

@@ -1,5 +1,6 @@
 using BiUM.Contract.Models.Api;
 using BiUM.Core.Authorization;
+using BiUM.Core.Constants;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.DynamicApi;
@@ -90,6 +91,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
                 {
                     var newSession = Guid.NewGuid();
                     _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+                    context.HttpContext.Items.Remove(CorrelationContextHttpItems.PassthroughHeader);
                     context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
                     localOrchestration = true;
                 }
@@ -108,6 +110,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
                 {
                     var newSession = Guid.NewGuid();
                     _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+                    context.HttpContext.Items.Remove(CorrelationContextHttpItems.PassthroughHeader);
                     context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
                     localOrchestration = true;
                 }
@@ -118,6 +121,7 @@ public sealed class CompensatableApiActionFilter : IAsyncActionFilter
         {
             var newSession = Guid.NewGuid();
             _correlationContextAccessor.CorrelationContext = ctx.WithCompensationSessionId(newSession);
+            context.HttpContext.Items.Remove(CorrelationContextHttpItems.PassthroughHeader);
             context.HttpContext.Items[CompensationSessionIdItemsKey] = newSession;
             localOrchestration = true;
         }

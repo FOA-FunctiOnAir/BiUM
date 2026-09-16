@@ -46,6 +46,7 @@ graph TD
 - [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md) — **Entity / column / DTO naming**: `BaseEntity.Active` only (no duplicate `IsActive`), boolean and `DateTime` naming (no `IS_` / `Utc` suffixes), translation tables with `Column` (no `TranslationCode` on parent). **Read this before adding or refactoring domain models.**
 - [Agents.Crud.md](Agents.Crud.md) — `DomainCrud` metadata vs runtime CRUD, tenant rules, `CrudController`.
 - [Agents.DynamicApi.md](Agents.DynamicApi.md) — `DomainDynamicApi` metadata vs runtime handler, Roslyn compile, `DynamicApiController`.
+- [Agents.PlatformIntegration.md](Agents.PlatformIntegration.md) — `IPlatformActionExecutor`, event definitions, `ctx.Events`, scheduler legacy bridge.
 - [Agents.DynamicExporter.md](Agents.DynamicExporter.md) — async Excel export jobs, background worker, user-scoped requests.
 - [Agents.HttpClientService.md](Agents.HttpClientService.md) — `IHttpClientsService` / `HttpClientService`, URL resolution, correlation header.
 - [Agents.Compensation.md](Agents.Compensation.md) — compensation session, snapshots, `CompensatableApi` / `CompensatableApiActionFilter`, `CompensationSessionFinalized` event.

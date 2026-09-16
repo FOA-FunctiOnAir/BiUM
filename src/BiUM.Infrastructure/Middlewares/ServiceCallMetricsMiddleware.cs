@@ -75,12 +75,24 @@ public class ServiceCallMetricsMiddleware
                     Success = isSuccess
                 };
 
-                await _rabbitMQClient.PublishAsync(serviceCalledEvent);
+                _ = SafePublishAsync(_rabbitMQClient.PublishAsync(serviceCalledEvent));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to publish ServiceCalledEvent for {Path}", context.Request.Path);
+                _logger.LogError(ex, "Failed to build ServiceCalledEvent for {Path}", context.Request.Path);
             }
+        }
+    }
+
+    private async Task SafePublishAsync(Task publishTask)
+    {
+        try
+        {
+            await publishTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Background publish failed for ServiceCalledEvent");
         }
     }
 

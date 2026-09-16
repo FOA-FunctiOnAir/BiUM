@@ -36,6 +36,7 @@ public class TestDynamicApiController : ApiControllerBase
             SampleDynamicApiConstants.CurrencyListCode,
             "Currency list (simple)",
             SampleDynamicApiHandlerSources.CurrencyList,
+            Ids.Parameter.HttpType.Values.Get,
             cancellationToken);
 
     [HttpPost]
@@ -45,7 +46,51 @@ public class TestDynamicApiController : ApiControllerBase
             SampleDynamicApiConstants.CurrencyListPagedCode,
             "Currency list (manual paging)",
             SampleDynamicApiHandlerSources.CurrencyListPaged,
+            Ids.Parameter.HttpType.Values.Get,
             cancellationToken);
+
+    [HttpPost]
+    public async Task<ApiResponse<SetupCurrencyDynamicApisResult>> SetupMathDynamicApis(CancellationToken cancellationToken)
+    {
+        var response = new ApiResponse<SetupCurrencyDynamicApisResult>
+        {
+            Value = new SetupCurrencyDynamicApisResult()
+        };
+
+        var getMath = await SetupDynamicApiAsync(
+            SampleDynamicApiConstants.MathMultiplyDivideGetApiId,
+            SampleDynamicApiConstants.MathMultiplyDivideGetCode,
+            "Math multiply/divide (GET)",
+            SampleDynamicApiHandlerSources.MathMultiplyDivide,
+            Ids.Parameter.HttpType.Values.Get,
+            cancellationToken);
+
+        if (!getMath.Success)
+        {
+            response.AddMessage(getMath);
+            return response;
+        }
+
+        response.Value!.Apis.Add(getMath.Value!);
+
+        var postMath = await SetupDynamicApiAsync(
+            SampleDynamicApiConstants.MathMultiplyDividePostApiId,
+            SampleDynamicApiConstants.MathMultiplyDividePostCode,
+            "Math multiply/divide (POST)",
+            SampleDynamicApiHandlerSources.MathMultiplyDivide,
+            Ids.Parameter.HttpType.Values.Post,
+            cancellationToken);
+
+        if (!postMath.Success)
+        {
+            response.AddMessage(postMath);
+            return response;
+        }
+
+        response.Value.Apis.Add(postMath.Value!);
+
+        return response;
+    }
 
     [HttpPost]
     public async Task<ApiResponse<SetupCurrencyDynamicApisResult>> SetupCurrencyDynamicApis(CancellationToken cancellationToken)
@@ -60,6 +105,7 @@ public class TestDynamicApiController : ApiControllerBase
             SampleDynamicApiConstants.CurrencyGetCurrenciesCode,
             "Currency list (datagrid)",
             SampleDynamicApiHandlerSources.GetCurrencies,
+            Ids.Parameter.HttpType.Values.Get,
             cancellationToken);
 
         if (!getCurrencies.Success)
@@ -75,6 +121,7 @@ public class TestDynamicApiController : ApiControllerBase
             SampleDynamicApiConstants.CurrencyGetCurrencyCode,
             "Currency by id",
             SampleDynamicApiHandlerSources.GetCurrency,
+            Ids.Parameter.HttpType.Values.Get,
             cancellationToken);
 
         if (!getCurrency.Success)
@@ -125,6 +172,7 @@ public class TestDynamicApiController : ApiControllerBase
         string code,
         string displayName,
         string sourceCode,
+        Guid httpType,
         CancellationToken cancellationToken)
     {
         var save = await _dynamicApiService.SaveDomainDynamicApiAsync(new SaveDomainDynamicApiCommand
@@ -134,7 +182,7 @@ public class TestDynamicApiController : ApiControllerBase
             MicroserviceId = SampleDynamicApiConstants.MicroserviceId,
             Code = code,
             NameTr = [new BaseEntityTranslationDto { LanguageId = Ids.Language.English.Id, Translation = displayName }],
-            HttpType = Ids.Parameter.HttpType.Values.Get,
+            HttpType = httpType,
             ExecutionType = Ids.Parameter.DynamicApiExecutionType.Values.CSharpEf,
             RuntimePlatformType = SampleDynamicApiConstants.RuntimePlatformType,
             SourceCode = sourceCode,
@@ -157,13 +205,15 @@ public class TestDynamicApiController : ApiControllerBase
             return response;
         }
 
+        var httpSegment = httpType == Ids.Parameter.HttpType.Values.Post ? "Post" : "Get";
+
         return new ApiResponse<SetupCurrencyDynamicApiResult>
         {
             Value = new SetupCurrencyDynamicApiResult
             {
                 ApiId = apiId,
                 Code = code,
-                CallUrl = $"/api/base/DynamicApi/Get/{code}",
+                CallUrl = $"/api/base/DynamicApi/{httpSegment}/{code}",
                 Mirrors = code switch
                 {
                     SampleDynamicApiConstants.CurrencyGetCurrenciesCode => "TestCurrencyController.GetCurrencies / CurrencyRepository.GetCurrencies",

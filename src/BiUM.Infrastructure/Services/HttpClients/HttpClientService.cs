@@ -17,6 +17,7 @@ using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -54,6 +55,7 @@ public class HttpClientService : IHttpClientsService
     private static readonly TimeSpan Timeout = new(0, 5, 0);
     private static readonly TimeSpan ServiceInfoL1CacheTtl = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan ServiceInfoL2CacheTtl = TimeSpan.FromDays(1);
+    private static readonly ConcurrentDictionary<string, string> _urlClientKeyCache = new();
     // H-5: SemaphoreSlim sliding expiry — entries evicted after 30 min idle instead of accumulating forever.
     private static readonly TimeSpan ServiceInfoLockSlide = TimeSpan.FromMinutes(30);
     private static readonly MediaTypeHeaderValue JsonMediaTypeHeaderValue = new(JsonContentType);
@@ -771,17 +773,18 @@ public class HttpClientService : IHttpClientsService
 
     private HttpClient GetHttpClient(string url)
     {
-        var uri = new Uri(url);
+        var qi = url.IndexOf('?');
+        var baseUrl = qi >= 0 ? url[..qi] : url;
 
-        var host = uri.Host;
+        var key = _urlClientKeyCache.GetOrAdd(baseUrl, static u =>
+        {
+            var uri = new Uri(u);
+            var serviceKey = uri.AbsolutePath.Split('/').FirstOrDefault(p => p != "api");
 
-        var port = uri.Port;
-
-        var serviceKey = uri.AbsolutePath.Split('/').FirstOrDefault(p => p != "api");
-
-        var key = string.IsNullOrEmpty(serviceKey)
-            ? $"{host}:{port}"
-            : $"{host}:{port}/{serviceKey}";
+            return string.IsNullOrEmpty(serviceKey)
+                ? $"{uri.Host}:{uri.Port}"
+                : $"{uri.Host}:{uri.Port}/{serviceKey}";
+        });
 
         var httpClient = _httpClientFactory.CreateClient(key);
 
@@ -1058,6 +1061,18 @@ public class HttpClientService : IHttpClientsService
 
     private void TryAddCorrelationContext(HttpRequestMessage request)
     {
+        var httpContext = _httpContextAccessor.HttpContext;
+
+        if (httpContext is not null &&
+            httpContext.Items.TryGetValue(CorrelationContextHttpItems.PassthroughHeader, out var passthroughObj) &&
+            passthroughObj is string passthroughHeader &&
+            !string.IsNullOrEmpty(passthroughHeader))
+        {
+            request.Headers.TryAddWithoutValidation(HeaderKeys.CorrelationContext, passthroughHeader);
+
+            return;
+        }
+
         var correlationContext = _correlationContextAccessor.CorrelationContext;
 
         if (correlationContext is not null)
@@ -1066,21 +1081,7 @@ public class HttpClientService : IHttpClientsService
 
             var base64 = Convert.ToBase64String(bytes);
 
-            request.Headers.Add(HeaderKeys.CorrelationContext, base64);
-
-            return;
-        }
-
-        var httpContext = _httpContextAccessor.HttpContext;
-
-        if (httpContext is not null)
-        {
-            var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
-
-            if (!string.IsNullOrEmpty(correlationContextHeader))
-            {
-                request.Headers.Add(HeaderKeys.CorrelationContext, correlationContextHeader);
-            }
+            request.Headers.TryAddWithoutValidation(HeaderKeys.CorrelationContext, base64);
         }
     }
 

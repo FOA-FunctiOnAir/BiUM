@@ -13,7 +13,7 @@ Bu belge, **`CorrelationContext`** modelinin alanları, HTTP ve mesajlaşma üze
 ## 2. HTTP header
 
 - Anahtar: **`HeaderKeys.CorrelationContext`** → `x-correlation-context` (`BiUM.Core/Constants/HeaderKeys.cs`).
-- **`CorrelationContextExtractorMiddleware`** (`BiUM.Infrastructure/Middlewares/CorrelationContextExtractorMiddleware.cs`): Base64 gövde → `ICorrelationContextSerializer.Deserialize` → `ICorrelationContextAccessor.CorrelationContext`. Bozuk header’da log + bağlam atlanır.
+- **`CorrelationContextExtractorMiddleware`** (`BiUM.Infrastructure/Middlewares/CorrelationContextExtractorMiddleware.cs`): Base64 gövde → `ICorrelationContextSerializer.Deserialize` → `ICorrelationContextAccessor.CorrelationContext`; gelen ham header **`HttpContext.Items[CorrelationContextHttpItems.PassthroughHeader]`** içine yazılır (outbound passthrough için). Bozuk header’da log + bağlam atlanır.
 
 ### 2b. Gateway → istemci yanıt header’ları
 

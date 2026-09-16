@@ -34,12 +34,18 @@ public partial class DynamicApiService
         var cacheKey = BuildCacheKey(code, version.Version);
         var handler = _runtimeCache.GetOrLoad(cacheKey, version.CompiledAssembly, version.EntryPointTypeName);
 
+        var dynamicApiId = version.DynamicApiId;
         var context = new DynamicApiExecutionContext(
             DbContext,
             parameters,
             pageStart,
             pageSize,
             CorrelationContext,
+            dynamicApiId,
+            new DynamicApiHttp(_httpClientsService),
+            new DynamicApiCache(dynamicApiId, _redisClient),
+            new DynamicApiMemoryCache(dynamicApiId, _memoryCache),
+            new DynamicApiEvents(_eventPublisher),
             DbContext.Database.GetConnectionString() ?? string.Empty,
             _dbType);
 

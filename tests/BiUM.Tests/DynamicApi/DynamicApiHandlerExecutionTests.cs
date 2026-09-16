@@ -26,14 +26,10 @@ public class DynamicApiHandlerExecutionTests
         compile.Success.Should().BeTrue();
 
         var handler = LoadHandler(compile);
-        var ctx = new DynamicApiExecutionContext(
+        var ctx = DynamicApiExecutionContextTestHelper.Create(
             Mock.Of<IDbContext>(),
-            new Dictionary<string, object?>(),
             pageStart: 5,
-            pageSize: 10,
-            correlation: null,
-            connectionString: "Data Source=:memory:",
-            databaseType: DynamicApiSchemaRules.DbTypePostgresql);
+            pageSize: 10);
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 
@@ -58,14 +54,10 @@ public class DynamicApiHandlerExecutionTests
         compile.Success.Should().BeTrue(compile.Error);
 
         var handler = LoadHandler(compile);
-        var ctx = new DynamicApiExecutionContext(
+        var ctx = DynamicApiExecutionContextTestHelper.Create(
             Mock.Of<IDbContext>(),
-            new Dictionary<string, object?>(),
             pageStart: 10,
-            pageSize: 10,
-            correlation: null,
-            connectionString: "Data Source=:memory:",
-            databaseType: DynamicApiSchemaRules.DbTypePostgresql);
+            pageSize: 10);
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 
@@ -89,14 +81,7 @@ public class DynamicApiHandlerExecutionTests
         compile.Success.Should().BeTrue();
 
         var handler = LoadHandler(compile);
-        var ctx = new DynamicApiExecutionContext(
-            Mock.Of<IDbContext>(),
-            new Dictionary<string, object?>(),
-            null,
-            null,
-            null,
-            "Data Source=:memory:",
-            DynamicApiSchemaRules.DbTypePostgresql);
+        var ctx = DynamicApiExecutionContextTestHelper.Create(Mock.Of<IDbContext>());
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 
@@ -126,14 +111,7 @@ public class DynamicApiHandlerExecutionTests
         compile.Success.Should().BeTrue(compile.Error);
 
         var handler = LoadHandler(compile);
-        var ctx = new DynamicApiExecutionContext(
-            db,
-            new Dictionary<string, object?>(),
-            null,
-            null,
-            null,
-            "Data Source=:memory:",
-            DynamicApiSchemaRules.DbTypePostgresql);
+        var ctx = DynamicApiExecutionContextTestHelper.Create(db);
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 

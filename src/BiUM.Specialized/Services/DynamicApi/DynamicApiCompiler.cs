@@ -1,4 +1,4 @@
-using BiUM.Contract.Models.Api;
+using BiUM.Infrastructure.Common.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace BiUM.Specialized.Services.DynamicApi;
 
@@ -155,19 +154,19 @@ public static class DynamicApiCompiler
 
     private static IEnumerable<MetadataReference> CollectReferences(DynamicApiCompileRequest request)
     {
-        var assemblies = new HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies())
+        var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") is string trustedPlatformAssemblies)
         {
-            typeof(object).Assembly,
-            typeof(Task).Assembly,
-            typeof(ApiResponse).Assembly,
-            typeof(IDynamicApiHandler).Assembly,
-            typeof(Microsoft.EntityFrameworkCore.DbContext).Assembly,
-            typeof(System.Linq.Enumerable).Assembly,
-            typeof(DynamicApiDbContextOptions).Assembly,
-            typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute).Assembly,
-            typeof(Microsoft.EntityFrameworkCore.RelationalEntityTypeBuilderExtensions).Assembly,
-            typeof(Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions).Assembly
-        };
+            foreach (var path in trustedPlatformAssemblies.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                referencePaths.Add(path);
+            }
+        }
+
+        var assemblies = new HashSet<Assembly>();
+        AddAssemblyGraph(typeof(IDynamicApiHandler).Assembly, assemblies);
+        AddAssemblyGraph(typeof(DomainDynamicApi).Assembly, assemblies);
 
         if (!string.IsNullOrWhiteSpace(request.DomainDbContextTypeFullName))
         {
@@ -187,7 +186,12 @@ public static class DynamicApiCompiler
                 continue;
             }
 
-            yield return MetadataReference.CreateFromFile(assembly.Location);
+            referencePaths.Add(assembly.Location);
+        }
+
+        foreach (var path in referencePaths)
+        {
+            yield return MetadataReference.CreateFromFile(path);
         }
     }
 

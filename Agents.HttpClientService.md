@@ -39,8 +39,11 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 
 `TryAddCorrelationContext`:
 
-1. **`ICorrelationContextAccessor.CorrelationContext` doluysa** önce bu değer serileştirilip outbound header olarak eklenir (istek içinde güncellenen `CompensationSessionId` dahil tüm alanlar downstream’e böyle gider).
-2. Accessor boşsa, gelen HTTP isteğindeki `CorrelationContext` header’ı varsa aynen outbound’a kopyalanır.
+1. **`CorrelationContextHttpItems.PassthroughHeader`** (`HttpContext.Items`) doluysa — extractor middleware gelen header’ı buraya yazar; servis bağlamı yerelde değiştirilmediyse — outbound’a **aynı Base64 blob** kopyalanır (yeniden MemoryPack/Brotli yok).
+2. Passthrough yoksa ve **`ICorrelationContextAccessor.CorrelationContext` doluysa** accessor serileştirilir (ör. telafi oturumu eklendi, Gateway zenginleştirdi).
+3. **`CompensatableApiActionFilter`** bağlamı güncellediğinde passthrough item silinir; sonraki hop serialize eder.
+
+gRPC **`CorrelationContextFilter`** aynı passthrough → serialize sırasını kullanır.
 
 Böylece zincirlenen çağrılarda tenant, kullanıcı ve telafi oturumu gibi alanlar korunur; orkestrasyon servisleri Gateway’e dönmeden doğrudan MS çağırsa bile güncel bağlam taşınır.
 

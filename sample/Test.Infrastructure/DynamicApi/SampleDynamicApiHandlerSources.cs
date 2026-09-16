@@ -69,4 +69,25 @@ public static class SampleDynamicApiHandlerSources
 
         return new ApiResponse { Value = currency };
         """;
+
+    public const string MathMultiplyDivide = """
+        if (!ctx.Parameters.TryGetValue("a", out var aRaw) || !double.TryParse(aRaw?.ToString(), out var a))
+        {
+            return new ApiResponse();
+        }
+
+        if (!ctx.Parameters.TryGetValue("b", out var bRaw) || !double.TryParse(bRaw?.ToString(), out var b))
+        {
+            return new ApiResponse();
+        }
+
+        return new ApiResponse
+        {
+            Value = new
+            {
+                multiply = a * b,
+                divide = b == 0 ? (double?)null : a / b
+            }
+        };
+        """;
 }

@@ -27,7 +27,9 @@ Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == Co
 
 ## 3. Arka plan işleme
 
-- `DynamicExportBackgroundService` (`IHostedService`): ~5 sn döngü; `ProcessPendingExportsAsync`, `ExpireOldExportsAsync`
+- `BiUMBackgroundJobHost` (`IHostedService`): kayıtlı `IBiUMBackgroundJob` örneklerini periyodik çalıştırır
+- `DynamicExportBiUMBackgroundJob` (varsayılan aralık ~10 sn): `ProcessPendingExportsAsync`, `ExpireOldExportsAsync`
+- Eski ad: `DynamicExportBackgroundService` (ayrı hosted service); yeni işler `BiUMBackgroundJobHost` üzerinden kaydedilir
 - `DynamicExporterService.Worker`: kaynak URL'den `pageStart`/`pageSize` ile sayfalar (`IHttpClientsService.GetContent` — ham JSON; typed `PaginatedApiResponse` deserialize yok); döngü `totalCount` dolana kadar devam eder (`pageStart` her sayfada alınan satır sayısı kadar artar); `MaxExportRows`, `MaxFetchPages`, `TotalJobTimeoutMinutes`
 - **`SaveExportRequest.sourceParameters`**: yalnızca kaynak list API'sinin query parametreleri (BiDynamic `requestMapping` + opsiyonel `q`). `microserviceId`, `dataTableInstance`, `pageStart`, `pageSize` kayda yazılmaz; routing için `sourceMicroserviceId` kullanılır. Worker filtreleri GET query string'e taşır (`componentType`, `q`, …); select alanı `{ id }` object ise scalar `id` olarak normalize edilir.
 - `DynamicExportExcelWriter`: OpenXML streaming xlsx; `ExtractRowsFromApiResponse` `value` dizisini okur
@@ -48,11 +50,11 @@ Görünürlük: `CreatedBy == CorrelationContext.User.Id` **ve** `TenantId == Co
 
 ## 5. DI
 
-`ConfigureSpecializedServices`: `IDynamicExporterService`, `DynamicExportBackgroundService`, `DynamicExporterOptions`.
+`ConfigureSpecializedServices`: `IDynamicExporterService`, `DynamicExportBiUMBackgroundJob`, `BiUMBackgroundJobHost`, `DynamicExporterOptions`.
 
 ## 6. Kod konumları
 
 - API: `DynamicExporterService.Api.cs`
-- Worker: `DynamicExporterService.Worker.cs`, `DynamicExportBackgroundService`
+- Worker: `DynamicExporterService.Worker.cs`, `DynamicExportBiUMBackgroundJob`, `BiUMBackgroundJobHost`
 - Excel: `DynamicExportExcelWriter.cs`
 - Controller: `DynamicExporterController.cs`

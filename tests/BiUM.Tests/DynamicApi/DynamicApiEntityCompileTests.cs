@@ -101,14 +101,10 @@ public class DynamicApiEntityCompileTests
         var cache = new DynamicApiRuntimeCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()));
         var handler = cache.GetOrLoad("test", compile.AssemblyBytes!, compile.EntryPointTypeName!);
 
-        var ctx = new DynamicApiExecutionContext(
+        var ctx = DynamicApiExecutionContextTestHelper.Create(
             Mock.Of<IDbContext>(),
-            new Dictionary<string, object?>(),
-            null,
-            null,
-            null,
-            connectionString,
-            DynamicApiSchemaRules.DbTypeSqlite);
+            connectionString: connectionString,
+            databaseType: DynamicApiSchemaRules.DbTypeSqlite);
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 
@@ -170,14 +166,10 @@ public class DynamicApiEntityCompileTests
         var cache = new DynamicApiRuntimeCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()));
         var handler = cache.GetOrLoad("deleted-filter", compile.AssemblyBytes!, compile.EntryPointTypeName!);
 
-        var ctx = new DynamicApiExecutionContext(
+        var ctx = DynamicApiExecutionContextTestHelper.Create(
             Mock.Of<IDbContext>(),
-            new Dictionary<string, object?>(),
-            null,
-            null,
-            null,
-            connectionString,
-            DynamicApiSchemaRules.DbTypeSqlite);
+            connectionString: connectionString,
+            databaseType: DynamicApiSchemaRules.DbTypeSqlite);
 
         var result = await handler.ExecuteAsync(ctx, CancellationToken.None);
 

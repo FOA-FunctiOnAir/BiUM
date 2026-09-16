@@ -12,13 +12,62 @@ namespace BiUM.Specialized.Services.Crud;
 
 public partial class CrudService
 {
+    private static readonly TimeSpan _compensationCacheL2Ttl = TimeSpan.FromDays(1);
+    private static readonly TimeSpan _compensationCacheL1Ttl = TimeSpan.FromMinutes(5);
+
     public async Task<bool> IsCrudMutationCompensatibleByCodeAsync(string code, CancellationToken cancellationToken)
     {
+        var cacheKey = $"bium:compensation:crud:{BiAppOptions.Domain}:{code}";
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var l1 = await _inMemoryClient.GetAsync<bool?>(cacheKey);
+
+                if (l1.Value is not null)
+                {
+                    return l1.Value.Value;
+                }
+            }
+            catch { }
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var l2 = await _redisClient.GetAsync<bool?>(cacheKey);
+
+                if (l2.Value is not null)
+                {
+                    if (_inMemoryClient is not null)
+                    {
+                        try { await _inMemoryClient.AddAsync<bool?>(cacheKey, l2.Value, _compensationCacheL1Ttl); } catch { }
+                    }
+
+                    return l2.Value.Value;
+                }
+            }
+            catch { }
+        }
+
         try
         {
             var version = await GetVersionByCodeAsync(code, cancellationToken);
+            var result = version.DomainCrud?.Compensatible == true;
 
-            return version.DomainCrud?.Compensatible == true;
+            if (_redisClient is not null)
+            {
+                try { await _redisClient.AddAsync<bool?>(cacheKey, result, _compensationCacheL2Ttl); } catch { }
+            }
+
+            if (_inMemoryClient is not null)
+            {
+                try { await _inMemoryClient.AddAsync<bool?>(cacheKey, result, _compensationCacheL1Ttl); } catch { }
+            }
+
+            return result;
         }
         catch
         {
@@ -26,7 +75,22 @@ public partial class CrudService
         }
     }
 
-    public async Task<ApiResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
+    internal async Task InvalidateCompensationCrudCacheAsync(string code)
+    {
+        var cacheKey = $"bium:compensation:crud:{BiAppOptions.Domain}:{code}";
+
+        if (_redisClient is not null)
+        {
+            try { await _redisClient.RemoveAsync(cacheKey); } catch { }
+        }
+
+        if (_inMemoryClient is not null)
+        {
+            try { await _inMemoryClient.RemoveAsync(cacheKey); } catch { }
+        }
+    }
+
+    public virtual async Task<ApiResponse> SaveAsync(string code, Dictionary<string, object?> data, CancellationToken cancellationToken)
     {
         var (version, error) = await TryGetPublishedVersionAsync(code, cancellationToken);
 

@@ -3,8 +3,10 @@ using BiUM.Core.Common.Configs;
 using BiUM.Core.Compensation;
 using BiUM.Core.Database;
 using BiUM.Core.HttpClients;
+using BiUM.Core.PlatformIntegration;
 using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Services.HttpClients;
+using BiUM.Infrastructure.Services.PlatformIntegration;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Common.Mapper;
 using BiUM.Specialized.Common.MediatR;
@@ -12,15 +14,18 @@ using BiUM.Specialized.Compensation;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Interceptors;
 using BiUM.Specialized.Services;
+using BiUM.Specialized.Services.BackgroundJobs;
 using BiUM.Specialized.Services.Compensation;
 using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.DynamicApi;
 using BiUM.Specialized.Services.DynamicExporter;
+using BiUM.Specialized.Services.PlatformIntegration;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OpenTelemetry.Trace;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -64,9 +69,19 @@ public static partial class ApplicationExtensions
 
         builder.Services.AddMemoryCache();
         builder.Services.AddSingleton<DynamicApiRuntimeCache>();
+        builder.Services.AddScoped<IEventDefinitionProvider, HttpEventDefinitionProvider>();
+        builder.Services.AddScoped<IEventIntegrationMetricRecorder, HttpEventIntegrationMetricRecorder>();
+        builder.Services.AddScoped<IPlatformActionExecutor, PlatformActionExecutor>();
+        builder.Services.AddScoped<IDynamicApiEventPublisher, DynamicApiEventPublisher>();
         builder.Services.AddScoped<IDynamicApiService, DynamicApiService>();
         builder.Services.AddScoped<IDynamicExporterService, DynamicExporterService>();
-        builder.Services.AddHostedService<DynamicExportBackgroundService>();
+        builder.Services.AddScoped<DynamicExportBiUMBackgroundJob>();
+        builder.Services.AddSingleton(new BiUMBackgroundJobRegistration
+        {
+            JobType = typeof(DynamicExportBiUMBackgroundJob),
+            Interval = TimeSpan.FromSeconds(10)
+        });
+        builder.Services.AddHostedService<BiUMBackgroundJobHost>();
 
         builder.Services.AddScoped<ICrudService, CrudService>();
         builder.Services.AddScoped<ICompensationService, CompensationService>();

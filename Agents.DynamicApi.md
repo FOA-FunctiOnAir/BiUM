@@ -45,7 +45,12 @@ Bu uçlar BiUM `DomainDynamicApiController` üzerindedir; **BiApp.Configuration 
 ## 4. Runtime
 
 - `DynamicApiRuntimeCache` (`IMemoryCache`): `code` + versiyon anahtarı; collectible `AssemblyLoadContext`. `ConfigureSpecializedServices` içinde `AddMemoryCache()` bu cache için zorunludur.
-- `IDynamicApiExecutionContext`: `Db` (`IDbContext`), `Parameters`, `PageStart`, `PageSize`, `Correlation`, `ConnectionString`, `DatabaseType`
+- `IDynamicApiExecutionContext` — handler yalnızca **`ctx.*`** ile erişir; `ConnectionString` / `DatabaseType` handler yüzeyinde yok (platform `DynamicApiDbContextOptions.ConfigureForHandler` ile `ctx.Entity` factory'sine enjekte eder):
+  - `Db` (`IDbContext`), `Parameters`, `PageStart`, `PageSize`, `Correlation`
+  - `Http` — `IHttpClientsService` sarmalayıcısı (`CallService`, `Get`, `Post`, …)
+  - `Cache` — Redis (`IRedisClient`); anahtar `{DynamicApiId}-{key}` (tenant prefix yok); varsayılan TTL **1 gün**, üst sınır **1 gün**; Redis kapalıysa `dynamic_api_cache_redis_unavailable`
+  - `MemoryCache` — process `IMemoryCache`; aynı anahtar kuralı ve TTL
+  - `Events` — `PublishAsync(eventId)` / `PublishAsync(eventCode)` → `DynamicApiEventPublisher` → `IPlatformActionExecutor` ([Agents.PlatformIntegration.md](Agents.PlatformIntegration.md))
 - Handler dönüş tipi: `ApiResponse` veya `PaginatedApiResponse<T>` (ikisi de `ApiResponse` tabanı)
 - HTTP method eşleşmesi: tanımdaki `HttpType` ile route method uyuşmalı
 
@@ -106,10 +111,17 @@ Platform kataloğunda tanımlanır (repo seed değil); ardından `BiUM.Core.Cons
 - `DynamicExportRequestStatus`: Pending / Processing / Ready / Failed / Expired
 - `DynamicApiCompileStatus`: Draft / Success / Failed
 - `DynamicApiExecutionType`: CSharpEf
+- `ServiceParameterDirectionType`: In / Out (event parametre yönü; mevcut katalog GUID'leri)
+- `EventChannelType`: InternalRabbitMq / ExternalRabbitMq / ExternalHttpWebhook / Mqtt
+- `EventDirectionType`: Inbound / Outbound / Bidirectional
+- `EventCredentialType`: ExternalRabbitMq / Mqtt / WebhookHmac / WebhookApiKey
+- `EventActionType`: Service / PublishEvent / InvokeEvent
+- `SchedulerTriggerType`: Service / PublishEvent / InvokeEvent
+- `EventIntegrationStatusType`: Success / Failed / Skipped / Timeout
 - `Ids.Parameter.ServiceType.Values.DynamicApi` (mevcut sabit)
 - `Ids.Service.SaveDynamicApiServices` (Configuration callback servisi)
 
-**Publish — Configuration callback:** `DynamicApiService.SaveDynamicApiServicesAsync` `protected virtual`dır; yerel/sample ortamda BiApp.Configuration erişilemiyorsa türetilmiş servis bu adımı no-op yapabilir (`sample/Test.Infrastructure/DynamicApi/SampleDynamicApiService.cs`).
+**Publish — Configuration callback:** `DynamicApiService.SaveDynamicApiServicesAsync` `protected virtual`dır; yerel/sample ortamda BiApp.Configuration erişilemiyorsa türetilmiş servis bu adımı no-op yapabilir (`sample/Test.Infrastructure/DynamicApi/SampleDynamicApiService.cs`). Aynı örüntü CRUD için `CrudService.SaveCrudServicesAsync` (`SampleCrudService`).
 
 ## Sample (Test.API) — Currency Dynamic API
 
@@ -120,7 +132,11 @@ Platform kataloğunda tanımlanır (repo seed değil); ardından `BiUM.Core.Cons
 | `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApi` | Basit liste (`currency-list`) kaydet + publish |
 | `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApiPaged` | Manuel sayfalama (`currency-list-paged`) kaydet + publish |
 | `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApis` | Repository-style iki API kaydet + publish (idempotent) |
+| `POST /api/test/TestDynamicApi/SetupMathDynamicApis` | `a`/`b` çarpım-bölüm örneği GET + POST kaydet + publish |
 | `POST /api/test/TestDynamicApi/CreateCurrencyExportRequest` | Dynamic Export işi oluşturur (kaynak: `currency-get-currencies`) |
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesCrud` | CRUD tanımı `sample-notes` kaydet + publish (PostgreSQL DDL) |
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesDynamicApi` | CRUD tablosunu okuyan Dynamic API `sample-notes-list` kaydet + publish |
+| `POST /api/test/TestCrudDynamicApi/SetupSampleNotesCrudAndDynamicApi` | CRUD + Dynamic API + 2 örnek satır seed (tek çağrı) |
 
 Yayınlanan kodlar:
 
@@ -130,6 +146,14 @@ Yayınlanan kodlar:
 | `currency-list-paged` | Basit | Manuel `Skip`/`Take`, `PaginatedApiResponse` |
 | `currency-get-currencies` | Repository-style | `TestCurrencyController.GetCurrencies` / DataGrid + Excel export kaynağı |
 | `currency-get-currency` | Repository-style | `TestCurrencyController.GetCurrency` (query `id`) |
+| `math-multiply-divide-get` | Basit | Query `a`, `b` → `{ multiply, divide }` |
+| `math-multiply-divide-post` | Basit | Body `a`, `b` → `{ multiply, divide }` |
+
+**Math örneği:**
+
+`GET /api/base/DynamicApi/Get/math-multiply-divide-get?a=6&b=3` → `{ multiply: 18, divide: 2 }`
+
+`POST /api/base/DynamicApi/Post/math-multiply-divide-post` body `{ "a": 6, "b": 3 }`
 
 **Datagrid çağrısı** (Configuration servis kataloğunda bu code'a bağlı action):
 
@@ -139,11 +163,19 @@ Yayınlanan kodlar:
 
 1. `POST /api/test/TestDynamicApi/SetupCurrencyDynamicApis`
 2. `POST /api/test/TestDynamicApi/CreateCurrencyExportRequest` → `exportRequestId`, `downloadUrl`
-3. Arka plan (`DynamicExportBackgroundService`) sayfalı olarak Dynamic API'den veri çeker
+3. Arka plan (`BiUMBackgroundJobHost` → `DynamicExportBiUMBackgroundJob`, ~10 sn) sayfalı olarak Dynamic API'den veri çeker
 4. `GET /api/base/DynamicExporter/GetExportRequest?id={exportRequestId}` → `status=Ready`
 5. `GET /api/base/DynamicExporter/Download?id={exportRequestId}` → xlsx
 
-Handler kaynakları: `sample/Test.Infrastructure/DynamicApi/SampleDynamicApiHandlerSources.cs`. Publish normalizer + EF global filter uygulanır; handler'da cast/`!Deleted` yok.
+Handler kaynakları: `sample/Test.Infrastructure/DynamicApi/SampleDynamicApiHandlerSources.cs`, CRUD tablo örneği: `sample/Test.Infrastructure/Crud/SampleCrudHandlerSources.cs`. Publish normalizer + EF global filter uygulanır; handler'da cast/`!Deleted` yok.
+
+**REST Client örnekleri:** `sample/http-examples.http` (VS Code REST Client / benzeri eklenti ile `Test.API` üzerinde doğrudan çalıştırılabilir).
+
+**CRUD tablo örneği akışı:**
+
+1. `POST /api/test/TestCrudDynamicApi/SetupSampleNotesCrudAndDynamicApi` (correlation `ApplicationId` / `TenantId` sabitleriyle uyumlu olmalı; sample varsayılan tenant: `SampleCrudConstants.TenantId`)
+2. `GET /api/base/DynamicApi/Get/sample-notes-list` → CRUD `SAMPLE_NOTES` satırları
+3. İsteğe bağlı: `POST /api/base/Crud/Save/sample-notes` body `{ "Title": "…" }` ile yeni satır
 
 **Publish normalizer — `PaginatedApiResponse`:** Handler kaynağında `new PaginatedApiResponse(...)` yazılabilir; publish sırasında `PaginatedApiResponse<object>`'e çevrilir. İlk argüman `IList<object>` olmalıdır (ör. anonymous projection sonrası `items.Select(x => (object)x).ToList()`).
 

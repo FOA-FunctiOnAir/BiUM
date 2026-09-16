@@ -132,8 +132,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
-        await PublishEntityEventsAsync();
-        await PublishAuditLogEventsAsync();
+        _ = SafePublishAsync(PublishEntityEventsAsync());
+        _ = SafePublishAsync(PublishAuditLogEventsAsync());
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }

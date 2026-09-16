@@ -5,6 +5,16 @@ namespace BiUM.Specialized.Services.DynamicApi;
 
 public static class DynamicApiDbContextOptions
 {
+    public static void ConfigureForHandler(DbContextOptionsBuilder builder, IDynamicApiExecutionContext ctx)
+    {
+        if (ctx is not IDynamicApiRuntimeInternals runtime)
+        {
+            throw new InvalidOperationException("dynamic_api_invalid_context");
+        }
+
+        Configure(builder, runtime.DatabaseType, runtime.ConnectionString);
+    }
+
     public static void Configure(DbContextOptionsBuilder builder, string databaseType, string connectionString)
     {
         if (string.IsNullOrWhiteSpace(connectionString))

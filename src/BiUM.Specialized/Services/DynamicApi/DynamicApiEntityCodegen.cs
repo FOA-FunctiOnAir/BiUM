@@ -135,7 +135,7 @@ public static partial class DynamicApiEntityCodegen
                 public static DynamicTableDbContext Create(IDynamicApiExecutionContext ctx)
                 {
                     var builder = new DbContextOptionsBuilder<DynamicTableDbContext>();
-                    DynamicApiDbContextOptions.Configure(builder, ctx.DatabaseType, ctx.ConnectionString);
+                    DynamicApiDbContextOptions.ConfigureForHandler(builder, ctx);
                     return new DynamicTableDbContext(builder.Options);
                 }
             }

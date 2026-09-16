@@ -57,6 +57,7 @@ public partial class DynamicApiService
             {
                 Id = command.Id ?? GuidGenerator.New(),
                 ApplicationId = command.ApplicationId,
+                TenantId = command.TenantId != Guid.Empty ? command.TenantId : CorrelationContext.TenantId ?? Guid.Empty,
                 MicroserviceId = command.MicroserviceId,
                 Name = command.NameTr!.ToTranslationString(),
                 Code = command.Code.Trim(),
@@ -98,6 +99,16 @@ public partial class DynamicApiService
             domainDynamicApi.Compensatible = command.Compensatible;
             domainDynamicApi.CompileStatusType = Ids.Parameter.DynamicApiCompileStatus.Values.Draft;
             domainDynamicApi.CompileError = null;
+
+            if (domainDynamicApi.TenantId == Guid.Empty)
+            {
+                var resolvedTenant = command.TenantId != Guid.Empty ? command.TenantId : CorrelationContext.TenantId ?? Guid.Empty;
+
+                if (resolvedTenant != Guid.Empty)
+                {
+                    domainDynamicApi.TenantId = resolvedTenant;
+                }
+            }
 
             var paramIds = command.DynamicApiParameters
                 .Where(p => p._rowStatus is RowStatuses.Edited or RowStatuses.Deleted)
@@ -159,6 +170,8 @@ public partial class DynamicApiService
         }
 
         _ = await DbContext.SaveChangesAsync(cancellationToken);
+
+        await InvalidateCompensationDynamicApiCacheAsync(command.Code.Trim());
 
         return response;
     }
@@ -264,19 +277,84 @@ public partial class DynamicApiService
                 cancellationToken);
     }
 
+    private static readonly TimeSpan _dynamicApiCompensationCacheL2Ttl = TimeSpan.FromDays(1);
+    private static readonly TimeSpan _dynamicApiCompensationCacheL1Ttl = TimeSpan.FromMinutes(5);
+
     public async Task<bool> IsDynamicApiMutationCompensatibleByCodeAsync(string code, CancellationToken cancellationToken)
     {
+        var cacheKey = $"bium:compensation:dynamicapi:{BiAppOptions.Domain}:{code}";
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var l1 = await _inMemoryClient.GetAsync<bool?>(cacheKey);
+
+                if (l1.Value is not null)
+                {
+                    return l1.Value.Value;
+                }
+            }
+            catch { }
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var l2 = await _redisClient.GetAsync<bool?>(cacheKey);
+
+                if (l2.Value is not null)
+                {
+                    if (_inMemoryClient is not null)
+                    {
+                        try { await _inMemoryClient.AddAsync<bool?>(cacheKey, l2.Value, _dynamicApiCompensationCacheL1Ttl); } catch { }
+                    }
+
+                    return l2.Value.Value;
+                }
+            }
+            catch { }
+        }
+
         try
         {
             var definition = await DbContext.DomainDynamicApis
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Code == code, cancellationToken);
 
-            return definition?.Compensatible == true;
+            var result = definition?.Compensatible == true;
+
+            if (_redisClient is not null)
+            {
+                try { await _redisClient.AddAsync<bool?>(cacheKey, result, _dynamicApiCompensationCacheL2Ttl); } catch { }
+            }
+
+            if (_inMemoryClient is not null)
+            {
+                try { await _inMemoryClient.AddAsync<bool?>(cacheKey, result, _dynamicApiCompensationCacheL1Ttl); } catch { }
+            }
+
+            return result;
         }
         catch
         {
             return false;
+        }
+    }
+
+    private async Task InvalidateCompensationDynamicApiCacheAsync(string code)
+    {
+        var cacheKey = $"bium:compensation:dynamicapi:{BiAppOptions.Domain}:{code}";
+
+        if (_redisClient is not null)
+        {
+            try { await _redisClient.RemoveAsync(cacheKey); } catch { }
+        }
+
+        if (_inMemoryClient is not null)
+        {
+            try { await _inMemoryClient.RemoveAsync(cacheKey); } catch { }
         }
     }
 

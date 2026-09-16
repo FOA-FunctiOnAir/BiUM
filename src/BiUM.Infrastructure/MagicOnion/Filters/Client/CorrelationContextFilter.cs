@@ -34,26 +34,28 @@ internal sealed class CorrelationContextFilter : IClientFilter
             return next.Invoke(context);
         }
 
-        // Prefer in-memory accessor: it holds the most current context for this request
-        // (set by CorrelationContextMiddleware before any gRPC call), avoiding a redundant
-        // HTTP header serialize on the hot path when cache is warm.
-        var correlationContext = _correlationContextAccessor.CorrelationContext;
+        var httpContext = _httpContextAccessor.HttpContext;
 
-        if (correlationContext is not null)
+        if (httpContext is not null &&
+            httpContext.Items.TryGetValue(CorrelationContextHttpItems.PassthroughHeader, out var passthroughObj) &&
+            passthroughObj is string passthroughHeader &&
+            !string.IsNullOrEmpty(passthroughHeader))
         {
-            var bytes = _correlationContextSerializer.Serialize(correlationContext);
-
-            var base64 = Convert.ToBase64String(bytes);
-
-            headers.Add(HeaderKeys.CorrelationContext, base64);
+            headers.Add(HeaderKeys.CorrelationContext, passthroughHeader);
         }
         else
         {
-            // Fallback: read from HTTP request header (e.g. background jobs or
-            // calls made outside a CorrelationContextMiddleware pipeline).
-            var httpContext = _httpContextAccessor.HttpContext;
+            var correlationContext = _correlationContextAccessor.CorrelationContext;
 
-            if (httpContext is not null)
+            if (correlationContext is not null)
+            {
+                var bytes = _correlationContextSerializer.Serialize(correlationContext);
+
+                var base64 = Convert.ToBase64String(bytes);
+
+                headers.Add(HeaderKeys.CorrelationContext, base64);
+            }
+            else if (httpContext is not null)
             {
                 var correlationContextHeader = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
 

@@ -1,0 +1,79 @@
+using BiUM.Contract.Models.Api;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace BiUM.Specialized.Services.DynamicApi;
+
+public interface IDynamicApiHttp
+{
+    Task<ApiResponse> CallService(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> CallService<TResponse>(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PaginatedApiResponse<TResponse>> CallPaginatedService<TResponse>(
+        Guid serviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> Get<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<string>> GetContent(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse> Post(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> Post<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        CancellationToken cancellationToken = default);
+}

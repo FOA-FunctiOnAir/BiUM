@@ -12,7 +12,9 @@ namespace BiUM.Specialized.Common;
 
 public abstract partial class SpecializedBase
 {
-    protected CorrelationContext CorrelationContext { get; }
+    private readonly ICorrelationContextProvider _correlationContextProvider;
+
+    protected CorrelationContext CorrelationContext => _correlationContextProvider.Get() ?? CorrelationContext.Empty;
     protected ITranslationService TranslationService { get; }
     protected ILogger<SpecializedBase> Logger { get; }
     protected IMapper Mapper { get; }
@@ -21,9 +23,7 @@ public abstract partial class SpecializedBase
 
     protected SpecializedBase(IServiceProvider serviceProvider)
     {
-        var correlationContextProvider = serviceProvider.GetRequiredService<ICorrelationContextProvider>();
-
-        CorrelationContext = correlationContextProvider.Get() ?? CorrelationContext.Empty;
+        _correlationContextProvider = serviceProvider.GetRequiredService<ICorrelationContextProvider>();
         TranslationService = serviceProvider.GetRequiredService<ITranslationService>();
         Logger = serviceProvider.GetRequiredService<ILogger<SpecializedBase>>();
         Mapper = serviceProvider.GetRequiredService<IMapper>();

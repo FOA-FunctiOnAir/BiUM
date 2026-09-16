@@ -1,0 +1,64 @@
+@baseUrl = http://localhost:5000
+@applicationId = aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+@tenantId = cccccccc-dddd-eeee-ffff-000000000001
+
+### Math Dynamic APIs — setup (GET + POST)
+POST {{baseUrl}}/api/test/TestDynamicApi/SetupMathDynamicApis
+
+### Math multiply/divide (GET)
+GET {{baseUrl}}/api/base/DynamicApi/Get/math-multiply-divide-get?a=6&b=3
+
+### Math multiply/divide (POST)
+POST {{baseUrl}}/api/base/DynamicApi/Post/math-multiply-divide-post
+Content-Type: application/json
+
+{
+  "a": 6,
+  "b": 3
+}
+
+### Currency Dynamic APIs — setup (datagrid + by id)
+POST {{baseUrl}}/api/test/TestDynamicApi/SetupCurrencyDynamicApis
+
+### Currency list (datagrid)
+GET {{baseUrl}}/api/base/DynamicApi/Get/currency-get-currencies?pageStart=0&pageSize=10
+
+### Currency by id (replace with a real currency id from your DB)
+GET {{baseUrl}}/api/base/DynamicApi/Get/currency-get-currency?id=00000000-0000-0000-0000-000000000001
+
+### Simple currency list
+POST {{baseUrl}}/api/test/TestDynamicApi/SetupCurrencyDynamicApi
+
+GET {{baseUrl}}/api/base/DynamicApi/Get/currency-list
+
+### CRUD + Dynamic API pipeline — single setup (PostgreSQL required)
+# Correlation header yoksa endpoint sample ApplicationId/TenantId ile correlation otomatik doldurur.
+POST {{baseUrl}}/api/test/TestCrudDynamicApi/SetupSampleNotesCrudAndDynamicApi
+
+### Read CRUD table via Dynamic API
+GET {{baseUrl}}/api/base/DynamicApi/Get/sample-notes-list
+
+### Add a note via CRUD runtime
+POST {{baseUrl}}/api/base/Crud/Save/sample-notes
+Content-Type: application/json
+
+{
+  "Title": "Note from http-examples.http"
+}
+
+### CRUD list
+POST {{baseUrl}}/api/base/Crud/GetList/sample-notes
+Content-Type: application/json
+
+{}
+
+### Dynamic Export — setup currencies first, then create export job
+POST {{baseUrl}}/api/test/TestDynamicApi/SetupCurrencyDynamicApis
+
+POST {{baseUrl}}/api/test/TestDynamicApi/CreateCurrencyExportRequest
+
+### Poll export status (replace exportRequestId from previous response)
+GET {{baseUrl}}/api/base/DynamicExporter/GetExportRequest?id=00000000-0000-0000-0000-000000000001
+
+### Download export (when status is Ready)
+GET {{baseUrl}}/api/base/DynamicExporter/Download?id=00000000-0000-0000-0000-000000000001

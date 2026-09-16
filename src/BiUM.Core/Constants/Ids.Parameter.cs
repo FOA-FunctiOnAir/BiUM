@@ -102,5 +102,91 @@ public partial class Ids
                 public static Guid CustomHeader = Guid.Parse("29232346-baa2-4f06-9592-923fe3b706b7");
             }
         }
+
+        public static class ServiceParameterDirectionType
+        {
+            public static Guid Id = Guid.Parse("80497b41-35ff-5518-b3cc-72e7358ad06d");
+
+            public static class Values
+            {
+                public static Guid In = Guid.Parse("a1bf7312-050c-5140-9fa5-30f27285915f");
+                public static Guid Out = Guid.Parse("e8519f76-e7ec-54fb-aeed-c8d1cec2f915");
+            }
+        }
+
+        public static class EventChannelType
+        {
+            public static Guid Id = Guid.Parse("01a09750-6218-76b0-a12c-e17dd174eaf9");
+
+            public static class Values
+            {
+                public static Guid InternalRabbitMq = Guid.Parse("01a09750-6914-7a07-a4d9-6008671b680e");
+                public static Guid ExternalRabbitMq = Guid.Parse("01a09750-67fc-7ac0-8109-3d14d3fba54a");
+                public static Guid ExternalHttpWebhook = Guid.Parse("01a09750-693e-774a-9666-a191d6c5b400");
+                public static Guid Mqtt = Guid.Parse("01a09750-6978-72cc-be4d-ae9b12f22a83");
+            }
+        }
+
+        public static class EventDirectionType
+        {
+            public static Guid Id = Guid.Parse("01a09752-bee1-79a9-9eae-a45dfa28211b");
+
+            public static class Values
+            {
+                public static Guid Inbound = Guid.Parse("01a09752-bf04-7117-a613-591df07a2087");
+                public static Guid Outbound = Guid.Parse("01a09752-bf1f-7d0d-9b0f-cbd7cb33608e");
+                public static Guid Bidirectional = Guid.Parse("01a09752-bf25-74a1-a81e-2c3000d980d5");
+            }
+        }
+
+        public static class EventCredentialType
+        {
+            public static Guid Id = Guid.Parse("01a09755-515f-71e4-9e33-8407f292a20e");
+
+            public static class Values
+            {
+                public static Guid ExternalRabbitMq = Guid.Parse("01a09755-51cf-7f95-b560-14cb8799e3fe");
+                public static Guid Mqtt = Guid.Parse("01a09755-51d8-77c5-a452-8c95ec2f6c87");
+                public static Guid WebhookHmac = Guid.Parse("01a09755-51ec-711a-87c8-23f2e3631216");
+                public static Guid WebhookApiKey = Guid.Parse("01a09755-5211-708b-aa0d-6fa2ef6c3f3b");
+            }
+        }
+
+        public static class EventActionType
+        {
+            public static Guid Id = Guid.Parse("01a09757-4f7b-7d17-b714-2cc5c1d4c3a4");
+
+            public static class Values
+            {
+                public static Guid Service = Guid.Parse("01a09757-4fe8-734e-adc6-11acd7f126f6");
+                public static Guid PublishEvent = Guid.Parse("01a09757-4fed-739d-b232-912b75532774");
+                public static Guid InvokeEvent = Guid.Parse("01a09757-4ff3-7dc4-87e4-2903980c6456");
+            }
+        }
+
+        public static class SchedulerTriggerType
+        {
+            public static Guid Id = Guid.Parse("01a09759-4f73-73e3-8235-192352cafb60");
+
+            public static class Values
+            {
+                public static Guid Service = Guid.Parse("01a09759-500f-7baf-b87f-6bd2ee4bc5ae");
+                public static Guid PublishEvent = Guid.Parse("01a09759-5017-7d6c-8d25-c3bd223311eb");
+                public static Guid InvokeEvent = Guid.Parse("01a09759-502e-7889-bd22-04ff7f11a25d");
+            }
+        }
+
+        public static class EventIntegrationStatusType
+        {
+            public static Guid Id = Guid.Parse("01a0975d-079c-716e-9d3d-db978229cf43");
+
+            public static class Values
+            {
+                public static Guid Success = Guid.Parse("01a0975d-0826-7091-ba3b-ef7ea0914035");
+                public static Guid Failed = Guid.Parse("01a0975d-0831-7ccc-a2d5-4d13c1cbfb10");
+                public static Guid Skipped = Guid.Parse("01a0975d-0853-7767-b418-5024af8e74d6");
+                public static Guid Timeout = Guid.Parse("01a0975d-0858-7a20-a353-fd6082c95019");
+            }
+        }
     }
 }

@@ -468,6 +468,8 @@ public partial class CrudService
 
         _ = await DbContext.SaveChangesAsync(cancellationToken);
 
+        await InvalidateCompensationCrudCacheAsync(command.Code);
+
         return response;
     }
 
@@ -725,7 +727,7 @@ public partial class CrudService
         return false;
     }
 
-    private async Task<ApiResponse> SaveCrudServicesAsync(
+    protected virtual async Task<ApiResponse> SaveCrudServicesAsync(
         Guid applicationId,
         Guid microserviceId,
         string code,
@@ -772,13 +774,13 @@ public partial class CrudService
     }
 }
 
-internal class SaveCrudServicesColumnDto
+public class SaveCrudServicesColumnDto
 {
     public Guid FieldId { get; set; }
     public required string Property { get; set; }
 }
 
-internal sealed class SaveCrudServicesPartialPayloadDto
+public sealed class SaveCrudServicesPartialPayloadDto
 {
     public required string PartialCode { get; init; }
     public required List<SaveCrudServicesColumnDto> Columns { get; init; }

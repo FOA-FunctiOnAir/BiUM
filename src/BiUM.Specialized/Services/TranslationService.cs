@@ -109,7 +109,7 @@ public sealed partial class TranslationService : ITranslationService
     {
         var translation = await GetTranslation(code, cancellationToken);
 
-        if (translation is null)
+        if (translation is null || translation.DomainTranslationDetails.Count == 0)
         {
             response.AddMessage(new ResponseMessage
             {

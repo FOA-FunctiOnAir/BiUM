@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Core.Caching;
 using BiUM.Core.Constants;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Models;
@@ -214,7 +215,7 @@ public sealed partial class TranslationService
 
     private async Task<DomainTranslation?> GetTranslationFromCacheOrDbAsync(string code, Guid applicationId, CancellationToken cancellationToken)
     {
-        var cacheKey = $"bium:translation:{_biAppOptions.Domain}:{applicationId}:{_correlationContext.LanguageId}:{code}";
+        var cacheKey = CacheKeys.Translation.Build(_biAppOptions.Domain, applicationId, _correlationContext.LanguageId, code);
 
         if (_inMemoryClient is not null)
         {
@@ -275,7 +276,7 @@ public sealed partial class TranslationService
 
     private async Task InvalidateTranslationCacheAsync(Guid applicationId, string code)
     {
-        var pattern = $"bium:translation:{_biAppOptions.Domain}:{applicationId}:*:{code}";
+        var pattern = CacheKeys.Translation.Pattern(_biAppOptions.Domain, applicationId, code);
 
         if (_redisClient is not null)
         {

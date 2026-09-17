@@ -14,4 +14,15 @@ public static class CacheKeys
             public const string ServicePattern = $"{Prefix}:service:*";
         }
     }
+
+    public static class Translation
+    {
+        private const string Prefix = "bium:translation";
+
+        public static string Build(string domain, Guid applicationId, Guid languageId, string code) =>
+            $"{Prefix}:{domain.ToLowerInvariant()}:{applicationId}:{languageId}:{code}";
+
+        public static string Pattern(string domain, Guid applicationId, string code) =>
+            $"{Prefix}:{domain.ToLowerInvariant()}:{applicationId}:*:{code}";
+    }
 }

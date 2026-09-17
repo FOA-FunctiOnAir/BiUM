@@ -14,8 +14,4 @@ public sealed class PlatformActionRequest
     public string? EventCode { get; init; }
 
     public Dictionary<string, object?> Parameters { get; init; } = new(StringComparer.OrdinalIgnoreCase);
-
-    public string? LegacyTarget { get; init; }
-
-    public string? LegacyTaskKey { get; init; }
 }

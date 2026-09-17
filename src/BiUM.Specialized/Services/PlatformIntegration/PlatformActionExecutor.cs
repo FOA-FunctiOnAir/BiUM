@@ -40,11 +40,6 @@ public sealed class PlatformActionExecutor : IPlatformActionExecutor
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(request.LegacyTarget))
-            {
-                return await ExecuteLegacyAsync(request, cancellationToken);
-            }
-
             if (request.ActionType == Ids.Parameter.EventActionType.Values.Service ||
                 request.ActionType == Ids.Parameter.SchedulerTriggerType.Values.Service)
             {
@@ -157,26 +152,6 @@ public sealed class PlatformActionExecutor : IPlatformActionExecutor
         await RecordMetricAsync(definition.Id, definition.Code, response.Success, 0, null, cancellationToken);
 
         return response;
-    }
-
-    private async Task<ApiResponse> ExecuteLegacyAsync(PlatformActionRequest request, CancellationToken cancellationToken)
-    {
-        if (_rabbitMqClient is null)
-        {
-            throw new InvalidOperationException("platform_action_rabbitmq_unavailable");
-        }
-
-        var @event = new ExecuteScheduledTaskEvent
-        {
-            Target = request.LegacyTarget!.Trim(),
-            Task = request.LegacyTaskKey ?? string.Empty
-        };
-
-        await _rabbitMqClient.PublishToDomainAsync(request.LegacyTarget!.Trim(), @event, cancellationToken);
-
-        await RecordMetricAsync(request.EventId, request.EventCode, true, 0, "legacy", cancellationToken);
-
-        return new ApiResponse();
     }
 
     private async Task PublishRabbitMqAsync(

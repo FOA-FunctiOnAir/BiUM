@@ -3,9 +3,11 @@ using BiUM.Contract.Models.Api;
 using BiUM.Contract.Models.MessageBroker;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Mapper;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -83,5 +85,47 @@ public static partial class Extensions
             excludedIds,
             PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
             mapper,
+            cancellationToken);
+
+    public static async Task<PaginatedApiResponse<TDestination>> SelectToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        Expression<Func<TSource, TDestination>> selector,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        IBaseQuery baseQuery,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+    {
+        var filteredQuery = sourceQuery.ApplyExcludedIds(excludedIds);
+
+        var result = await filteredQuery
+            .Select(selector)
+            .OrderBy(d => d.Name)
+            .ToPaginatedListAsync(baseQuery, cancellationToken);
+
+        await result.MergeSelectedIdsAsync(
+            selectedIds,
+            (missingIds, ct) => filteredQuery.Where(x => missingIds.Contains(x.Id)).Select(selector).ToListAsync(ct),
+            cancellationToken);
+
+        return result;
+    }
+
+    public static Task<PaginatedApiResponse<TDestination>> SelectToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        Expression<Func<TSource, TDestination>> selector,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        int? pageStart,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+        => sourceQuery.SelectToForParameterPaginatedListAsync(
+            selector,
+            selectedIds,
+            excludedIds,
+            PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
             cancellationToken);
 }

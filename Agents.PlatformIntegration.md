@@ -10,7 +10,7 @@ Platform integration contracts live in **`BiUM.Core.PlatformIntegration`**. Runt
 | `IEventDefinitionProvider` | Core | Load event metadata (`GetByIdAsync`, `GetByCodeAsync`) |
 | `IPlatformActionExecutor` | Core | Execute Service / PublishEvent / InvokeEvent |
 | `IEventIntegrationMetricRecorder` | Core | Record integration attempt metrics |
-| `PlatformActionExecutor` | Specialized | Default executor (HTTP service call, RMQ publish, nested invoke, legacy scheduler target) |
+| `PlatformActionExecutor` | Specialized | Default executor (HTTP service call, RMQ publish, nested invoke) |
 | `HttpEventDefinitionProvider` | Infrastructure | Remote: `GET /api/configuration/Event/GetFwEventDefinition` |
 | `HttpEventIntegrationMetricRecorder` | Infrastructure | Remote: `POST /api/observability/EventIntegrationMetric/RecordEventIntegrationMetric` |
 | `NoOpEventIntegrationMetricRecorder` | Core | No-op when Observability is unavailable |
@@ -48,8 +48,6 @@ sequenceDiagram
     end
     Exec->>Obs: RecordAsync(status, duration, …)
 ```
-
-**Legacy scheduler path:** when `PlatformActionRequest.LegacyTarget` is set, executor publishes `ExecuteScheduledTaskEvent` to the given RabbitMQ domain (backward compatible with pre-metadata scheduler tasks).
 
 ## 4. DI defaults (`ConfigureSpecializedServices`)
 

@@ -9,11 +9,6 @@ public record BaseCommand<TType> : BaseRequestDto<TType>
     public bool Test { get; set; }
 }
 
-public record BaseSchedulerCommand : BaseRequestDto<ApiResponse>
-{
-    public Guid? TenantId { get; set; }
-}
-
 public record BaseCommandDto : BaseCommand<ApiResponse>;
 
 public record BaseCommandResponseDto<TType> : BaseCommand<ApiResponse<TType>>;

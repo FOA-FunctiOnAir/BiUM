@@ -153,36 +153,6 @@ public sealed class PlatformActionExecutorTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_legacy_target_publishes_execute_scheduled_task_event()
-    {
-        ExecuteScheduledTaskEvent? published = null;
-        var rabbit = new Mock<IRabbitMQClient>();
-        rabbit.Setup(r => r.PublishToDomainAsync(
-                "treasury",
-                It.IsAny<ExecuteScheduledTaskEvent>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<string, IBaseEvent, CancellationToken>((_, message, _) => published = (ExecuteScheduledTaskEvent)message)
-            .Returns(Task.CompletedTask);
-
-        var executor = CreateExecutor(
-            Mock.Of<IHttpClientsService>(),
-            Mock.Of<IEventDefinitionProvider>(),
-            rabbit.Object);
-
-        var result = await executor.ExecuteAsync(new PlatformActionRequest
-        {
-            ActionType = Ids.Parameter.SchedulerTriggerType.Values.Service,
-            LegacyTarget = "treasury",
-            LegacyTaskKey = "save-rates"
-        });
-
-        result.Success.Should().BeTrue();
-        published.Should().NotBeNull();
-        published!.Target.Should().Be("treasury");
-        published.Task.Should().Be("save-rates");
-    }
-
-    [Fact]
     public async Task ExecuteAsync_records_success_metric()
     {
         Guid? recordedStatus = null;

@@ -28,6 +28,21 @@ public class PaginatedApiResponse<TType> : ApiResponse<IReadOnlyList<TType>>
         Value = [];
     }
 
+    [JsonConstructor]
+    protected PaginatedApiResponse(
+        IReadOnlyList<TType>? value,
+        IReadOnlyList<ResponseMessage>? messages,
+        bool success,
+        int pageNumber,
+        int totalPages,
+        int totalCount)
+        : base(value ?? [], messages ?? [], success)
+    {
+        PageNumber = pageNumber > 0 ? pageNumber : 1;
+        TotalPages = totalPages;
+        TotalCount = totalCount;
+    }
+
     public PaginatedApiResponse(IBaseQuery baseQuery, IList<TType> items, int count)
     {
         var (pageStart, pageSize) = GetQueryParameters(baseQuery);

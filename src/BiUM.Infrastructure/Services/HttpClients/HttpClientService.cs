@@ -1395,9 +1395,9 @@ public class HttpClientService : IHttpClientsService
                         Message = "The response was expected to be an error, but indicates success.",
                         Severity = MessageSeverity.Error
                     });
-
-                    return result;
                 }
+
+                return result;
             }
 
             result = new ApiResponse();
@@ -1472,9 +1472,9 @@ public class HttpClientService : IHttpClientsService
                         Message = "The response was expected to be an error, but indicates success.",
                         Severity = MessageSeverity.Error
                     });
-
-                    return result;
                 }
+
+                return result;
             }
 
             result = new ApiResponse<TResponse>();
@@ -1669,9 +1669,9 @@ public class HttpClientService : IHttpClientsService
                         Message = "The response was expected to be an error, but indicates success.",
                         Severity = MessageSeverity.Error
                     });
-
-                    return result;
                 }
+
+                return result;
             }
 
             result = new PaginatedApiResponse<TResponse>();

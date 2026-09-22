@@ -48,9 +48,9 @@ public sealed class ProjectToTranslationSqliteTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddSingleton<ICorrelationContextProvider>(correlationProvider);
-        var correlationContextAccessor = new TestCorrelationContextAccessor { CorrelationContext = correlationProvider.Context };
+        var correlationContextAccessor = TestCorrelationContextBootstrap.RegisterSharedAccessor();
+        correlationContextAccessor.CorrelationContext = correlationProvider.Context;
         services.AddSingleton<ICorrelationContextAccessor>(correlationContextAccessor);
-        CorrelationContextLanguage.Configure(correlationContextAccessor);
         services.AddSingleton(dateTimeMock.Object);
         services.AddSingleton(Options.Create(new BiAppOptions
         {

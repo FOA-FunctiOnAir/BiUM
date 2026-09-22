@@ -3,7 +3,6 @@ using BiApp.Test.Application.Features.Currencies.Queries.GetFwCurrenciesForParam
 using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +22,6 @@ public partial class CurrencyRepository
         CancellationToken cancellationToken)
     {
         var query = _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(c =>
                 string.IsNullOrEmpty(q) ||
                 string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
@@ -39,7 +37,6 @@ public partial class CurrencyRepository
         var returnObject = new ApiResponse<IList<GetFwCurrenciesForNamesDto>>();
 
         var currencies = await _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .ApplyForNamesIds(ids)
             .ToIListAsync<Currency, GetFwCurrenciesForNamesDto>(Mapper, cancellationToken);
 

@@ -1,6 +1,7 @@
 using BiApp.Test2.Application.Features.Accounts.Commands.SaveAccount;
 using BiApp.Test2.Domain.Entities;
 using BiUM.Contract.Models.Api;
+using BiUM.Specialized.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;

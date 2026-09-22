@@ -4,7 +4,7 @@ using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using static BiUM.Specialized.Mapping.TranslationMapping;
 
 namespace BiUM.Specialized.Common.DynamicApi;
 
@@ -27,8 +27,8 @@ public class DomainDynamicApiDto : BaseDto, IMapFrom<DomainDynamicApi>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<DomainDynamicApi, DomainDynamicApiDto>()
-            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.DomainDynamicApiTranslations.GetColumnTranslation(nameof(res.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(res => res.DomainDynamicApiTranslations.GetColumnTranslations(nameof(res.Name))));
+            .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<DomainDynamicApi, DomainDynamicApiTranslation>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))))
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<DomainDynamicApi, DomainDynamicApiTranslation>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))));
     }
 }
 
@@ -54,6 +54,6 @@ public class DomainDynamicApisDto : BaseDto, IMapFrom<DomainDynamicApi>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<DomainDynamicApi, DomainDynamicApisDto>()
-            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.DomainDynamicApiTranslations.GetColumnTranslation(nameof(res.Name))));
+            .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<DomainDynamicApi, DomainDynamicApiTranslation>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))));
     }
 }

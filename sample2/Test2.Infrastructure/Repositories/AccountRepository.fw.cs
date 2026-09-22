@@ -3,7 +3,6 @@ using BiApp.Test2.Application.Features.Accounts.Queries.GetFwAccountsForParamete
 using BiApp.Test2.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Specialized.Database;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +22,6 @@ public partial class AccountRepository
         CancellationToken cancellationToken)
     {
         var query = _context.Accounts
-            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(c =>
                 string.IsNullOrEmpty(q) ||
                 string.IsNullOrEmpty(c.Name) || c.Name.Contains(q) ||
@@ -39,7 +37,6 @@ public partial class AccountRepository
         var returnObject = new ApiResponse<IList<GetFwAccountsForNamesDto>>();
 
         var currencies = await _context.Accounts
-            .Include(c => c.AccountTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .ApplyForNamesIds(ids)
             .ToIListAsync<Account, GetFwAccountsForNamesDto>(Mapper, cancellationToken);
 

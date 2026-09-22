@@ -35,9 +35,13 @@ Kaynak: `BiUM.Specialized/Database/Extensions.cs` (partial sınıfın bu dosyada
 - MSSQL ve PostgreSQL yollarında retry açık olduğu için **`RequestTransactionMiddleware`** içinde **`IExecutionStrategy`** kullanımı zorunludur; aksi halde retry + kullanıcı transaction’ı çakışır.
 - InMemory sağlayıcıda middleware transaction açmaz (`RequestTransactionMiddlewarePolicies.IsInMemoryDatabaseProvider`).
 
-## 5. Sorgu yardımcıları (aynı dosyada)
+## 5. Sorgu yardımcıları ve çeviri dil çözümlemesi
 
 - **`OrderQuery`**, **`OrderPaginatedQuery`**, **`OrderByProperty`**: `IBaseQuery` sıralama ve sayfalama parametreleri ile `IQueryable` düzenleme.
+- **`PaginationQuery.ToPageBaseQuery`**: sayfalama-only `IBaseQuery` (repository’lerde `ToPaginatedListAsync(..., PaginationQuery.ToPageBaseQuery(pageStart, pageSize), mapper, cancellationToken)`).
+- **`CorrelationContextLanguage`** (`BiUM.Specialized/Database/CorrelationContextLanguage.cs`): `UseSpecialized()` içinde `ICorrelationContextAccessor` ile yapılandırılır. `ProjectTo` öncesi dil: açık `languageId` (boş olmayan `Guid`) → `CorrelationContext.LanguageId` → `CorrelationContext.DefaultLanguageId`.
+- **EF extension overload’ları** (`Extensions.*.cs`): çeviri içeren `ProjectTo` yolunda varsayılan overload **`languageId` almaz** — dil bağlamdan gelir. Farklı dil gereken nadir API’ler için aynı metodların **`Guid languageId`** parametreli overload’ı vardır. Mikroservis repository’leri normalde yalnızca bağlam overload’ını kullanır; **`CorrelationContext.LanguageId`’yi extension argümanı olarak geçirmeyin**. Sorgu filtrelerinde (`Include`, `Where`, cache key) dil kullanımı ayrı kalır.
+- **AutoMapper çeviri ifadeleri** (`BiUM.Specialized.Mapping.TranslationMapping`): DTO `Mapping` profillerinde `GetColumnTranslationExpr` / `GetColumnTranslationsExpr` için `using static BiUM.Specialized.Mapping.TranslationMapping`; `NameTr` kaydetme yollarında `ToTranslationString()` için `using BiUM.Specialized.Mapping`. `System.Linq.Extensions` ile paylaşılan tip adı yok (`BiUM.Core` enumerable helper’ları ayrı kalır).
 
 ## 6. EF Core migrations (BiApp microservices)
 

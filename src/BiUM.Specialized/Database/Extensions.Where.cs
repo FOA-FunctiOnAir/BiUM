@@ -48,11 +48,29 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
-        var query = queryable.AsNoTracking().Where(predicate);
+        var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
+            queryable.AsNoTracking().Where(predicate),
+            mapper);
 
-        var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
+        return await projected.ToListAsync(cancellationToken);
+    }
 
-        return items;
+    public static async Task<List<TDestination>> WhereToListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, bool>> predicate,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
+            queryable.AsNoTracking().Where(predicate),
+            mapper,
+            languageId);
+
+        return await projected.ToListAsync(cancellationToken);
     }
 
     public static async Task<List<TDestination>> WhereToListAsync<TSource, TDestination>(
@@ -64,10 +82,28 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
-        var query = queryable.AsNoTracking().Where(predicate);
+        var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
+            queryable.AsNoTracking().Where(predicate),
+            mapper);
 
-        var items = mapper.Map<List<TDestination>>(await query.ToListAsync(cancellationToken));
+        return await projected.ToListAsync(cancellationToken);
+    }
 
-        return items;
+    public static async Task<List<TDestination>> WhereToListAsync<TSource, TDestination>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, int, bool>> predicate,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default
+    )
+        where TSource : class
+        where TDestination : class
+    {
+        var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
+            queryable.AsNoTracking().Where(predicate),
+            mapper,
+            languageId);
+
+        return await projected.ToListAsync(cancellationToken);
     }
 }

@@ -73,4 +73,22 @@ public static partial class Extensions
                 .ToListAsync<TSource, TDestination>(mapper, ct),
             cancellationToken);
     }
+
+    public static Task MergeSelectedIdsAsync<TSource, TDestination>(
+        this PaginatedApiResponse<TDestination> response,
+        IReadOnlyList<Guid>? selectedIds,
+        IQueryable<TSource> sourceQuery,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+    {
+        return response.MergeSelectedIdsAsync(
+            selectedIds,
+            (missingIds, ct) => sourceQuery
+                .Where(x => missingIds.Contains(x.Id))
+                .ToListAsync<TSource, TDestination>(mapper, languageId, ct),
+            cancellationToken);
+    }
 }

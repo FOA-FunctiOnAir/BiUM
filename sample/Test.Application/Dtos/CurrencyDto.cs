@@ -4,7 +4,7 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Mapping;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using static BiUM.Specialized.Mapping.TranslationMapping;
 
 namespace BiApp.Test.Application.Dtos;
 
@@ -27,7 +27,7 @@ public class CurrencyDto : BaseDto, IMapFrom<Currency>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<Currency, CurrencyDto>()
-            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.CurrencyTranslations.GetColumnTranslation(nameof(res.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(res => res.CurrencyTranslations.GetColumnTranslations(nameof(res.Name))));
+            .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<Currency, CurrencyTranslation>(res => res.CurrencyTranslations, nameof(Currency.Name))))
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<Currency, CurrencyTranslation>(res => res.CurrencyTranslations, nameof(Currency.Name))));
     }
 }

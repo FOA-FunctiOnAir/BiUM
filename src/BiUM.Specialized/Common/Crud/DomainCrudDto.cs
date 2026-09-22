@@ -4,7 +4,7 @@ using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Mapping;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using static BiUM.Specialized.Mapping.TranslationMapping;
 
 namespace BiUM.Specialized.Common.Crud;
 
@@ -25,7 +25,7 @@ public class DomainCrudDto : BaseDto, IMapFrom<DomainCrud>
     public void Mapping(Profile profile)
     {
         profile.CreateMap<DomainCrud, DomainCrudDto>()
-            .ForMember(dto => dto.Name, conf => conf.MapFrom(res => res.DomainCrudTranslations.GetColumnTranslation(nameof(res.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(res => res.DomainCrudTranslations.GetColumnTranslations(nameof(res.Name))));
+            .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<DomainCrud, DomainCrudTranslation>(res => res.DomainCrudTranslations, nameof(DomainCrud.Name))))
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<DomainCrud, DomainCrudTranslation>(res => res.DomainCrudTranslations, nameof(DomainCrud.Name))));
     }
 }

@@ -3,7 +3,6 @@ using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
 using BiUM.Contract.Models.MessageBroker;
 using BiUM.Specialized.Database;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
@@ -20,7 +19,6 @@ public partial class CurrencyRepository
         if (id != Guid.Empty)
         {
             var currency = await _context.Currencies
-                .Include(c => c.CurrencyTranslations)
                 .FirstOrDefaultAsync<Currency, CurrencyDto>(x => x.Id == id, Mapper, cancellationToken);
 
             if (currency is null)
@@ -41,7 +39,6 @@ public partial class CurrencyRepository
         var response = new ApiResponse<CurrencyDto>();
 
         var currency = await _context.Currencies
-            .Include(c => c.CurrencyTranslations)
             .FirstOrDefaultAsync<Currency, CurrencyDto>(c => c.Code.Equals(code), Mapper, cancellationToken);
 
         if (currency is null)
@@ -59,7 +56,6 @@ public partial class CurrencyRepository
     public async Task<PaginatedApiResponse<CurrenciesDto>> GetCurrencies(Guid? id, string? name, string? code, IBaseQuery baseQuery, CancellationToken cancellationToken)
     {
         var currencys = _context.Currencies
-            .Include(c => c.CurrencyTranslations.Where(ct => ct.LanguageId == CorrelationContext.LanguageId))
             .Where(p =>
                 (!id.HasValue || p.Id == id.Value) &&
                 (string.IsNullOrWhiteSpace(name) || p.Name.ToLower().Contains(name.Trim().ToLower())) &&

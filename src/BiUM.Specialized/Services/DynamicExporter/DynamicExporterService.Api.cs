@@ -103,7 +103,7 @@ public partial class DynamicExporterService
             .ToPaginatedListAsync<DomainDynamicExportRequest, DynamicExportRequestDto>(
                 PaginationQuery.ToPageBaseQuery(query.PageStart, query.PageSize),
                 Mapper,
-                cancellationToken);
+                cancellationToken: cancellationToken);
     }
 
     public async Task<ApiResponse> DeleteExportRequestAsync(DeleteExportRequestCommand command, CancellationToken cancellationToken)

@@ -164,7 +164,7 @@ public sealed partial class TranslationService
 
         var domainTranslation = await _baseContext.DomainTranslations
             .Include(m => m.DomainTranslationDetails)
-            .FirstOrDefaultAsync<DomainTranslation, DomainTranslationDto>(x => x.Id == id, _mapper, cancellationToken);
+            .FirstOrDefaultAsync<DomainTranslation, DomainTranslationDto>(x => x.Id == id, _mapper, Guid.Empty, cancellationToken);
 
         returnObject.Value = domainTranslation;
 

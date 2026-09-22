@@ -1,3 +1,4 @@
+using BiUM.Core.Authorization;
 using BiUM.Core.Database;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Middlewares;
@@ -12,6 +13,8 @@ public static partial class ApplicationExtensions
 {
     public static WebApplication UseSpecialized(this WebApplication app)
     {
+        CorrelationContextLanguage.Configure(app.Services.GetRequiredService<ICorrelationContextAccessor>());
+
         _ = app.UseMiddleware<RequestTransactionMiddleware>();
 
         if (app.Environment.IsDevelopment())

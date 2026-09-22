@@ -5,6 +5,7 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.DynamicApi;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Database;
+using BiUM.Specialized.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -227,8 +228,6 @@ public partial class DynamicApiService
         var returnObject = new ApiResponse<DomainDynamicApiDto>();
 
         var domainDynamicApi = await DbContext.DomainDynamicApis
-            .Include(x => x.DynamicApiParameters)
-            .Include(x => x.DomainDynamicApiTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(ReadFilter())
             .FirstOrDefaultAsync<DomainDynamicApi, DomainDynamicApiDto>(x => x.Id == id, Mapper, cancellationToken);
 
@@ -244,8 +243,6 @@ public partial class DynamicApiService
         var returnObject = new ApiResponse<DomainDynamicApiDto>();
 
         var domainDynamicApi = await DbContext.DomainDynamicApis
-            .Include(x => x.DynamicApiParameters)
-            .Include(x => x.DomainDynamicApiTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(ReadFilter())
             .FirstOrDefaultAsync<DomainDynamicApi, DomainDynamicApiDto>(x => x.Code == code, Mapper, cancellationToken);
 
@@ -264,7 +261,6 @@ public partial class DynamicApiService
         CancellationToken cancellationToken)
     {
         return await DbContext.DomainDynamicApis
-            .Include(x => x.DomainDynamicApiTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(ReadFilter())
             .Where(api =>
                 (!applicationId.HasValue || api.ApplicationId == applicationId.Value) &&

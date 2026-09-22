@@ -5,6 +5,7 @@ using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Database;
+using BiUM.Specialized.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -559,11 +560,6 @@ public partial class CrudService
         var returnObject = new ApiResponse<DomainCrudDto>();
 
         var domainCrud = await DbContext.DomainCruds
-            .Include(p => p.DomainCrudTranslations)
-            .Include(m => m.DomainCrudColumns)
-            .Include(m => m.DomainCrudPartialUpdates)
-                .ThenInclude(p => p.Columns)
-                    .ThenInclude(c => c.CrudColumn)
             .Where(DomainCrudReadFilter())
             .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Id == id, Mapper, cancellationToken);
 
@@ -579,11 +575,6 @@ public partial class CrudService
         var returnObject = new ApiResponse<DomainCrudDto>();
 
         var domainCrud = await DbContext.DomainCruds
-            .Include(p => p.DomainCrudTranslations)
-            .Include(m => m.DomainCrudColumns)
-            .Include(m => m.DomainCrudPartialUpdates)
-                .ThenInclude(p => p.Columns)
-                    .ThenInclude(c => c.CrudColumn)
             .Where(DomainCrudReadFilter())
             .FirstOrDefaultAsync<DomainCrud, DomainCrudDto>(x => x.Code == code, Mapper, cancellationToken);
 
@@ -602,7 +593,6 @@ public partial class CrudService
         CancellationToken cancellationToken)
     {
         var domainCruds = await DbContext.DomainCruds
-            .Include(x => x.DomainCrudTranslations.Where(y => y.LanguageId == CorrelationContext.LanguageId))
             .Where(DomainCrudReadFilter())
             .Where(dc =>
                 (!applicationId.HasValue || dc.ApplicationId == applicationId.Value) &&

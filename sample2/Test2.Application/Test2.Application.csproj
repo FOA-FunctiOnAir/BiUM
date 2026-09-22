@@ -1,5 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Test2.Domain\Test2.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BiUM.Specialized\BiUM.Specialized.csproj" />
   </ItemGroup>
 </Project>

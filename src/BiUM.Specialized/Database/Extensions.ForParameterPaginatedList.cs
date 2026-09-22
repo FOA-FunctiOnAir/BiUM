@@ -34,6 +34,26 @@ public static partial class Extensions
         return result;
     }
 
+    public static async Task<PaginatedApiResponse<TDestination>> ToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        IBaseQuery baseQuery,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+    {
+        var result = await sourceQuery
+            .ApplyExcludedIds(excludedIds)
+            .ToPaginatedListAsync<TSource, TDestination>(baseQuery, mapper, languageId, cancellationToken);
+
+        await result.MergeSelectedIdsAsync(selectedIds, sourceQuery, mapper, languageId, cancellationToken);
+
+        return result;
+    }
+
     public static Task<PaginatedApiResponse<TDestination>> ToForParameterPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> sourceQuery,
         IReadOnlyList<Guid>? selectedIds,
@@ -51,7 +71,26 @@ public static partial class Extensions
             mapper,
             cancellationToken);
 
-    public static async Task<PaginatedApiResponse<TDestination>> ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
+    public static Task<PaginatedApiResponse<TDestination>> ToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        int? pageStart,
+        int? pageSize,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+        => sourceQuery.ToForParameterPaginatedListAsync<TSource, TDestination>(
+            selectedIds,
+            excludedIds,
+            PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
+            mapper,
+            languageId,
+            cancellationToken);
+
+    public static Task<PaginatedApiResponse<TDestination>> ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> sourceQuery,
         IReadOnlyList<Guid>? selectedIds,
         IReadOnlyList<Guid>? excludedIds,
@@ -60,15 +99,30 @@ public static partial class Extensions
         CancellationToken cancellationToken = default)
         where TSource : class, IEntity
         where TDestination : ForValuesDtoBase
-    {
-        var result = await sourceQuery
-            .ApplyExcludedIds(excludedIds)
-            .ProjectToPaginatedListAsync<TSource, TDestination>(baseQuery, mapper, cancellationToken);
+        => sourceQuery.ToForParameterPaginatedListAsync<TSource, TDestination>(
+            selectedIds,
+            excludedIds,
+            baseQuery,
+            mapper,
+            cancellationToken);
 
-        await result.ProjectToMergeSelectedIdsAsync(selectedIds, sourceQuery, mapper, cancellationToken);
-
-        return result;
-    }
+    public static Task<PaginatedApiResponse<TDestination>> ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        IBaseQuery baseQuery,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+        => sourceQuery.ToForParameterPaginatedListAsync<TSource, TDestination>(
+            selectedIds,
+            excludedIds,
+            baseQuery,
+            mapper,
+            languageId,
+            cancellationToken);
 
     public static Task<PaginatedApiResponse<TDestination>> ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
         this IQueryable<TSource> sourceQuery,
@@ -80,11 +134,30 @@ public static partial class Extensions
         CancellationToken cancellationToken = default)
         where TSource : class, IEntity
         where TDestination : ForValuesDtoBase
-        => sourceQuery.ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
+        => sourceQuery.ToForParameterPaginatedListAsync<TSource, TDestination>(
             selectedIds,
             excludedIds,
             PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
             mapper,
+            cancellationToken);
+
+    public static Task<PaginatedApiResponse<TDestination>> ProjectToForParameterPaginatedListAsync<TSource, TDestination>(
+        this IQueryable<TSource> sourceQuery,
+        IReadOnlyList<Guid>? selectedIds,
+        IReadOnlyList<Guid>? excludedIds,
+        int? pageStart,
+        int? pageSize,
+        IMapper mapper,
+        Guid languageId,
+        CancellationToken cancellationToken = default)
+        where TSource : class, IEntity
+        where TDestination : ForValuesDtoBase
+        => sourceQuery.ToForParameterPaginatedListAsync<TSource, TDestination>(
+            selectedIds,
+            excludedIds,
+            PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
+            mapper,
+            languageId,
             cancellationToken);
 
     public static async Task<PaginatedApiResponse<TDestination>> SelectToForParameterPaginatedListAsync<TSource, TDestination>(
@@ -106,7 +179,9 @@ public static partial class Extensions
 
         await result.MergeSelectedIdsAsync(
             selectedIds,
-            (missingIds, ct) => filteredQuery.Where(x => missingIds.Contains(x.Id)).Select(selector).ToListAsync(ct),
+            (missingIds, ct) => EntityFrameworkQueryableExtensions.ToListAsync(
+                filteredQuery.Where(x => missingIds.Contains(x.Id)).Select(selector),
+                ct),
             cancellationToken);
 
         return result;

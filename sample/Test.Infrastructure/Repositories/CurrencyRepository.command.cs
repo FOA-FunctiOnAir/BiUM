@@ -2,6 +2,7 @@ using BiApp.Test.Application.Features.Currencies.Commands.SaveCurrency;
 using BiApp.Test.Application.Features.Currencies.Commands.UpdateCurrencyCode;
 using BiApp.Test.Domain.Entities;
 using BiUM.Contract.Models.Api;
+using BiUM.Specialized.Mapping;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;

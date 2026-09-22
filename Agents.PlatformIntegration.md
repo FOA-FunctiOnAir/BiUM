@@ -51,12 +51,14 @@ sequenceDiagram
 
 ## 4. DI defaults (`ConfigureSpecializedServices`)
 
+All of the following are **`AddScoped`** (they consume scoped `IHttpClientsService`; do not re-register as Singleton):
+
 - `IEventDefinitionProvider` → `HttpEventDefinitionProvider`
 - `IEventIntegrationMetricRecorder` → `HttpEventIntegrationMetricRecorder`
 - `IPlatformActionExecutor` → `PlatformActionExecutor`
 - `IDynamicApiEventPublisher` → `DynamicApiEventPublisher`
 
-Microservices that **own** event metadata (Configuration) or need local overrides replace `IEventDefinitionProvider` / recorder in their `ConfigureServices` after `AddSpecializedServices`.
+Microservices that **own** event metadata (Configuration) or need local overrides replace `IEventDefinitionProvider` / recorder in their `ConfigureServices` after `AddSpecializedServices`, keeping the same **Scoped** lifetime.
 
 ## 5. Dynamic API surface
 

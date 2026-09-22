@@ -12,22 +12,22 @@ namespace BiUM.Infrastructure.Services.Compensation;
 public sealed class CompensationSessionFinalizedPublisher : ICompensationSessionFinalizedPublisher
 {
     private readonly IRabbitMQClient _rabbitMQClient;
-    private readonly ICorrelationContextAccessor _correlationContextAccessor;
+    private readonly ICorrelationContextProvider _correlationContextProvider;
     private readonly ILogger<CompensationSessionFinalizedPublisher> _logger;
 
     public CompensationSessionFinalizedPublisher(
         IRabbitMQClient rabbitMQClient,
-        ICorrelationContextAccessor correlationContextAccessor,
+        ICorrelationContextProvider correlationContextProvider,
         ILogger<CompensationSessionFinalizedPublisher> logger)
     {
         _rabbitMQClient = rabbitMQClient;
-        _correlationContextAccessor = correlationContextAccessor;
+        _correlationContextProvider = correlationContextProvider;
         _logger = logger;
     }
 
     public Task PublishAsync(Guid compensationSessionId, bool success, CancellationToken cancellationToken = default)
     {
-        var ctx = _correlationContextAccessor.CorrelationContext;
+        var ctx = _correlationContextProvider.Get();
         var correlationId = ctx?.CorrelationId ?? Guid.Empty;
 
         if (ctx is null || correlationId == Guid.Empty)

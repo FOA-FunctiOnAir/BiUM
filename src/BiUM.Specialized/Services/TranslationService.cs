@@ -10,7 +10,6 @@ using BiUM.Specialized.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -88,16 +87,9 @@ public sealed partial class TranslationService : ITranslationService
         return FindAndSetMessage(response, code, exception.ToString(), severity, cancellationToken);
     }
 
-    public async Task<string?> GetValueAsync(string code, CancellationToken cancellationToken)
+    public Task<string?> GetValueAsync(string code, CancellationToken cancellationToken)
     {
-        var translation = await GetTranslation(code, cancellationToken);
-
-        if (translation is null || translation.DomainTranslationDetails.Count == 0)
-        {
-            return null;
-        }
-
-        return translation.DomainTranslationDetails.First().Text;
+        return GetTranslation(code, cancellationToken);
     }
 
     private async Task<ApiResponse> FindAndSetMessage(
@@ -107,9 +99,9 @@ public sealed partial class TranslationService : ITranslationService
         MessageSeverity severity,
         CancellationToken cancellationToken)
     {
-        var translation = await GetTranslation(code, cancellationToken);
+        var message = await GetTranslation(code, cancellationToken);
 
-        if (translation is null || translation.DomainTranslationDetails.Count == 0)
+        if (message is null)
         {
             response.AddMessage(new ResponseMessage
             {
@@ -121,8 +113,6 @@ public sealed partial class TranslationService : ITranslationService
 
             return response;
         }
-
-        var message = translation.DomainTranslationDetails.First().Text;
 
         response.AddMessage(new ResponseMessage
         {

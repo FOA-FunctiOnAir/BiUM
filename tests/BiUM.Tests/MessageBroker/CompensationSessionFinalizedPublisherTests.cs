@@ -1,8 +1,8 @@
 using BiUM.Contract.Models;
+using BiUM.Core.Authorization;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Services.Compensation;
-using BiUM.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -25,19 +25,20 @@ public sealed class CompensationSessionFinalizedPublisherTests
             .Callback<CompensationSessionFinalizedEvent, CancellationToken>((e, _) => captured = e)
             .Returns(Task.CompletedTask);
 
-        var accessor = new TestCorrelationContextAccessor
-        {
-            CorrelationContext = new CorrelationContext
+        var provider = new Mock<ICorrelationContextProvider>();
+
+        provider
+            .Setup(p => p.Get())
+            .Returns(new CorrelationContext
             {
                 CorrelationId = correlationId,
                 ApplicationId = Guid.Empty,
                 LanguageId = CorrelationContext.DefaultLanguageId,
-            }
-        };
+            });
 
         var publisher = new CompensationSessionFinalizedPublisher(
             rabbit.Object,
-            accessor,
+            provider.Object,
             NullLogger<CompensationSessionFinalizedPublisher>.Instance);
 
         await publisher.PublishAsync(sessionId, success: true, CancellationToken.None);

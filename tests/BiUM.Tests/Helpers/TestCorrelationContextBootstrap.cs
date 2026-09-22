@@ -1,7 +1,6 @@
 using BiUM.Core.Authorization;
 using BiUM.Infrastructure.Services.Authorization;
 using BiUM.Specialized.Database;
-using System.Threading;
 
 namespace BiUM.Tests.Helpers;
 

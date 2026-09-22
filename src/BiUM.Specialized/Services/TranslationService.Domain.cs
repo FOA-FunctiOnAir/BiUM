@@ -196,7 +196,7 @@ public sealed partial class TranslationService
         return domainTranslations;
     }
 
-    private async Task<DomainTranslation?> GetTranslation(string code, CancellationToken cancellationToken)
+    private async Task<string?> GetTranslation(string code, CancellationToken cancellationToken)
     {
         var result = await GetTranslationFromCacheOrDbAsync(code, _correlationContext.ApplicationId, cancellationToken);
 
@@ -213,7 +213,7 @@ public sealed partial class TranslationService
         return await GetTranslationFromCacheOrDbAsync(code, Ids.Application.BiDynamic.Id, cancellationToken);
     }
 
-    private async Task<DomainTranslation?> GetTranslationFromCacheOrDbAsync(string code, Guid applicationId, CancellationToken cancellationToken)
+    private async Task<string?> GetTranslationFromCacheOrDbAsync(string code, Guid applicationId, CancellationToken cancellationToken)
     {
         var cacheKey = CacheKeys.Translation.Build(_biAppOptions.Domain, applicationId, _correlationContext.LanguageId, code);
 
@@ -221,11 +221,11 @@ public sealed partial class TranslationService
         {
             try
             {
-                var l1 = await _inMemoryClient.GetAsync<DomainTranslation>(cacheKey);
+                var l1 = await _inMemoryClient.GetAsync<TranslationCacheDto>(cacheKey);
 
                 if (l1.Value is not null)
                 {
-                    return l1.Value;
+                    return l1.Value.Text;
                 }
             }
             catch { }
@@ -235,7 +235,7 @@ public sealed partial class TranslationService
         {
             try
             {
-                var l2 = await _redisClient.GetAsync<DomainTranslation>(cacheKey);
+                var l2 = await _redisClient.GetAsync<TranslationCacheDto>(cacheKey);
 
                 if (l2.Value is not null)
                 {
@@ -244,7 +244,7 @@ public sealed partial class TranslationService
                         try { await _inMemoryClient.AddAsync(cacheKey, l2.Value, _translationCacheL1Ttl); } catch { }
                     }
 
-                    return l2.Value;
+                    return l2.Value.Text;
                 }
             }
             catch { }
@@ -261,17 +261,19 @@ public sealed partial class TranslationService
             return null;
         }
 
+        var cacheEntry = new TranslationCacheDto { Text = translation.DomainTranslationDetails.First().Text };
+
         if (_redisClient is not null)
         {
-            try { await _redisClient.AddAsync(cacheKey, translation, _translationCacheL2Ttl); } catch { }
+            try { await _redisClient.AddAsync(cacheKey, cacheEntry, _translationCacheL2Ttl); } catch { }
         }
 
         if (_inMemoryClient is not null)
         {
-            try { await _inMemoryClient.AddAsync(cacheKey, translation, _translationCacheL1Ttl); } catch { }
+            try { await _inMemoryClient.AddAsync(cacheKey, cacheEntry, _translationCacheL1Ttl); } catch { }
         }
 
-        return translation;
+        return cacheEntry.Text;
     }
 
     private async Task InvalidateTranslationCacheAsync(Guid applicationId, string code)

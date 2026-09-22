@@ -2,9 +2,11 @@ using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.Compensation;
 using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Services;
 using BiUM.Infrastructure.Services.Compensation;
 using BiUM.Infrastructure.Services.MessageBroker.RabbitMQ;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -76,6 +78,8 @@ public static class RabbitMqServiceCollectionExtensions
                 sp.GetRequiredService<RabbitMQPublisherChannelPool>(),
                 sp.GetRequiredService<IRabbitMQSerializer>(),
                 sp.GetRequiredService<ICorrelationContextAccessor>(),
+                sp.GetRequiredService<IHttpContextAccessor>(),
+                sp.GetRequiredService<ICorrelationContextSerializer>(),
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<IDateTimeService>(),
                 sp.GetRequiredService<IOptions<BiAppOptions>>(),
@@ -131,6 +135,8 @@ public static class RabbitMqServiceCollectionExtensions
                     sp.GetRequiredKeyedService<RabbitMQPublisherChannelPool>(key),
                     sp.GetRequiredService<IRabbitMQSerializer>(),
                     sp.GetRequiredService<ICorrelationContextAccessor>(),
+                    sp.GetRequiredService<IHttpContextAccessor>(),
+                    sp.GetRequiredService<ICorrelationContextSerializer>(),
                     sp.GetRequiredService<IServiceScopeFactory>(),
                     sp.GetRequiredService<IDateTimeService>(),
                     sp.GetRequiredService<IOptions<BiAppOptions>>(),

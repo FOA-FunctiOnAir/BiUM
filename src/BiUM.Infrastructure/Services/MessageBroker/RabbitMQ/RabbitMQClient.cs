@@ -8,7 +8,9 @@ using BiUM.Core.Database;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.Serialization;
 using BiUM.Infrastructure.Common.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -52,6 +54,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
     private readonly RabbitMQPublisherChannelPool _publisherChannelPool;
     private readonly IRabbitMQSerializer _serializer;
     private readonly ICorrelationContextAccessor _correlationContextAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICorrelationContextSerializer _correlationContextSerializer;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly IDateTimeService _dateTimeService;
     private readonly BiAppOptions _appOptions;
@@ -66,6 +70,8 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         RabbitMQPublisherChannelPool publisherChannelPool,
         IRabbitMQSerializer serializer,
         ICorrelationContextAccessor correlationContextAccessor,
+        IHttpContextAccessor httpContextAccessor,
+        ICorrelationContextSerializer correlationContextSerializer,
         IServiceScopeFactory serviceScopeFactory,
         IDateTimeService dateTimeService,
         IOptions<BiAppOptions> appOptionsAccessor,
@@ -77,11 +83,48 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         _publisherChannelPool = publisherChannelPool;
         _serializer = serializer;
         _correlationContextAccessor = correlationContextAccessor;
+        _httpContextAccessor = httpContextAccessor;
+        _correlationContextSerializer = correlationContextSerializer;
         _serviceScopeFactory = serviceScopeFactory;
         _dateTimeService = dateTimeService;
         _appOptions = appOptionsAccessor.Value;
         _rabbitMqOptions = rabbitMqClientOptionsMonitor.Get(rabbitMqClientKey);
         _logger = logger;
+    }
+
+    private CorrelationContext? GetAmbientCorrelationContext()
+    {
+        if (_correlationContextAccessor.CorrelationContext is not null)
+        {
+            return _correlationContextAccessor.CorrelationContext;
+        }
+
+        var httpContext = _httpContextAccessor.HttpContext;
+
+        if (httpContext is null)
+        {
+            return null;
+        }
+
+        var headerValue = httpContext.Request.Headers[HeaderKeys.CorrelationContext].ToString();
+
+        if (string.IsNullOrEmpty(headerValue))
+        {
+            return null;
+        }
+
+        try
+        {
+            var bytes = Convert.FromBase64String(headerValue);
+
+            return _correlationContextSerializer.Deserialize(bytes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize CorrelationContext from header");
+
+            return null;
+        }
     }
 
     public Task PublishAsync<T>(T message, CancellationToken cancellationToken)
@@ -157,7 +200,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var eventAttribute = GetEventAttribute(type);
 
-        var correlationContext = _correlationContextAccessor.CorrelationContext ?? CorrelationContext.Empty;
+        var correlationContext = GetAmbientCorrelationContext() ?? CorrelationContext.Empty;
 
         if (message is CompensationSessionFinalizedEvent compensationSessionFinalized)
         {
@@ -243,7 +286,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         var type = message.GetType();
 
-        var correlationContext = _correlationContextAccessor.CorrelationContext ?? CorrelationContext.Empty;
+        var correlationContext = GetAmbientCorrelationContext() ?? CorrelationContext.Empty;
 
         if (message is CompensationSessionFinalizedEvent compensationSessionFinalized)
         {
@@ -809,7 +852,7 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         if (message.CorrelationId == Guid.Empty)
         {
-            message.CorrelationId = _correlationContextAccessor.CorrelationContext?.CorrelationId ?? Guid.Empty;
+            message.CorrelationId = GetAmbientCorrelationContext()?.CorrelationId ?? Guid.Empty;
         }
     }
 

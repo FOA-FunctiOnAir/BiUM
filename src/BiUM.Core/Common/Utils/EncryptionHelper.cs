@@ -206,6 +206,11 @@ public static class EncryptionHelper
 
         if (reversible)
         {
+            if (storedValue.Contains(':'))
+            {
+                return storedValue;
+            }
+
             return Decrypt(storedValue, key);
         }
 

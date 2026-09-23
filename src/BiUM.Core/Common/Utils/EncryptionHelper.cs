@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +8,10 @@ namespace BiUM.Core.Common.Utils;
 
 public static class EncryptionHelper
 {
+    public const string ActivitySourceName = "BiUM.EncryptionHelper";
+
+    private static readonly ActivitySource ActivitySource = new(ActivitySourceName);
+
     private const int Iterations = 256_789;
 
     private const int SaltSize = 16; // 128 bits
@@ -18,6 +23,8 @@ public static class EncryptionHelper
 
     public static byte[] Encrypt(byte[] value, byte[] password)
     {
+        using var activity = StartCryptoActivity("Encrypt");
+
         // 1. Generate a random salt
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
 
@@ -47,6 +54,8 @@ public static class EncryptionHelper
 
     public static byte[] Decrypt(byte[] value, byte[] password)
     {
+        using var activity = StartCryptoActivity("Decrypt");
+
         using var ms = new MemoryStream(value);
 
         // 1. Read the Salt
@@ -128,6 +137,8 @@ public static class EncryptionHelper
             return plainValue;
         }
 
+        using var activity = StartCryptoActivity("Hash");
+
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
         var plainBytes = Encoding.UTF8.GetBytes(plainValue);
         var hash = Rfc2898DeriveBytes.Pbkdf2(plainBytes, salt, Iterations, HashAlgorithm, HashSize);
@@ -149,12 +160,26 @@ public static class EncryptionHelper
             return false;
         }
 
+        using var activity = StartCryptoActivity("Verify");
+
         var salt = Convert.FromBase64String(parts[0]);
         var storedHash = Convert.FromBase64String(parts[1]);
         var plainBytes = Encoding.UTF8.GetBytes(plainValue);
         var computedHash = Rfc2898DeriveBytes.Pbkdf2(plainBytes, salt, Iterations, HashAlgorithm, HashSize);
+        var verified = CryptographicOperations.FixedTimeEquals(storedHash, computedHash);
 
-        return CryptographicOperations.FixedTimeEquals(storedHash, computedHash);
+        activity?.SetTag("encryption.verify.result", verified);
+
+        return verified;
+    }
+
+    private static Activity? StartCryptoActivity(string operation)
+    {
+        var activity = ActivitySource.StartActivity($"EncryptionHelper.{operation}", ActivityKind.Internal);
+
+        activity?.SetTag("encryption.pbkdf2_iterations", Iterations);
+
+        return activity;
     }
 
     public static string Protect(string plainValue, string key, bool reversible)

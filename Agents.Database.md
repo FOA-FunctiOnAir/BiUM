@@ -37,7 +37,7 @@ Kaynak: `BiUM.Specialized/Database/Extensions.cs` (partial sınıfın bu dosyada
 
 ## 5. Sorgu yardımcıları ve çeviri dil çözümlemesi
 
-- **`OrderQuery`**, **`OrderPaginatedQuery`**, **`OrderByProperty`**: `IBaseQuery` sıralama ve sayfalama parametreleri ile `IQueryable` düzenleme.
+- **`OrderQuery`**, **`OrderPaginatedQuery`**, **`OrderByProperty`**: `IBaseQuery` sıralama ve sayfalama parametreleri ile `IQueryable` düzenleme. **`ToPaginatedListAsync<TSource,TDestination>`** / **`WhereToPaginatedListAsync`**: `OrderPaginatedQuery` **kaynak entity** üzerinde (SQL `ORDER BY` / `OFFSET` / `FETCH`, varsayılan `Created`); sonra `ProjectTo`. DTO üzerinde sıralama yok (`Created` DTO’da olmayabilir; in-memory sıralama yok). `SortBy` entity özellik adı olmalıdır.
 - **`PaginationQuery.ToPageBaseQuery`**: sayfalama-only `IBaseQuery` (repository’lerde `ToPaginatedListAsync(..., PaginationQuery.ToPageBaseQuery(pageStart, pageSize), mapper, cancellationToken)`).
 - **`CorrelationContextLanguage`** (`BiUM.Specialized/Database/CorrelationContextLanguage.cs`): `UseSpecialized()` içinde `ICorrelationContextAccessor` ile yapılandırılır. `ProjectTo` öncesi dil: açık `languageId` (boş olmayan `Guid`) → `CorrelationContext.LanguageId` → `CorrelationContext.DefaultLanguageId`.
 - **EF extension overload’ları** (`Extensions.*.cs`): çeviri içeren `ProjectTo` yolunda varsayılan overload **`languageId` almaz** — dil bağlamdan gelir. Farklı dil gereken nadir API’ler için aynı metodların **`Guid languageId`** parametreli overload’ı vardır. Mikroservis repository’leri normalde yalnızca bağlam overload’ını kullanır; **`CorrelationContext.LanguageId`’yi extension argümanı olarak geçirmeyin**. Sorgu filtrelerinde (`Include`, `Where`, cache key) dil kullanımı ayrı kalır.

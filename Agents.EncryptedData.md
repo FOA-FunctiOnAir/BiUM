@@ -31,6 +31,7 @@ Bu belge, EF Core üzerinde **`[EncryptedData]`** ile işaretli `string` özelli
 ## 6. Diğer yardımcılar
 
 - **`EncryptionHelper`** (`BiUM.Core/Common/Utils/EncryptionHelper.cs`): Encrypt/Decrypt, Hash/Verify, Protect/Unprotect — uygulama kodu (login, export vb.) doğrudan da kullanabilir.
+- **OpenTelemetry**: PBKDF2 içeren `Hash`, `Verify`, `Encrypt`, `Decrypt` çağrıları `ActivitySource` **`BiUM.EncryptionHelper`** altında `EncryptionHelper.{operation}` internal span üretir (`encryption.pbkdf2_iterations` tag). Kaynak adı `ApplicationExtensions.Services` içinde `.AddSource(EncryptionHelper.ActivitySourceName)` ile dinlenir.
 
 ## 7. AI ajanları için
 

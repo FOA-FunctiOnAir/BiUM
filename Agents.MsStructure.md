@@ -100,7 +100,7 @@ Static parameter values (`BiApp.Parameters` / `GetParameterValueByParameterId`) 
 
 **`ToForParameterPaginatedListAsync`**: single-call pipeline for ForParameter repositories (`ApplyExcludedIds` + `ToPaginatedListAsync` + `MergeSelectedIdsAsync`). Pass **`PaginationQuery.ToPageBaseQuery(pageStart, pageSize)`** (or the convenience `pageStart`/`pageSize` overload on `ToForParameterPaginatedListAsync` only).
 
-**ProjectTo helpers** (`ProjectToListAsync`, `ProjectToFirstOrDefaultAsync`, `ProjectToPaginatedListAsync`, `ProjectToForParameterPaginatedListAsync`): SQL-project via AutoMapper; prefer over in-memory `ToListAsync<TSource,TDestination>` when only DTO columns are needed.
+**ProjectTo helpers** (`ProjectToListAsync`, `ProjectToFirstOrDefaultAsync`, `ProjectToPaginatedListAsync`, `ProjectToForParameterPaginatedListAsync`): SQL-project via AutoMapper; prefer over in-memory `ToListAsync<TSource,TDestination>` when only DTO columns are needed. Paginated ProjectTo paths apply **`OrderPaginatedQuery` on the entity `IQueryable`** (SQL) before `ProjectTo`; do not sort the DTO in memory.
 
 **BiUM.Generator** emits this pattern for entities with the ForParameter feature; new services should not hand-roll a different handler or return type (`ApiResponse<List<>>` is not valid for ForParameter).
 

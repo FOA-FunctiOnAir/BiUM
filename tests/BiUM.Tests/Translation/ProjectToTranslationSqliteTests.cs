@@ -193,6 +193,23 @@ public sealed class ProjectToTranslationSqliteTests : IDisposable
     }
 
     [Fact]
+    public async Task ToPaginatedListAsync_without_sortBy_orders_on_source_entity()
+    {
+        using var scope = _sp.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        var result = await ctx.Currencies
+            .ToPaginatedListAsync<Currency, GetFwCurrenciesForNamesDto>(
+                PaginationQuery.ToPageBaseQuery(0, 10),
+                _mapper,
+                LanguageTr,
+                CancellationToken.None);
+
+        result.Value.Should().HaveCount(1);
+        result.Value[0].Name.Should().Be("Amerikan Doları");
+    }
+
+    [Fact]
     public async Task WhereToListAsync_with_languageId_returns_correct_translation()
     {
         using var scope = _sp.CreateScope();

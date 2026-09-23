@@ -61,16 +61,18 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking();
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking(),
+            query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 
@@ -84,17 +86,19 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking();
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking(),
+            query.OrderPaginatedQuery(baseQuery),
             mapper,
             languageId);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 
@@ -108,16 +112,18 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking().Where(predicate);
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking().Where(predicate),
+            query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 
@@ -132,17 +138,19 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking().Where(predicate);
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking().Where(predicate),
+            query.OrderPaginatedQuery(baseQuery),
             mapper,
             languageId);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 
@@ -156,16 +164,18 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking().Where(predicate);
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking().Where(predicate),
+            query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 
@@ -180,17 +190,19 @@ public static partial class Extensions
         where TSource : class
         where TDestination : class
     {
+        var query = queryable.AsNoTracking().Where(predicate);
+
         var projected = CorrelationContextLanguage.ProjectToMapped<TSource, TDestination>(
-            queryable.AsNoTracking().Where(predicate),
+            query.OrderPaginatedQuery(baseQuery),
             mapper,
             languageId);
 
-        var items = await projected.OrderPaginatedQuery(baseQuery).ToListAsync(cancellationToken);
+        var items = await projected.ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
             items: items,
-            count: await projected.CountAsync(cancellationToken)
+            count: await query.CountAsync(cancellationToken)
         );
     }
 }

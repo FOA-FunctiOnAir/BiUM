@@ -117,6 +117,7 @@ public static partial class ApplicationExtensions
             .WithTracing(tracing =>
                 tracing
                     .AddSource(serviceName)
+                    .AddSource(BiUM.Core.Common.Utils.EncryptionHelper.ActivitySourceName)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation(options =>
                     {

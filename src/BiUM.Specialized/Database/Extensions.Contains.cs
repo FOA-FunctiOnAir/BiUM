@@ -200,12 +200,12 @@ public static partial class Extensions
         return Expression.Call(current, nameof(string.ToUpper), Type.EmptyTypes);
     }
 
-    private sealed class ContainsParameterReplacer(ParameterExpression source, ParameterExpression target) : ExpressionVisitor
+    private sealed class ContainsParameterReplacer(ParameterExpression source, Expression target) : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node) =>
             node == source ? target : base.VisitParameter(node);
     }
 
-    private static Expression ReplaceParameter(Expression expression, ParameterExpression source, ParameterExpression target) =>
+    private static Expression ReplaceParameter(Expression expression, ParameterExpression source, Expression target) =>
         new ContainsParameterReplacer(source, target).Visit(expression)!;
 }

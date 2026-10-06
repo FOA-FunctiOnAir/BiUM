@@ -112,6 +112,16 @@ Static parameter values (`BiApp.Parameters` / `GetParameterValueByParameterId`) 
   ```
 - `Expression<Func<T,bool>>.Or(other)`: generic predicate combinator (parameter-safe `OrElse`), usable with any two predicates built via `BuildContains`/`BuildAnyContains`.
 
+**`WhereExpanded` + entity-style `ApplyContains`/`ApplyAnyContains`** (`Extensions.ContainsExpand.cs`): lets a search live **inline**, mixed freely with `&&`/`||`/other conditions, inside one hand-written predicate — the thing plain chained `.Where(...).ApplyContains(...)` cannot do (chaining only `AND`s; OR-ing or nesting a search inside another condition needs `BuildContains(...).Or(...)`, which is fine for 1–2 terms but doesn't read naturally for arbitrary boolean composition). Call `.WhereExpanded(predicate)` instead of `.Where(predicate)`, then use `entity.ApplyContains(selector, search)` / `entity.ApplyAnyContains(collectionSelector, childSelector, search, childFilter?)` as plain `bool` sub-expressions anywhere inside that one predicate:
+  ```csharp
+  var audits = _context.Audits
+      .WhereExpanded(a =>
+          (!id.HasValue || a.Id == id.Value) &&
+          (!tenantId.HasValue || a.TenantId == tenantId.Value) &&
+          a.ApplyContains(x => x.ServiceName, serviceName));
+  ```
+  `WhereExpanded` runs a dedicated `ExpressionVisitor` **once, at query-build time** (not per row) that recognizes calls to these two specific methods by `MethodInfo` and rewrites them in place into the same `Replace`/`ToUpper`/`Contains`/`OrElse` subtree `BuildContains`/`BuildAnyContains` would have produced — by the time EF Core sees the tree, no custom method call remains, so it translates and runs server-side exactly like the chained form. This only works through `WhereExpanded`; a plain `.Where(a => a.ApplyContains(...))` throws "could not be translated" at query execution (EF Core cannot translate an arbitrary custom method call, and `a.ApplyContains(...)` touches the query parameter so it can't be client-evaluated either) — this is intentional: it fails loudly rather than guessing. Outside any `IQueryable` (LINQ-to-Objects, unit tests, a plain C# `if`), the **same two methods also run as real code** — a small built-in expression **interpreter** (member access, null-forgiving chains, ternary, string concatenation — no `Expression.Compile()`, so no JIT/dynamic-method cost per call) evaluates the selector directly against the live object; a selected field or a null-forgiving chain that turns out null is treated as empty/no-match, never an exception. Prefer `WhereExpanded` for anything hitting the database; the direct-call form is for composing the identical logic outside a query.
+
 **ProjectTo helpers** (`ProjectToListAsync`, `ProjectToFirstOrDefaultAsync`, `ProjectToPaginatedListAsync`, `ProjectToForParameterPaginatedListAsync`): SQL-project via AutoMapper; prefer over in-memory `ToListAsync<TSource,TDestination>` when only DTO columns are needed. Paginated ProjectTo paths apply **`OrderPaginatedQuery` on the entity `IQueryable`** (SQL) before `ProjectTo`; do not sort the DTO in memory.
 
 **BiUM.Generator** emits this pattern for entities with the ForParameter feature; new services should not hand-roll a different handler or return type (`ApiResponse<List<>>` is not valid for ForParameter).

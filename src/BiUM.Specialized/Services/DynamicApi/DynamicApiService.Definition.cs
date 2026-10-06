@@ -262,10 +262,11 @@ public partial class DynamicApiService
     {
         return await DbContext.DomainDynamicApis
             .Where(ReadFilter())
-            .Where(api => !applicationId.HasValue || api.ApplicationId == applicationId.Value)
-            .ApplyAnyContains(api => api.DomainDynamicApiTranslations, rt => rt.Translation, q, childFilter: rt => rt.LanguageId == CorrelationContext.LanguageId)
-            .ApplyContains(api => api.Name, name)
-            .ApplyContains(api => api.Code, code)
+            .WhereExpanded(api =>
+                (!applicationId.HasValue || api.ApplicationId == applicationId.Value) &&
+                api.ApplyAnyContains(x => x.DomainDynamicApiTranslations, rt => rt.Translation, q, childFilter: rt => rt.LanguageId == CorrelationContext.LanguageId) &&
+                api.ApplyContains(x => x.Name, name) &&
+                api.ApplyContains(x => x.Code, code))
             .ToPaginatedListAsync<DomainDynamicApi, DomainDynamicApisDto>(
                 PaginationQuery.ToPageBaseQuery(pageStart, pageSize),
                 Mapper,

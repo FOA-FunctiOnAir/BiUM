@@ -594,10 +594,11 @@ public partial class CrudService
     {
         var domainCruds = await DbContext.DomainCruds
             .Where(DomainCrudReadFilter())
-            .Where(dc => !applicationId.HasValue || dc.ApplicationId == applicationId.Value)
-            .ApplyAnyContains(dc => dc.DomainCrudTranslations, rt => rt.Translation, q, childFilter: rt => rt.LanguageId == CorrelationContext.LanguageId)
-            .ApplyContains(dc => dc.Name, name)
-            .ApplyContains(dc => dc.Code, code)
+            .WhereExpanded(dc =>
+                (!applicationId.HasValue || dc.ApplicationId == applicationId.Value) &&
+                dc.ApplyAnyContains(x => x.DomainCrudTranslations, rt => rt.Translation, q, childFilter: rt => rt.LanguageId == CorrelationContext.LanguageId) &&
+                dc.ApplyContains(x => x.Name, name) &&
+                dc.ApplyContains(x => x.Code, code))
             .ToPaginatedListAsync<DomainCrud, DomainCrudsDto>(PaginationQuery.ToPageBaseQuery(pageStart, pageSize), Mapper, cancellationToken);
 
         return domainCruds;

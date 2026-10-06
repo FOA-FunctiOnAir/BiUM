@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -36,19 +37,114 @@ public static partial class Extensions
         Expression<Func<TSource, string?>> selector,
         string? search)
     {
-        var (trNeedle, invariantNeedle) = PrepareContainsNeedles(search);
-
-        if (trNeedle is null || invariantNeedle is null)
+        if (PrepareContainsNeedles(search).Tr is null)
         {
             return queryable;
         }
 
-        var entityParam = Expression.Parameter(typeof(TSource), "e");
-        var field = ReplaceParameter(selector.Body, selector.Parameters[0], entityParam);
-        var contains = BuildContainsExpression(field, trNeedle, invariantNeedle);
-        var lambda = Expression.Lambda<Func<TSource, bool>>(contains, entityParam);
+        return queryable.Where(BuildContains(selector, search));
+    }
 
-        return queryable.Where(lambda);
+    public static IQueryable<TSource> ApplyContains<TSource>(
+        this IQueryable<TSource> queryable,
+        string? search,
+        params Expression<Func<TSource, string?>>[] selectors)
+    {
+        if (PrepareContainsNeedles(search).Tr is null || selectors.Length == 0)
+        {
+            return queryable;
+        }
+
+        Expression<Func<TSource, bool>>? combined = null;
+
+        foreach (var selector in selectors)
+        {
+            var predicate = BuildContains(selector, search);
+            combined = combined is null ? predicate : combined.Or(predicate);
+        }
+
+        return queryable.Where(combined!);
+    }
+
+    public static IQueryable<TSource> ApplyAnyContains<TSource, TChild>(
+        this IQueryable<TSource> queryable,
+        Expression<Func<TSource, IEnumerable<TChild>>> collectionSelector,
+        Expression<Func<TChild, string?>> childSelector,
+        string? search,
+        Expression<Func<TChild, bool>>? childFilter = null)
+    {
+        if (PrepareContainsNeedles(search).Tr is null)
+        {
+            return queryable;
+        }
+
+        return queryable.Where(BuildAnyContains(collectionSelector, childSelector, search, childFilter));
+    }
+
+    public static Expression<Func<TSource, bool>> BuildContains<TSource>(
+        Expression<Func<TSource, string?>> selector,
+        string? search)
+    {
+        var entityParam = Expression.Parameter(typeof(TSource), "e");
+        var (trNeedle, invariantNeedle) = PrepareContainsNeedles(search);
+
+        if (trNeedle is null)
+        {
+            return Expression.Lambda<Func<TSource, bool>>(Expression.Constant(true), entityParam);
+        }
+
+        var field = ReplaceParameter(selector.Body, selector.Parameters[0], entityParam);
+        var contains = BuildContainsExpression(field, trNeedle, invariantNeedle!);
+
+        return Expression.Lambda<Func<TSource, bool>>(contains, entityParam);
+    }
+
+    public static Expression<Func<TSource, bool>> BuildAnyContains<TSource, TChild>(
+        Expression<Func<TSource, IEnumerable<TChild>>> collectionSelector,
+        Expression<Func<TChild, string?>> childSelector,
+        string? search,
+        Expression<Func<TChild, bool>>? childFilter = null)
+    {
+        var entityParam = Expression.Parameter(typeof(TSource), "e");
+        var (trNeedle, invariantNeedle) = PrepareContainsNeedles(search);
+
+        if (trNeedle is null)
+        {
+            return Expression.Lambda<Func<TSource, bool>>(Expression.Constant(true), entityParam);
+        }
+
+        var collection = ReplaceParameter(collectionSelector.Body, collectionSelector.Parameters[0], entityParam);
+        var childParam = Expression.Parameter(typeof(TChild), "c");
+        var childField = ReplaceParameter(childSelector.Body, childSelector.Parameters[0], childParam);
+        var notNull = Expression.NotEqual(childField, Expression.Constant(null, typeof(string)));
+        var contains = BuildContainsExpression(childField, trNeedle, invariantNeedle!);
+        Expression childBody = Expression.AndAlso(notNull, contains);
+
+        if (childFilter is not null)
+        {
+            var filterBody = ReplaceParameter(childFilter.Body, childFilter.Parameters[0], childParam);
+            childBody = Expression.AndAlso(filterBody, childBody);
+        }
+
+        var childPredicate = Expression.Lambda<Func<TChild, bool>>(childBody, childParam);
+
+        var anyCall = Expression.Call(
+            typeof(Enumerable),
+            nameof(Enumerable.Any),
+            [typeof(TChild)],
+            collection,
+            childPredicate);
+
+        return Expression.Lambda<Func<TSource, bool>>(anyCall, entityParam);
+    }
+
+    public static Expression<Func<T, bool>> Or<T>(this Expression<Func<T, bool>> left, Expression<Func<T, bool>> right)
+    {
+        var param = Expression.Parameter(typeof(T), "x");
+        var leftBody = ReplaceParameter(left.Body, left.Parameters[0], param);
+        var rightBody = ReplaceParameter(right.Body, right.Parameters[0], param);
+
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(leftBody, rightBody), param);
     }
 
     private static (string? Tr, string? Invariant) PrepareContainsNeedles(string? search)

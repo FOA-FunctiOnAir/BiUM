@@ -57,7 +57,7 @@ When a microservice name has **more than one logical segment** (e.g. bounded con
 | Artifact | Convention | Example (`Education.Coach`) |
 |----------|------------|-------------------------------|
 | **`BiAppOptions.Domain`** | PascalCase segments separated by **`.`** | `Education.Coach` |
-| **`HttpClientsOptions.Domains` / `BiGrpcOptions.Domains` keys** | Same spelling as domain, **`ToLowerInvariant()`** for lookup (dots preserved; see `HttpClientService`) | `education.coach` |
+| **`HttpClientsOptions.Domains` / `BiGrpcOptions.Domains` keys** | Segments joined with **`-`**, lowercase | `education-coach` |
 | **`[BiUMRoute("...")]`** (`BiUM.Specialized`) | Lowercase segments separated by **`/`** (URL segment under `/api/`). Resolves to `/api/{segments}/[controller]/[action]`. | `[BiUMRoute("education/coach")]` |
 | **PostgreSQL database name** (and similar identifiers) | Segments joined with **underscore `_`**, lowercase | `education_coach` |
 
@@ -142,7 +142,8 @@ Do not use `BaseQueryDto<List<>>`, `IQueryHandler`, or `PaginatedApiResponse` fo
 
 ## 5. Persistence
 
-- **`AddDatabase<TDbContext, TInitialiser>(configuration)`** registers the main EF Core context (see [Agents.Database.md](Agents.Database.md)).
+- **`AddDatabase<TDbContext, TInitialiser>(configuration)`** registers the main EF Core context from `Databases:Default` (see [Agents.Database.md](Agents.Database.md)).
+- **`AddBiUMNativeDatabase(configuration, "<Name>", migrationAssemblies)`** registers an additional PostgreSQL database for native SQL (bulk COPY, partitions, versioned SQL migrations); call **`await services.InitialiseNativeDatabases()`** at startup. Raw SQL must go through `INativeDatabase` statements (see [Agents.NativeDatabase.md](Agents.NativeDatabase.md)).
 - The context usually inherits **`BaseDbContext`** (encryption, interceptors, tenant/correlation awareness as configured).
 - Repositories are **`Scoped`**, depend on **`IDbContext`** / a typed context interface, and implement interfaces declared in Application.
 
@@ -165,8 +166,7 @@ Services that sync metadata or use Bolt registers a second context via **`AddBol
 Common sections (presence depends on service):
 
 - **`BiAppOptions`** — domain name, port, environment flags.
-- **`ConnectionStrings`** — main database (PostgreSQL and/or MSSQL per deployment).
-- **`DatabaseType`** — provider selection where used.
+- **`Databases`** — `Databases:Default` (`Type` + `ConnectionString`) is the main EF database; additional named entries (`Databases:<Name>`) are BiUM native databases registered with `AddBiUMNativeDatabase` (see [Agents.Database.md](Agents.Database.md), [Agents.NativeDatabase.md](Agents.NativeDatabase.md)). The old root `ConnectionStrings` / `DatabaseType` keys are no longer read.
 - **`BoltOptions`** — when Bolt is enabled.
 - **`RabbitMQOptions`**, **`RedisOptions`** (`RedisOptions:Default` for the primary `IRedisClient`; additional child keys require explicit `AddBiUMRedisClients` per key from the microservice host), **`HttpClientsOptions`**, **`BiGrpcOptions`**.
 

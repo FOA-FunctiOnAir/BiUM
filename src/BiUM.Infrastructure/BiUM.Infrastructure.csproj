@@ -32,4 +32,8 @@
     <ProjectReference Include="..\BiUM.Contract\BiUM.Contract.csproj" />
     <ProjectReference Include="..\BiUM.Core\BiUM.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BiUM.Tests" />
+  </ItemGroup>
 </Project>

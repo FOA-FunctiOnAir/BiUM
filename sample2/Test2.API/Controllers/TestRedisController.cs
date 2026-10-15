@@ -45,6 +45,24 @@ public class TestRedisController : ApiControllerBase
 
         return Ok($"Key '{key}' removed successfully.");
     }
+
+    [HttpPost("{key}")]
+    public async Task<IActionResult> AcquireLock(string key, [FromQuery] int seconds = 30)
+    {
+        var token = Guid.NewGuid();
+
+        var acquired = await _redisClient.AddIfNotExistsAsync(key, token, TimeSpan.FromSeconds(Math.Clamp(seconds, 1, 300)));
+
+        return acquired ? Ok(new { Key = key, Token = token }) : Conflict($"Key '{key}' is already locked.");
+    }
+
+    [HttpDelete("{key}/{token:guid}")]
+    public async Task<IActionResult> ReleaseLock(string key, Guid token)
+    {
+        var released = await _redisClient.RemoveIfEqualsAsync(key, token);
+
+        return released ? Ok($"Lock '{key}' released.") : Conflict($"Lock '{key}' is not held by token {token}.");
+    }
 }
 
 public class SetCacheRequest

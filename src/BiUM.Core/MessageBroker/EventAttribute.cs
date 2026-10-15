@@ -6,4 +6,6 @@ namespace BiUM.Core.MessageBroker;
 public class EventAttribute : Attribute
 {
     public string? Exchange { get; init; }
+
+    public ushort ConsumerConcurrency { get; init; } = 1;
 }

@@ -1,4 +1,6 @@
 using BiUM.Contract.Models.MessageBroker;
+using BiUM.Core.Common.Configs;
+using BiUM.Core.Extensions;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,16 +22,18 @@ public static partial class Extensions
     {
         Action<DbContextOptionsBuilder>? configureOptions = null;
 
-        if (configuration.GetValue<string>("DatabaseType") == "InMemory")
+        var databaseOptions = configuration.GetDatabaseOptions();
+
+        if (databaseOptions.Type == DatabaseTypes.InMemory)
         {
             configureOptions = options =>
                 options.UseInMemoryDatabase("InMemoryDb");
         }
-        else if (configuration.GetValue<string>("DatabaseType") == "MSSQL")
+        else if (databaseOptions.Type == DatabaseTypes.MSSQL)
         {
             configureOptions = options =>
                 options.UseSqlServer(
-                    configuration.GetConnectionString("MSSQL"),
+                    configuration.GetRequiredDatabaseConnectionString(),
                     sql =>
                     {
                         var mainMigrationsAssembly = EfMigrationsAssemblyResolver.GetActiveMigrationsAssemblyName(configuration, bolt: false);
@@ -44,9 +48,9 @@ public static partial class Extensions
                         _ = sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     });
         }
-        else if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
+        else if (databaseOptions.Type == DatabaseTypes.PostgreSQL)
         {
-            var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration.GetConnectionString("PostgreSQL"))
+            var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration.GetRequiredDatabaseConnectionString())
             {
                 Pooling = true,
                 MinPoolSize = 0,

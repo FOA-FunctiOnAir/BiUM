@@ -52,7 +52,8 @@ graph TD
 - [Agents.Compensation.md](Agents.Compensation.md) — compensation session, snapshots, `CompensatableApi` / `CompensatableApiActionFilter`, `CompensationSessionFinalized` event.
 - [Agents.CorrelationContext.md](Agents.CorrelationContext.md) — `CorrelationContext` model, `x-correlation-context`, serializer, accessor.
 - [Agents.EncryptedData.md](Agents.EncryptedData.md) — `[EncryptedData]`, EF value converter, `BaseDbContext` + `BiAppOptions.EncryptionKey`.
-- [Agents.Database.md](Agents.Database.md) — `AddDatabase`, providers, retry, health checks, `IDbContext` registration.
+- [Agents.Database.md](Agents.Database.md) — `Databases` config (`Databases:Default` + named entries), `AddDatabase`, providers, retry, health checks, `IDbContext` registration.
+- [Agents.NativeDatabase.md](Agents.NativeDatabase.md) — `AddBiUMNativeDatabase`, keyed `INativeDatabase`, typed native SQL statements, bulk COPY merge, range partitions, versioned native migrations.
 - [Agents.RequestPipeline.md](Agents.RequestPipeline.md) — `UseInfrastructure`, `UseSpecialized`, request transaction, exception and rollback behavior.
 - [Agents.MessageBroker.md](Agents.MessageBroker.md) — `AddBiUMRabbitMqClients`, `RabbitMQOptions:Default` + optional named brokers, `IRabbitMQClient` publish path, headers, correlation on messages.
 - [Agents.Redis.md](Agents.Redis.md) — `AddBiUMRedisClients`, `RedisOptions:Default` + optional keyed clients, `IRedisClient` / `RedisClient`, `Enable` davranışı.
@@ -60,11 +61,13 @@ graph TD
 ### `src/` Modules
 
 - **`BiUM.Core`**: Base abstractions and interfaces.
-    - `Common/`: Utilities, Config Options (`BoltOptions`, `RedisOptions` for Redis, root `RabbitMQOptions` with per-broker sections under `Default` mapped to `RabbitMqOptions`); `BiAppOptions` includes `EncryptionKey` for `[EncryptedData]` conversion.
+    - `Common/`: Utilities, Config Options (`BoltOptions`, `RedisOptions` for Redis, root `RabbitMQOptions` with per-broker sections under `Default` mapped to `RabbitMqOptions`, `DatabaseOptions` for the `Databases` section read via `Extensions/DatabaseConfigurationExtensions`); `BiAppOptions` includes `EncryptionKey` for `[EncryptedData]` conversion.
     - `Common/Attributes/`: `EncryptedDataAttribute` for marking properties as encrypted/hashed at persistence (with `Reversible` flag).
     - `Common/Utils/`: `EncryptionHelper` for Encrypt/Decrypt (byte[] or string), Hash/Verify (non-reversible), Protect/Unprotect (reversible flag); used by the value converter and by application code (e.g. login, export).
-    - `Database/`: `IRepository`, `IUnitOfWork`.
-    - `MessageBroker/`: `IEventBus`.
+    - `Database/`: `IRepository`, `IUnitOfWork`; `Database/Native/`: `INativeDatabase`, `NativeSqlCommand`, `NativeSqlQuery<T>`, `NativeBulkMerge<TRow>`, `NativeRangePartitionSet`, `NativeSchemaMigration`.
+    - `PlatformIntegration/`: `IPlatformEventHandler` (per `EventCode` handlers for `PlatformIntegrationEvent`).
+    - `Observability/`: `ServiceCallMetricAttribute` — `[ServiceCallMetric(false)]` on a controller/action stops `ServiceCallMetricsMiddleware` from publishing `ServiceCalledEvent` for that endpoint (see [Agents.RequestPipeline.md](Agents.RequestPipeline.md)).
+    - `MessageBroker/`: `IEventBus`; `EventAttribute.ConsumerConcurrency` controls per-event consumer parallelism/prefetch.
     - `Logging/`: Logging interfaces.
 
 - **`BiUM.Infrastructure`**: Concrete implementations of Core.
@@ -79,6 +82,8 @@ graph TD
     - `Middlewares/`: `RequestTransactionMiddleware` wraps mutating HTTP requests (POST/PUT/PATCH/DELETE) for the scoped main `IDbContext` in `IExecutionStrategy.ExecuteAsync`; the transaction itself is opened lazily (`Database/LazyTransactionBeginInterceptor`, on the first `SaveChanges`) so no-op requests never pay for a transaction, and the middleware commits or rolls back whatever `Database.CurrentTransaction` ends up being after `next()`. The same lazy-begin + explicit commit/rollback pattern is mirrored for non-HTTP callers that also run `SaveChanges` (RabbitMQ event handlers, MagicOnion/gRPC service methods, `SyncDatabase` seeding) via the shared `ITransactionalUnitOfWorkRunner` (`BiUM.Core.Database` / `BiUM.Specialized.Database.TransactionalUnitOfWorkRunner`). `BaseDbContext.Dispose`/`DisposeAsync` logs at **Error** if a context is ever disposed with a still-open transaction, as a safety net for any call path that doesn't go through one of these wrappers. Skips GET/HEAD/OPTIONS, gRPC, InMemory provider, `/health*`, `/swagger*`, `/version`. Registered in `UseSpecialized` (after `UseRouting` from `UseInfrastructure`).
     - `Common/API/`: `ApiResponseTransactionRollbackFilter` sets `HttpContext.Items[ApiResponseTransactionRollbackFilter.RollbackRequestedKey] = true` when `ApiResponse.Success` is false (without throwing, so the response is written normally); `RequestTransactionMiddleware` checks this flag after `next()` and rolls back instead of committing when set. `ApiResponseLoggingFilter` logs each outbound `ApiResponse` / `ApiResponse<T>` message by severity (Error → `LogError`) with request path. `[CompensatableApi]` on a controller or action marks the **main** compensatable endpoint (`CompensatableApiActionFilter`: session + local commit/rollback + `CompensationSessionFinalized` publish). Dynamic CRUD HTTP surface: [Agents.Crud.md](Agents.Crud.md). Dynamic API: [Agents.DynamicApi.md](Agents.DynamicApi.md). Dynamic export: [Agents.DynamicExporter.md](Agents.DynamicExporter.md).
     - `Interceptors/`: `EntitySaveChangesInterceptor` (rejects `SaveChanges` during HTTP GET when `IHttpContextAccessor` is present and there are tracked changes), gRPC interceptors.
+    - `Database/Native/`: PostgreSQL implementation of the native database (`NpgsqlNativeDatabase`, `NativeDatabaseInitialiser`, `AddBiUMNativeDatabase`, `InitialiseNativeDatabases`) — see [Agents.NativeDatabase.md](Agents.NativeDatabase.md).
+    - `Services/PlatformIntegration/`: abstract `PlatformIntegrationEventDispatcher` + `AddPlatformEventHandlers(assembly)` — see [Agents.PlatformIntegration.md](Agents.PlatformIntegration.md).
     - `Database/`: `BaseDbContext` / `IDbContext` — `DomainDynamicApi*` ve `DomainDynamicExport*` DbSet'leri etkin; ayrıntı [Agents.DynamicApi.md](Agents.DynamicApi.md), [Agents.DynamicExporter.md](Agents.DynamicExporter.md).
     - `Database/Extensions.cs` (`AddDatabase`): PostgreSQL and MSSQL register `EnableRetryOnFailure` so execution strategy and request transactions align.
     - `Services/`: `ICrudService`, `ICompensationService`, and related behavior: [Agents.Crud.md](Agents.Crud.md). Uses `IHttpClientsService` for outbound calls where documented in [Agents.HttpClientService.md](Agents.HttpClientService.md).
@@ -90,7 +95,7 @@ graph TD
 ## 4. AI Agent Guidelines
 
 > [!IMPORTANT]
-> **Documentation Sync**: Any changes to the code must be immediately reflected in this `AGENTS.md`, the relevant `Agents.*.md` deep-dive (e.g. [Agents.Coding.md](Agents.Coding.md), [Agents.MsStructure.md](Agents.MsStructure.md), [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md), [Agents.Crud.md](Agents.Crud.md), [Agents.HttpClientService.md](Agents.HttpClientService.md), [Agents.Compensation.md](Agents.Compensation.md), [Agents.CorrelationContext.md](Agents.CorrelationContext.md), [Agents.EncryptedData.md](Agents.EncryptedData.md), [Agents.Database.md](Agents.Database.md), [Agents.RequestPipeline.md](Agents.RequestPipeline.md), [Agents.MessageBroker.md](Agents.MessageBroker.md)), or the respective module's `README.md`.
+> **Documentation Sync**: Any changes to the code must be immediately reflected in this `AGENTS.md`, the relevant `Agents.*.md` deep-dive (e.g. [Agents.Coding.md](Agents.Coding.md), [Agents.MsStructure.md](Agents.MsStructure.md), [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md), [Agents.Crud.md](Agents.Crud.md), [Agents.HttpClientService.md](Agents.HttpClientService.md), [Agents.Compensation.md](Agents.Compensation.md), [Agents.CorrelationContext.md](Agents.CorrelationContext.md), [Agents.EncryptedData.md](Agents.EncryptedData.md), [Agents.Database.md](Agents.Database.md), [Agents.NativeDatabase.md](Agents.NativeDatabase.md), [Agents.RequestPipeline.md](Agents.RequestPipeline.md), [Agents.MessageBroker.md](Agents.MessageBroker.md)), or the respective module's `README.md`.
 
 ### Critical Rules
 1. **Dependency Direction**: Respect the hierarchy. `Core` should never depend on `Infrastructure`.

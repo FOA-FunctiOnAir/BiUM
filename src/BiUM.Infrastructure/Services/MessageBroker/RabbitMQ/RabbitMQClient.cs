@@ -315,9 +315,11 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
             return;
         }
 
-        var channel = await CreateConsumerChannelAsync();
-
         var eventAttribute = eventType.GetCustomAttribute<EventAttribute>();
+
+        var consumerConcurrency = Math.Max((ushort)1, eventAttribute?.ConsumerConcurrency ?? 1);
+
+        var channel = await CreateConsumerChannelAsync(consumerConcurrency, cancellationToken);
 
         Dictionary<string, object?>? queueArguments = null;
 
@@ -691,11 +693,21 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
         _consumerChannels.Clear();
     }
 
-    private async Task<IChannel> CreateConsumerChannelAsync()
+    private async Task<IChannel> CreateConsumerChannelAsync(ushort consumerConcurrency, CancellationToken cancellationToken)
     {
         var connection = await _connectionProvider.GetConsumerConnectionAsync();
 
-        var channel = await connection.CreateChannelAsync();
+        var channelOptions = new CreateChannelOptions(
+            publisherConfirmationsEnabled: false,
+            publisherConfirmationTrackingEnabled: false,
+            consumerDispatchConcurrency: consumerConcurrency);
+
+        var channel = await connection.CreateChannelAsync(channelOptions, cancellationToken);
+
+        if (consumerConcurrency > 1)
+        {
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerConcurrency, global: false, cancellationToken: cancellationToken);
+        }
 
         channel.ChannelShutdownAsync += (_, args) =>
         {

@@ -1,6 +1,7 @@
 using BiUM.Contract.Models;
 using BiUM.Core.Authorization;
 using BiUM.Core.Compensation;
+using BiUM.Core.Extensions;
 using BiUM.Core.MessageBroker;
 using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Infrastructure.Common.Models;
@@ -204,7 +205,7 @@ public sealed class CompensationService : ICompensationService
                 return;
             }
 
-            var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+            var dbType = _configuration.GetDatabaseType();
             var table = dbType == DbTypePostgresql ? $"{QuotePg("dbo")}.{QuotePg("__PENDING_EVENT")}" : "[dbo].[__PENDING_EVENT]";
             var idCol = dbType == DbTypePostgresql ? QuotePg("ID") : QuoteMs("ID");
             var dispatchedCol = dbType == DbTypePostgresql ? QuotePg("DISPATCHED") : QuoteMs("DISPATCHED");
@@ -309,7 +310,7 @@ public sealed class CompensationService : ICompensationService
 
     private async Task CommitCrudRowAsync(DomainCompensationSnapshot snap, CancellationToken cancellationToken)
     {
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _configuration.GetDatabaseType();
         var schema = ResolveSchema(snap.ApplicationId!.Value, snap.TenantId);
         var tableName = snap.SnapshotTableName ?? string.Empty;
         var table = dbType == DbTypePostgresql
@@ -327,7 +328,7 @@ public sealed class CompensationService : ICompensationService
 
     private async Task RollbackCrudSnapshotAsync(DomainCompensationSnapshot snap, CancellationToken cancellationToken)
     {
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _configuration.GetDatabaseType();
         var schema = ResolveSchema(snap.ApplicationId!.Value, snap.TenantId);
         var tableName = snap.SnapshotTableName ?? string.Empty;
         var table = dbType == DbTypePostgresql

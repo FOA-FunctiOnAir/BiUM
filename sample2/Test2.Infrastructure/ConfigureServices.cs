@@ -1,6 +1,7 @@
 using BiApp.Test2.Application.Repositories;
 using BiApp.Test2.Contract.Services.Rpc;
 using BiApp.Test2.Infrastructure.Persistence;
+using BiApp.Test2.Infrastructure.Persistence.Native;
 using BiApp.Test2.Infrastructure.Repositories;
 using BiUM.Infrastructure.MagicOnion.Client;
 using BiUM.Specialized.Database;
@@ -21,6 +22,8 @@ public static class ConfigureServices
         _ = services.AddBolt<BoltDbContext, DomainBoltDbContextInitialiser>(configuration);
         _ = services.AddScoped<IBoltDbContext>(sp => sp.GetRequiredService<BoltDbContext>());
 
+        _ = services.AddBiUMNativeDatabase(configuration, SampleMetricsDatabase.Name, typeof(SampleMetricsDatabase).Assembly);
+
         _ = services.AddScoped<IAccountRepository, AccountRepository>();
         _ = services.AddScoped<ICompensationTestRepository, CompensationTestRepository>();
 
@@ -37,6 +40,8 @@ public static class ConfigureServices
             using var scope = services.CreateScope();
 
             await scope.ServiceProvider.InitialiseDatabase();
+
+            await scope.ServiceProvider.InitialiseNativeDatabases();
 
             await scope.ServiceProvider.SyncBolt();
 

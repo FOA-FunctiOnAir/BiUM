@@ -60,6 +60,19 @@ All of the following are **`AddScoped`** (they consume scoped `IHttpClientsServi
 
 Microservices that **own** event metadata (Configuration) or need local overrides replace `IEventDefinitionProvider` / recorder in their `ConfigureServices` after `AddSpecializedServices`, keeping the same **Scoped** lifetime.
 
+## 4.1. Consuming platform events in a microservice (`IPlatformEventHandler`)
+
+`PublishEvent` actions publish a `PlatformIntegrationEvent` (`EventId`, `EventCode`, `Parameters`). To receive it in a target service:
+
+1. Register the event definition with **ExternalRabbitMq** channel and `RoutingKey` = target domain (e.g. `energytracking`); the executor then calls `PublishToDomainAsync(domain, …)` → fanout `{domain}.platform_integration_event`.
+2. In the target service add one concrete subclass of **`PlatformIntegrationEventDispatcher`** (`BiUM.Specialized.Services.PlatformIntegration`). The base class is abstract on purpose: only services that declare a subclass subscribe to `PlatformIntegrationEvent`.
+3. Implement **`IPlatformEventHandler`** (`BiUM.Core.PlatformIntegration`: `EventCode` + `HandleAsync(PlatformIntegrationEvent, ct)`) per event code and register them with **`services.AddPlatformEventHandlers(assembly)`** (scoped).
+4. The dispatcher selects handlers by `EventCode` (case-insensitive); unknown codes are ignored (debug log).
+
+Sample: sample2 `Test2PlatformEventDispatcher` + `SamplePlatformEventHandler` (`test2-sample-event`); `TestSchedulerEventController.Trigger` repeats BiApp.Scheduler `RunScheduledTaskService.Execute` (same correlation context, `SchedulerTriggerType.PublishEvent`, definition from Configuration through `HttpClientsOptions:Domains:configuration`) and `TestPlatformEventController.GetLastReceived` shows what the handler received (`sample2/http-examples.http`).
+
+Example: BiApp.EnergyTracking `EnergyTrackingPlatformEventDispatcher`, `CollectionTickPlatformEventHandler` (`energytracking-collection-tick`), `PartitionMaintenancePlatformEventHandler` (`energytracking-partition-maintenance`).
+
 ## 5. Dynamic API surface
 
 Handler code:

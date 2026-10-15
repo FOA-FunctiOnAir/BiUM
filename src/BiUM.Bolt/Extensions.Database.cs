@@ -1,3 +1,5 @@
+using BiUM.Core.Common.Configs;
+using BiUM.Core.Extensions;
 using BiUM.Specialized.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +16,9 @@ public static partial class BoltDatabaseExtensions
         string connectionString)
         where TDbContext : DbContext
     {
-        if (configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
+        var databaseType = configuration.GetDatabaseType();
+
+        if (databaseType == DatabaseTypes.PostgreSQL)
         {
             var connectionStringBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -42,7 +46,7 @@ public static partial class BoltDatabaseExtensions
                             errorCodesToAdd: null);
                     }));
         }
-        else if (configuration.GetValue<string>("DatabaseType") == "MSSQL")
+        else if (databaseType == DatabaseTypes.MSSQL)
         {
             services.AddDbContext<TDbContext>(options =>
                 options.UseSqlServer(
@@ -66,33 +70,23 @@ public static partial class BoltDatabaseExtensions
 
     internal static string? TryGetMainDatabaseName(IConfiguration configuration)
     {
-        var databaseType = configuration.GetValue<string>("DatabaseType");
+        var databaseOptions = configuration.GetDatabaseOptions();
 
-        if (databaseType == "PostgreSQL")
+        if (string.IsNullOrWhiteSpace(databaseOptions.ConnectionString))
         {
-            var connectionStringArray = configuration.GetConnectionString("PostgreSQL")?.Split(";");
-
-            if (connectionStringArray is null || connectionStringArray.Length == 0)
-            {
-                return null;
-            }
-
-            foreach (var connectionStringItem in connectionStringArray)
-            {
-                var connectionStringItems = connectionStringItem.Trim().Split("=");
-
-                if (connectionStringItems.Length == 2 && connectionStringItems[0].Trim().Equals("Database", StringComparison.OrdinalIgnoreCase))
-                {
-                    return connectionStringItems[1].Trim();
-                }
-            }
-
             return null;
         }
 
-        if (databaseType == "MSSQL")
+        if (databaseOptions.Type == DatabaseTypes.PostgreSQL)
         {
-            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(configuration.GetConnectionString("MSSQL"));
+            var builder = new NpgsqlConnectionStringBuilder(databaseOptions.ConnectionString);
+
+            return string.IsNullOrWhiteSpace(builder.Database) ? null : builder.Database;
+        }
+
+        if (databaseOptions.Type == DatabaseTypes.MSSQL)
+        {
+            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(databaseOptions.ConnectionString);
 
             return string.IsNullOrWhiteSpace(builder.InitialCatalog) ? null : builder.InitialCatalog;
         }

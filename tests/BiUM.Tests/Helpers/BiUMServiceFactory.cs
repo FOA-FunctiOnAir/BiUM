@@ -144,7 +144,7 @@ public static class BiUMServiceFactory
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["DatabaseType"] = "PostgreSQL"
+                ["Databases:Default:Type"] = "PostgreSQL"
             })
             .Build();
         services.AddSingleton<IConfiguration>(configuration);

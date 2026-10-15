@@ -10,6 +10,7 @@ Bu belge, ASP.NET Core pipeline’da BiUM’un eklediği middleware ve filtreler
   - **REST**: `UseExceptionHandler` — `ApiResponse` JSON (`application/problem+json`); işlenmemiş istisna **`LogError`**.
 - **Domain**: `AppDomain.UnhandledException` ve `TaskScheduler.UnobservedTaskException` loglama.
 - **Middleware zinciri**: `CorrelationContextExtractorMiddleware` → `CorrelationContextActivityMiddleware` → `ServiceCallMetricsMiddleware`
+  - `ServiceCallMetricsMiddleware` her HTTP isteği için `ServiceCalledEvent` yayınlar (Observability → `SERVICE_CALL_METRIC`). `/health*`, `/swagger*`, `/version`, `/index.html`, `/favicon.ico` atlanır. Controller veya action **`[ServiceCallMetric(false)]`** (`BiUM.Core.Observability`) ile işaretlenirse o endpoint için event yayınlanmaz (Audit’teki `[Auditable(false)]` gibi; action seviyesindeki attribute controller’ınkini geçersiz kılar). Kontrol istek tamamlandıktan sonra seçilen endpoint’in metadata’sından yapılır. Örnek: Observability `EventIntegrationMetricController` — Scheduler/platform action metrik çağrılarının `SERVICE_CALL_METRIC`’e gürültü olarak düşmesini engeller.
 - **`UseRouting`**
 - **Health**: `/health`, `/health/live`, `/health/ready` (HealthChecks UI writer)
 - **`/version`**: `APP_VERSION` ortam değişkeni

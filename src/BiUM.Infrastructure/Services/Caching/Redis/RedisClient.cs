@@ -1,7 +1,6 @@
 using BiUM.Contract.Models.Caching.Redis;
 using BiUM.Core.Caching.Redis;
 using BiUM.Core.Common.Configs;
-using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -21,16 +20,9 @@ public class RedisClient : IRedisClient
     private readonly IDateTimeService _dateTimeService;
     private readonly ILogger<RedisClient> _logger;
 
-    private readonly AsyncLock _lock = new();
-
     private readonly IConnectionMultiplexer? _connectionMultiplexer;
     private readonly IDatabase? _database;
     private readonly TimeSpan? _defaultCacheTimeout;
-
-    private volatile bool _scriptsLoaded;
-
-    private LoadedLuaScript? _removeIfEqual;
-    private LoadedLuaScript? _replaceIfEqual;
 
     public RedisClient(
         IOptionsMonitor<RedisOptions> redisClientOptionsMonitor,
@@ -67,6 +59,21 @@ public class RedisClient : IRedisClient
 
         _database = _connectionMultiplexer.GetDatabase();
         _defaultCacheTimeout = _redisClientOptions.DefaultCacheTimeout;
+    }
+
+    internal RedisClient(
+        IDatabase database,
+        RedisOptions redisClientOptions,
+        string optionsName,
+        IDateTimeService dateTimeService,
+        ILogger<RedisClient> logger)
+    {
+        _optionsName = optionsName;
+        _redisClientOptions = redisClientOptions;
+        _dateTimeService = dateTimeService;
+        _logger = logger;
+        _database = database;
+        _defaultCacheTimeout = redisClientOptions.DefaultCacheTimeout;
     }
 
     private void OnConnectionFailed(object? sender, ConnectionFailedEventArgs e)
@@ -230,6 +237,43 @@ public class RedisClient : IRedisClient
         return await _database.StringSetAsync(key, JsonSerializer.Serialize(value), expiresIn, When.Always, CommandFlags.None);
     }
 
+    public async Task<bool> AddIfNotExistsAsync<T>(string key, T value, TimeSpan expiresIn)
+    {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
+        }
+
+        if (value is null)
+        {
+            throw new ArgumentNullException(nameof(value), "Value cannot be null or empty.");
+        }
+
+        return await _database.StringSetAsync(key, JsonSerializer.Serialize(value), expiresIn, When.NotExists, CommandFlags.None);
+    }
+
+    public async Task AddAllAsync<T>(IReadOnlyDictionary<string, T> items, TimeSpan expiresIn)
+    {
+        _ = _database ?? throw new InvalidOperationException("Redis client is not enabled");
+
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var batch = _database.CreateBatch();
+
+        var tasks = items
+            .Select(item => batch.StringSetAsync(item.Key, JsonSerializer.Serialize(item.Value), expiresIn, When.Always, CommandFlags.None))
+            .ToList();
+
+        batch.Execute();
+
+        await Task.WhenAll(tasks);
+    }
+
     /// <summary>
     /// The ExistsAsync method checks whether a cache item with a specific key exists in Redis database asynchronously. It takes in a string key parameter which represents the unique identifier of the cache item that is being checked for existence. The method returns a Task<bool> that indicates whether the cache item exists (true) or not (false).
     /// </summary>
@@ -348,10 +392,8 @@ public class RedisClient : IRedisClient
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
 
-        await LoadScriptsAsync();
-
         var expectedValue = expected.ToRedisValue();
-        var redisResult = await _database.ScriptEvaluateAsync(_removeIfEqual!, new { key = (RedisKey)key, expected = expectedValue });
+        var redisResult = await _database.ScriptEvaluateAsync(RedisScripts.RemoveIfEqualScript, [(RedisKey)key], [expectedValue]);
         var result = (int)redisResult;
 
         return result > 0;
@@ -399,20 +441,11 @@ public class RedisClient : IRedisClient
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
 
-        await LoadScriptsAsync();
-
         var redisValue = value.ToRedisValue();
         var expectedValue = expected.ToRedisValue();
-        RedisResult redisResult;
+        RedisValue expires = expiresIn.HasValue ? (long)expiresIn.Value.TotalMilliseconds : string.Empty;
 
-        if (expiresIn.HasValue)
-        {
-            redisResult = await _database.ScriptEvaluateAsync(_replaceIfEqual!, new { key = (RedisKey)key, value = redisValue, expected = expectedValue, expires = (int)expiresIn.Value.TotalMilliseconds });
-        }
-        else
-        {
-            redisResult = await _database.ScriptEvaluateAsync(_replaceIfEqual!, new { key = (RedisKey)key, value = redisValue, expected = expectedValue, expires = "" });
-        }
+        var redisResult = await _database.ScriptEvaluateAsync(RedisScripts.ReplaceIfEqualScript, [(RedisKey)key], [redisValue, expectedValue, expires]);
 
         var result = (int)redisResult;
 
@@ -510,42 +543,6 @@ public class RedisClient : IRedisClient
         }
 
         return keys;
-    }
-
-    private async Task LoadScriptsAsync()
-    {
-        _ = _connectionMultiplexer ?? throw new InvalidOperationException("Redis client is not enabled");
-
-        if (_scriptsLoaded)
-        {
-            return;
-        }
-
-        using (await _lock.LockAsync())
-        {
-            if (_scriptsLoaded)
-            {
-                return;
-            }
-
-            var removeIfEqual = LuaScript.Prepare(RedisScripts.RemoveIfEqualScript);
-            var replaceIfEqual = LuaScript.Prepare(RedisScripts.ReplaceIfEqualScript); // Fixed: Correct script for ReplaceIfEqual
-
-            foreach (var endpoint in _connectionMultiplexer.GetEndPoints())
-            {
-                var server = _connectionMultiplexer.GetServer(endpoint);
-
-                if (server.IsReplica)
-                {
-                    continue;
-                }
-
-                _removeIfEqual = await removeIfEqual.LoadAsync(server);
-                _replaceIfEqual = await replaceIfEqual.LoadAsync(server);
-            }
-
-            _scriptsLoaded = true;
-        }
     }
 
     public void Dispose()

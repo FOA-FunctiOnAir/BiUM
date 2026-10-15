@@ -1,13 +1,14 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Core.Common.Configs;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Constants;
+using BiUM.Core.Extensions;
 using BiUM.Infrastructure.Common.Models;
 using BiUM.Specialized.Common.Crud;
 using BiUM.Specialized.Common.Models;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Mapping;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -143,7 +144,7 @@ public partial class CrudService
 
         string ddl;
 
-        if (_configuration.GetValue<string>("DatabaseType") == "MSSQL")
+        if (_configuration.GetDatabaseType() == DatabaseTypes.MSSQL)
         {
             var ensureSchemaSql = GenerateEnsureSchemaMsSql(schema);
 
@@ -155,7 +156,7 @@ public partial class CrudService
                 ? ensureSchemaSql
                 : ensureSchemaSql + ddlBody;
         }
-        else if (_configuration.GetValue<string>("DatabaseType") == "PostgreSQL")
+        else if (_configuration.GetDatabaseType() == DatabaseTypes.PostgreSQL)
         {
             var ensurePgcryptoSql = GenerateEnsurePgcryptoPgSql();
             var ensureSchemaSql = GenerateEnsureSchemaPgSql(schema);

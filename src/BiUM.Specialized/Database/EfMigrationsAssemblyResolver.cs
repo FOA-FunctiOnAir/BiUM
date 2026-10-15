@@ -1,3 +1,5 @@
+using BiUM.Core.Common.Configs;
+using BiUM.Core.Extensions;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using System.IO;
@@ -11,19 +13,19 @@ public static class EfMigrationsAssemblyResolver
     public static string? GetMigrationsAssemblyName(IConfiguration configuration, bool bolt)
     {
         var domain = configuration.GetSection("BiAppOptions")["Domain"];
-        var databaseType = configuration.GetValue<string>("DatabaseType");
+        var databaseType = configuration.GetDatabaseType();
 
         if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(databaseType))
         {
             return null;
         }
 
-        if (databaseType is not ("PostgreSQL" or "MSSQL"))
+        if (databaseType is not (DatabaseTypes.PostgreSQL or DatabaseTypes.MSSQL))
         {
             return null;
         }
 
-        var providerSuffix = databaseType == "PostgreSQL" ? "Postgres" : "Mssql";
+        var providerSuffix = databaseType == DatabaseTypes.PostgreSQL ? "Postgres" : "Mssql";
         var boltSuffix = bolt ? ".Bolt" : string.Empty;
 
         return $"BiApp.{domain}.Migrations.{providerSuffix}{boltSuffix}";

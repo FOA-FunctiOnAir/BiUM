@@ -11,8 +11,10 @@ public class BiGrpcOptions
 
     public string GetServiceUrl(string serviceKey)
     {
-        return Domains?.TryGetValue(serviceKey, out var url) == true
+        var normalizedKey = serviceKey.Replace('.', '-');
+
+        return Domains?.TryGetValue(normalizedKey, out var url) == true
             ? url
-            : throw new InvalidOperationException($"{serviceKey} not found in Domains");
+            : throw new InvalidOperationException($"{normalizedKey} not found in Domains");
     }
 }

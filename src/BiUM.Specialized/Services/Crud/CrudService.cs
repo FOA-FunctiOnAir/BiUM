@@ -1,5 +1,6 @@
 using BiUM.Core.Caching.InMemory;
 using BiUM.Core.Caching.Redis;
+using BiUM.Core.Extensions;
 using BiUM.Core.HttpClients;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,6 @@ public partial class CrudService : BaseRepository, ICrudService
         _httpClientsService = serviceProvider.GetRequiredService<IHttpClientsService>();
         _redisClient = serviceProvider.GetService<IRedisClient>();
         _inMemoryClient = serviceProvider.GetService<IInMemoryClient>();
-        _dbType = configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        _dbType = configuration.GetDatabaseType();
     }
 }

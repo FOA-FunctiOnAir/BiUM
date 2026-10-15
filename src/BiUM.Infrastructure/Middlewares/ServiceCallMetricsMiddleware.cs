@@ -2,6 +2,7 @@ using BiUM.Core.Authorization;
 using BiUM.Core.Common.Configs;
 using BiUM.Core.MessageBroker.Events;
 using BiUM.Core.MessageBroker.RabbitMQ;
+using BiUM.Core.Observability;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -59,28 +60,44 @@ public class ServiceCallMetricsMiddleware
         }
         finally
         {
-            try
-            {
-                var correlationContext = correlationContextProvider.Get();
-                var serviceCalledEvent = new ServiceCalledEvent
-                {
-                    ApplicationId = correlationContext?.ApplicationId ?? Guid.Empty,
-                    TenantId = correlationContext?.TenantId,
-                    UserId = correlationContext?.User?.Id,
-                    ApplicationClientId = correlationContext?.ClientId,
-                    ServiceName = FormatServiceName(_biAppOptions.Domain),
-                    Endpoint = context.Request.Path + context.Request.QueryString,
-                    HttpMethod = context.Request.Method,
-                    ExecutionTimeMs = stopwatch.ElapsedMilliseconds,
-                    Success = isSuccess
-                };
+            PublishServiceCalledEvent(context, correlationContextProvider, _rabbitMQClient, _biAppOptions, stopwatch.ElapsedMilliseconds, isSuccess);
+        }
+    }
 
-                _ = SafePublishAsync(_rabbitMQClient.PublishAsync(serviceCalledEvent));
-            }
-            catch (Exception ex)
+    private void PublishServiceCalledEvent(
+        HttpContext context,
+        ICorrelationContextProvider correlationContextProvider,
+        IRabbitMQClient rabbitMQClient,
+        BiAppOptions biAppOptions,
+        long elapsedMilliseconds,
+        bool isSuccess)
+    {
+        try
+        {
+            if (IsMetricDisabled(context))
             {
-                _logger.LogError(ex, "Failed to build ServiceCalledEvent for {Path}", context.Request.Path);
+                return;
             }
+
+            var correlationContext = correlationContextProvider.Get();
+            var serviceCalledEvent = new ServiceCalledEvent
+            {
+                ApplicationId = correlationContext?.ApplicationId ?? Guid.Empty,
+                TenantId = correlationContext?.TenantId,
+                UserId = correlationContext?.User?.Id,
+                ApplicationClientId = correlationContext?.ClientId,
+                ServiceName = FormatServiceName(biAppOptions.Domain),
+                Endpoint = context.Request.Path + context.Request.QueryString,
+                HttpMethod = context.Request.Method,
+                ExecutionTimeMs = elapsedMilliseconds,
+                Success = isSuccess
+            };
+
+            _ = SafePublishAsync(rabbitMQClient.PublishAsync(serviceCalledEvent));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to build ServiceCalledEvent for {Path}", context.Request.Path);
         }
     }
 
@@ -94,6 +111,11 @@ public class ServiceCallMetricsMiddleware
         {
             _logger.LogError(ex, "Background publish failed for ServiceCalledEvent");
         }
+    }
+
+    internal static bool IsMetricDisabled(HttpContext context)
+    {
+        return context.GetEndpoint()?.Metadata.GetMetadata<ServiceCallMetricAttribute>()?.Enabled == false;
     }
 
     private static bool ShouldIgnoreRequest(HttpContext context)

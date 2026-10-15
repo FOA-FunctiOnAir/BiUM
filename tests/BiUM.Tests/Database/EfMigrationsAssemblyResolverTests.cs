@@ -11,7 +11,7 @@ public class EfMigrationsAssemblyResolverTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["BiAppOptions:Domain"] = domain,
-                ["DatabaseType"] = databaseType
+                ["Databases:Default:Type"] = databaseType
             })
             .Build();
 
@@ -34,7 +34,6 @@ public class EfMigrationsAssemblyResolverTests
     [Theory]
     [InlineData(null, "PostgreSQL")]
     [InlineData("", "PostgreSQL")]
-    [InlineData("Customers", null)]
     [InlineData("Customers", "")]
     [InlineData("Customers", "InMemory")]
     [InlineData("Customers", "SQLite")]

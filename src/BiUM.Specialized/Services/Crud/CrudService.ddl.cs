@@ -2,9 +2,9 @@ using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Utils;
 using BiUM.Core.Compensation;
 using BiUM.Core.Constants;
+using BiUM.Core.Extensions;
 using BiUM.Infrastructure.Common.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -584,7 +584,7 @@ END;
         var compensatible = version.DomainCrud?.Compensatible == true;
         var (api2db, _) = BuildMaps(version, compensatible);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _configuration.GetDatabaseType();
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 
@@ -667,7 +667,7 @@ END;
 
         var (api2db, _) = BuildMaps(version, compensatible);
 
-        var dbType = _configuration.GetValue<string>("DatabaseType") ?? DbTypePostgresql;
+        var dbType = _configuration.GetDatabaseType();
         var schema = ResolveSchema(version.ApplicationId, version.TenantId);
         var table = dbType == DbTypePostgresql ? $"{QuotePg(schema)}.{QuotePg(version.TableName)}" : $"[{schema}].[{version.TableName}]";
 

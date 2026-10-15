@@ -157,8 +157,8 @@ function Invoke-EfMigrationAdd {
         [string]$ContextName
     )
 
-    $previousDatabaseType = $env:DatabaseType
-    $env:DatabaseType = $DatabaseType
+    $previousDatabaseType = $env:Databases__Default__Type
+    $env:Databases__Default__Type = $DatabaseType
 
     try {
         dotnet ef migrations add $MigrationName `
@@ -169,10 +169,10 @@ function Invoke-EfMigrationAdd {
     }
     finally {
         if ($null -ne $previousDatabaseType) {
-            $env:DatabaseType = $previousDatabaseType
+            $env:Databases__Default__Type = $previousDatabaseType
         }
         else {
-            Remove-Item Env:DatabaseType -ErrorAction SilentlyContinue
+            Remove-Item Env:Databases__Default__Type -ErrorAction SilentlyContinue
         }
     }
 }

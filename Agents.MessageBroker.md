@@ -143,6 +143,12 @@ Bazen çalışan süreç **`BiAppOptions.Domain`** dışında bir mikroservisin 
 
 Hedef mikroserviste tüketim: ilgili event tipinde **`[Event]` boş**, **`StartConsumingAsync`** ile Seçenek **1** dinleyicisi (`{subscriberDomain}.{hedef_domain}.{event_snake}` kuyruk).
 
+## 4.2. Tüketici eşzamanlılığı (`ConsumerConcurrency`)
+
+- `[Event(Exchange = "x", ConsumerConcurrency = 16)]`: `StartConsumingAsync` bu event için kanalı `CreateChannelOptions(consumerDispatchConcurrency: N)` ile açar ve `BasicQos(prefetchCount: N)` uygular; pod başına aynı anda N mesaj işlenir.
+- Varsayılan `1` (eski davranış: kanal başına seri işleme, prefetch sınırsız).
+- Uzun süren ve paralel işlenebilen iş bandları için kullanılır (ör. EnergyTracking `CollectBucketEvent`). Handler’lar thread-safe olmalı; her mesaj kendi DI scope’unda çalışır.
+
 ## 5. Bağlam
 
 - **`ICorrelationContextAccessor`**: Yoksa `CorrelationContext.Empty` kullanılır.

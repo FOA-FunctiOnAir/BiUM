@@ -9,6 +9,8 @@ public static class ConfigureServices
     {
         services.AddApplicationAdditionalServices<IApplicationMarker>(configuration);
 
+        services.AddPlatformEventHandlers(typeof(IApplicationMarker).Assembly);
+
         return services;
     }
 }

@@ -26,7 +26,7 @@ HTTP `POST /Compensation/commit|rollback` **yoktur**. Acil durum veya yeniden de
 - Uygulama: `CompensationService.cs` — `IDbContext` **`BaseDbContext`** olmalı (aksi halde ctor hata verir).
 - **EF varlıkları**: `EntityClrTypeName` dolu anlık görüntüler; `ICompensatableEntity` için `CStatus` güncellenir.
 - **Dinamik CRUD**: `ApplicationId`, `SnapshotTableName`, `OperationType`, `OldDataJson` ile PostgreSQL / MSSQL için şema `t_{app16}_{tenant16}` kuralına göre çözülür (`ResolveSchema`).
-- **`DatabaseType`** yapılandırması: `CommitCrudRowAsync` / `RollbackCrudSnapshotAsync` için; varsayılan mantık kaynakta PostgreSQL.
+- **`Databases:Default:Type`** yapılandırması: `CommitCrudRowAsync` / `RollbackCrudSnapshotAsync` için; varsayılan mantık kaynakta PostgreSQL.
 
 Yerel commit/rollback yalnızca **Pending** anlık görüntü satırlarında işlem yapar; tekrarlayan olay teslimatları pratikte **idempotent** kalır.
 

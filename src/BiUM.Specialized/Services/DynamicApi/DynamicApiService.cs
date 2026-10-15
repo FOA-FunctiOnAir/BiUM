@@ -1,5 +1,6 @@
 using BiUM.Core.Caching.InMemory;
 using BiUM.Core.Caching.Redis;
+using BiUM.Core.Extensions;
 using BiUM.Core.HttpClients;
 using BiUM.Specialized.Database;
 using Microsoft.Extensions.Caching.Memory;
@@ -32,6 +33,6 @@ public partial class DynamicApiService : BaseRepository, IDynamicApiService
         _memoryCache = serviceProvider.GetRequiredService<IMemoryCache>();
         _eventPublisher = serviceProvider.GetService<IDynamicApiEventPublisher>() ?? new NoOpDynamicApiEventPublisher();
         _runtimeCache = runtimeCache;
-        _dbType = configuration.GetValue<string>("DatabaseType") ?? DynamicApiSchemaRules.DbTypePostgresql;
+        _dbType = configuration.GetDatabaseType();
     }
 }

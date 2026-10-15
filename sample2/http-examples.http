@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:5000
+
+### Native database — ensure daily partitions (yesterday … +7 days)
+POST {{baseUrl}}/api/test/TestNativeDatabase/EnsurePartitions?daysAhead=7
+
+### Native database — bulk merge 60 minute rows for source 1 (re-run updates the same rows)
+POST {{baseUrl}}/api/test/TestNativeDatabase/WriteMetrics?sourceId=1&count=60
+
+### Native database — range query
+GET {{baseUrl}}/api/test/TestNativeDatabase/GetMetrics?sourceId=1&from=2026-01-01T00:00:00Z&to=2030-01-01T00:00:00Z
+
+### Native database — delete rows of source 1
+DELETE {{baseUrl}}/api/test/TestNativeDatabase/DeleteMetrics?sourceId=1
+
+### Platform event — publish to own domain (handled by SamplePlatformEventHandler)
+POST {{baseUrl}}/api/test/TestPlatformEvent/Publish
+Content-Type: application/json
+
+{
+  "source": "http-examples"
+}
+
+### Scheduler simulation — same call as BiApp.Scheduler RunScheduledTaskService (PublishEvent via Configuration event definition)
+POST {{baseUrl}}/api/test/TestSchedulerEvent/Trigger?eventCode=test2-sample-event&applicationId=5abc0777-19ff-5993-b71e-38cc9f7673a2&tenantId=c5ee1829-675a-59e8-bd7e-4fe2e941776a
+
+### Platform event — last received event (stored in Redis by the handler)
+GET {{baseUrl}}/api/test/TestPlatformEvent/GetLastReceived
+
+### Redis lock — acquire (409 when already held)
+POST {{baseUrl}}/api/test/TestRedis/AcquireLock/sample-lock?seconds=30
+
+### Redis lock — release with the returned token (409 for a wrong token)
+DELETE {{baseUrl}}/api/test/TestRedis/ReleaseLock/sample-lock/00000000-0000-0000-0000-000000000000

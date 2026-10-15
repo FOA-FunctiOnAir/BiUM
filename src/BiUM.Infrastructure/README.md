@@ -30,6 +30,6 @@ Ensure your `appsettings.json` has the required sections:
 {
   "RabbitMQ": { ... },
   "Redis": { ... },
-  "ConnectionStrings": { ... }
+  "Databases": { "Default": { "Type": "PostgreSQL", "ConnectionString": "..." } }
 }
 ```

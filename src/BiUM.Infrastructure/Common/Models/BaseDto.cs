@@ -9,9 +9,11 @@ public class BaseDto
     public bool Active { get; set; }
     public DateOnly Created { get; set; }
     public TimeOnly CreatedTime { get; set; }
+    public DateTimeOffset? CreatedAt { get; set; }
     public Guid? CreatedBy { get; set; }
     public DateOnly? Updated { get; set; }
     public TimeOnly? UpdatedTime { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
     public bool Test { get; set; }
 }

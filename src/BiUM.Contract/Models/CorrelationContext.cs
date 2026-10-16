@@ -27,6 +27,7 @@ public sealed partial class CorrelationContext
     public Guid? TenantId { get; init; }
     public string? TenantName { get; init; }
     public Guid LanguageId { get; init; }
+    public string? TimeZoneId { get; init; }
     public Guid? ResourceId { get; init; }
     public Guid? ClientId { get; init; }
     public DateTime CreatedAt { get; } = DateTime.UtcNow;
@@ -46,6 +47,7 @@ public sealed partial class CorrelationContext
             TenantId = TenantId,
             TenantName = TenantName,
             LanguageId = LanguageId,
+            TimeZoneId = TimeZoneId,
             ResourceId = ResourceId,
             ClientId = ClientId,
             User = User
@@ -75,6 +77,7 @@ public sealed partial class CorrelationContext
             TenantId = TenantId,
             TenantName = TenantName,
             LanguageId = LanguageId,
+            TimeZoneId = TimeZoneId,
             ResourceId = ResourceId,
             ClientId = ClientId,
             User = User

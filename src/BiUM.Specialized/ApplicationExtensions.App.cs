@@ -14,6 +14,7 @@ public static partial class ApplicationExtensions
     public static WebApplication UseSpecialized(this WebApplication app)
     {
         CorrelationContextLanguage.Configure(app.Services.GetRequiredService<ICorrelationContextAccessor>());
+        CorrelationContextTimeZone.Configure(app.Services.GetRequiredService<ICorrelationContextAccessor>());
 
         _ = app.UseMiddleware<RequestTransactionMiddleware>();
 

@@ -21,7 +21,7 @@ public static partial class Extensions
             queryable.AsNoTracking(),
             mapper);
 
-        return await projected.ToListAsync(cancellationToken);
+        return CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
     }
 
     public static async Task<List<TDestination>> ToListAsync<TSource, TDestination>(
@@ -37,7 +37,7 @@ public static partial class Extensions
             mapper,
             languageId);
 
-        return await projected.ToListAsync(cancellationToken);
+        return CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
     }
 
     public static async Task<IList<TDestination>> ToIListAsync<TSource, TDestination>(

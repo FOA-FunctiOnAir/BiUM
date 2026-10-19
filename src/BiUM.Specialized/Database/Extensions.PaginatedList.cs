@@ -67,7 +67,7 @@ public static partial class Extensions
             query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
@@ -93,7 +93,7 @@ public static partial class Extensions
             mapper,
             languageId);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
@@ -118,7 +118,7 @@ public static partial class Extensions
             query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
@@ -145,7 +145,7 @@ public static partial class Extensions
             mapper,
             languageId);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
@@ -170,7 +170,7 @@ public static partial class Extensions
             query.OrderPaginatedQuery(baseQuery),
             mapper);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,
@@ -197,7 +197,7 @@ public static partial class Extensions
             mapper,
             languageId);
 
-        var items = await projected.ToListAsync(cancellationToken);
+        var items = CorrelationContextTimeZone.PopulateAuditFields(await projected.ToListAsync(cancellationToken));
 
         return new PaginatedApiResponse<TDestination>(
             baseQuery: baseQuery,

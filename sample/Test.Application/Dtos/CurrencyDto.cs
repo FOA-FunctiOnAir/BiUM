@@ -28,6 +28,6 @@ public class CurrencyDto : BaseDto, IMapFrom<Currency>
     {
         profile.CreateMap<Currency, CurrencyDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<Currency, CurrencyTranslation>(res => res.CurrencyTranslations, nameof(Currency.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<Currency, CurrencyTranslation>(res => res.CurrencyTranslations, nameof(Currency.Name))));
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<Currency, CurrencyTranslation, EntityTranslationDto>(res => res.CurrencyTranslations, nameof(Currency.Name))));
     }
 }

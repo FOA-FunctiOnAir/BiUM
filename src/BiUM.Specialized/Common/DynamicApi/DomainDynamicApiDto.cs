@@ -28,7 +28,7 @@ public class DomainDynamicApiDto : BaseDto, IMapFrom<DomainDynamicApi>
     {
         profile.CreateMap<DomainDynamicApi, DomainDynamicApiDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<DomainDynamicApi, DomainDynamicApiTranslation>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<DomainDynamicApi, DomainDynamicApiTranslation>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))));
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<DomainDynamicApi, DomainDynamicApiTranslation, BaseEntityTranslationDto>(res => res.DomainDynamicApiTranslations, nameof(DomainDynamicApi.Name))));
     }
 }
 

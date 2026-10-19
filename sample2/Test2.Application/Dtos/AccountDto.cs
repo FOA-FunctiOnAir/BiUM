@@ -28,6 +28,6 @@ public class AccountDto : BaseDto, IMapFrom<Account>
     {
         profile.CreateMap<Account, AccountDto>()
             .ForMember(dto => dto.Name, conf => conf.MapFrom(GetColumnTranslationExpr<Account, AccountTranslation>(res => res.AccountTranslations, nameof(Account.Name))))
-            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<Account, AccountTranslation>(res => res.AccountTranslations, nameof(Account.Name))));
+            .ForMember(dto => dto.NameTr, conf => conf.MapFrom(GetColumnTranslationsExpr<Account, AccountTranslation, EntityTranslationDto>(res => res.AccountTranslations, nameof(Account.Name))));
     }
 }

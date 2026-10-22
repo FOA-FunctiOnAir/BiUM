@@ -36,10 +36,14 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
     private readonly IMapper? _mapper;
     private readonly BiAppOptions? _biAppOptions;
     private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly EntityChangeEventOptions _entityChangeEventOptions;
     private readonly ILogger<EntitySaveChangesInterceptor> _logger;
 
     private readonly List<BaseEvent> _entityEventBuffer = [];
     private readonly List<AuditLogEvent> _auditBuffer = [];
+    private readonly List<(string Table, string Operation, Guid Id)> _entityChangeBuffer = [];
+
+    private static readonly HashSet<string> DefaultExcludedChangeTables = new(StringComparer.OrdinalIgnoreCase) { "__PENDING_EVENT" };
 
     // IsAuditable is cached per Type with a 5-minute TTL (attribute values never change at runtime,
     // but TTL allows hot-reload scenarios without requiring a restart).
@@ -54,7 +58,8 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         IMapper? mapper = null,
         IOptions<BiAppOptions>? biAppOptions = null,
         IHttpContextAccessor? httpContextAccessor = null,
-        ILogger<EntitySaveChangesInterceptor>? logger = null)
+        ILogger<EntitySaveChangesInterceptor>? logger = null,
+        IOptions<EntityChangeEventOptions>? entityChangeEventOptions = null)
     {
         _correlationContextProvider = correlationContextProvider;
         _dateTimeService = dateTimeService;
@@ -63,6 +68,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         _mapper = mapper;
         _biAppOptions = biAppOptions?.Value;
         _httpContextAccessor = httpContextAccessor;
+        _entityChangeEventOptions = entityChangeEventOptions?.Value ?? new EntityChangeEventOptions();
         _logger = logger ?? NullLogger<EntitySaveChangesInterceptor>.Instance;
     }
 
@@ -71,6 +77,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result)
     {
         EnsureNotSavingOnHttpGet(eventData.Context);
+        CollectTranslationChanges(eventData.Context);
 
         // L-6: compute ChangeTracker entries once and pass to both methods.
         if (eventData.Context is BaseDbContext bdc)
@@ -96,6 +103,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         CancellationToken cancellationToken = default)
     {
         EnsureNotSavingOnHttpGet(eventData.Context);
+        CollectTranslationChanges(eventData.Context);
 
         // L-6 + M-3: single ChangeTracker scan; async path uses ApplyAsync (no sync-over-async).
         if (eventData.Context is BaseDbContext bdc)
@@ -119,10 +127,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         SaveChangesCompletedEventData eventData,
         int result)
     {
-        // Fire-and-forget: wrap in a safe async shell so unobserved exceptions are logged
-        // rather than silently swallowed or crashing the finalizer thread.
-        _ = SafePublishAsync(PublishEntityEventsAsync());
-        _ = SafePublishAsync(PublishAuditLogEventsAsync());
+        DispatchBufferedEvents();
 
         return base.SavedChanges(eventData, result);
     }
@@ -132,16 +137,14 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
-        _ = SafePublishAsync(PublishEntityEventsAsync());
-        _ = SafePublishAsync(PublishAuditLogEventsAsync());
+        DispatchBufferedEvents();
 
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
     public override void SaveChangesFailed(DbContextErrorEventData eventData)
     {
-        _auditBuffer.Clear();
-        _entityEventBuffer.Clear();
+        ClearBuffers();
 
         base.SaveChangesFailed(eventData);
     }
@@ -150,10 +153,172 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
         DbContextErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
-        _auditBuffer.Clear();
-        _entityEventBuffer.Clear();
+        ClearBuffers();
 
         return base.SaveChangesFailedAsync(eventData, cancellationToken);
+    }
+
+    private void ClearBuffers()
+    {
+        _auditBuffer.Clear();
+        _entityEventBuffer.Clear();
+        _entityChangeBuffer.Clear();
+    }
+
+    private void DispatchBufferedEvents()
+    {
+        var afterCommitScope = AfterCommitEventScope.Current;
+
+        if (afterCommitScope is null)
+        {
+            var entityChangesEvent = BuildEntityChangesEvent(_entityChangeBuffer);
+
+            _entityChangeBuffer.Clear();
+
+            _ = SafePublishAsync(PublishEntityEventsAsync());
+            _ = SafePublishAsync(PublishAuditLogEventsAsync());
+
+            if (entityChangesEvent is not null && _rabbitMQClient is not null)
+            {
+                _ = SafePublishAsync(_rabbitMQClient.PublishAsync(entityChangesEvent));
+            }
+
+            return;
+        }
+
+        foreach (var entityEvent in _entityEventBuffer)
+        {
+            afterCommitScope.Enqueue(entityEvent);
+        }
+
+        foreach (var auditEvent in _auditBuffer)
+        {
+            afterCommitScope.Enqueue(auditEvent);
+        }
+
+        if (_entityChangeBuffer.Count > 0)
+        {
+            var committedEvent = afterCommitScope.GetOrAddState(() =>
+            {
+                var created = CreateEntityChangesEvent();
+
+                afterCommitScope.Enqueue(created);
+
+                return created;
+            });
+
+            AppendEntityChanges(committedEvent, _entityChangeBuffer);
+        }
+
+        ClearBuffers();
+    }
+
+    private void CollectTranslationChanges(DbContext? dbContext)
+    {
+        if (dbContext is null || !_entityChangeEventOptions.Enable)
+        {
+            return;
+        }
+
+        foreach (var entry in dbContext.ChangeTracker.Entries<ITranslationBaseEntity>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
+            {
+                continue;
+            }
+
+            var table = entry.Metadata.GetTableName();
+
+            if (!IsChangeTrackedTable(table) || entry.Entity.RecordId == Guid.Empty)
+            {
+                continue;
+            }
+
+            _entityChangeBuffer.Add((table!, EntityChangeOperations.Updated, entry.Entity.RecordId));
+        }
+    }
+
+    private bool IsChangeTrackedTable(string? table) =>
+        !string.IsNullOrWhiteSpace(table) &&
+        !DefaultExcludedChangeTables.Contains(table) &&
+        !_entityChangeEventOptions.ExcludedTables.Contains(table, StringComparer.OrdinalIgnoreCase);
+
+    private void CollectEntityChange(EntityEntry<IBaseEntity> entry, EntityState effectiveState, bool ownedChanged)
+    {
+        if (!_entityChangeEventOptions.Enable)
+        {
+            return;
+        }
+
+        var table = entry.Metadata.GetTableName();
+
+        if (!IsChangeTrackedTable(table))
+        {
+            return;
+        }
+
+        var operation = effectiveState switch
+        {
+            EntityState.Added => EntityChangeOperations.Created,
+            EntityState.Deleted => EntityChangeOperations.Deleted,
+            EntityState.Modified => EntityChangeOperations.Updated,
+            _ => ownedChanged ? EntityChangeOperations.Updated : null
+        };
+
+        if (operation is null)
+        {
+            return;
+        }
+
+        _entityChangeBuffer.Add((table!, operation, entry.Entity.Id));
+    }
+
+    private EntityChangesCommittedEvent? BuildEntityChangesEvent(IReadOnlyCollection<(string Table, string Operation, Guid Id)> changes)
+    {
+        if (changes.Count == 0)
+        {
+            return null;
+        }
+
+        var entityChangesEvent = CreateEntityChangesEvent();
+
+        AppendEntityChanges(entityChangesEvent, changes);
+
+        return entityChangesEvent;
+    }
+
+    private EntityChangesCommittedEvent CreateEntityChangesEvent()
+    {
+        var correlationContext = _correlationContextProvider.Get() ?? CorrelationContext.Empty;
+
+        return new EntityChangesCommittedEvent
+        {
+            CorrelationId = correlationContext.CorrelationId,
+            Domain = _biAppOptions?.Domain ?? string.Empty,
+            TenantId = correlationContext.TenantId
+        };
+    }
+
+    private static void AppendEntityChanges(EntityChangesCommittedEvent entityChangesEvent, IEnumerable<(string Table, string Operation, Guid Id)> changes)
+    {
+        foreach (var change in changes)
+        {
+            var item = entityChangesEvent.Changes.FirstOrDefault(c =>
+                string.Equals(c.Table, change.Table, StringComparison.OrdinalIgnoreCase) &&
+                c.Operation == change.Operation);
+
+            if (item is null)
+            {
+                item = new EntityChangeItem { Table = change.Table, Operation = change.Operation };
+
+                entityChangesEvent.Changes.Add(item);
+            }
+
+            if (!item.Ids.Contains(change.Id))
+            {
+                item.Ids.Add(change.Id);
+            }
+        }
     }
 
     private void EnsureNotSavingOnHttpGet(DbContext? dbContext)
@@ -256,6 +421,7 @@ public class EntitySaveChangesInterceptor : SaveChangesInterceptor
             }
 
             CollectEntityEvents(entry, isSoftDelete ? EntityState.Deleted : entry.State, ownedChanged);
+            CollectEntityChange(entry, isSoftDelete ? EntityState.Deleted : entry.State, ownedChanged);
         }
     }
 

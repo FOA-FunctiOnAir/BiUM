@@ -18,7 +18,7 @@ Bu belge, ASP.NET Core pipeline’da BiUM’un eklediği middleware ve filtreler
 
 ## 2. `UseSpecialized` (`BiUM.Specialized/ApplicationExtensions.App.cs`)
 
-- **`RequestTransactionMiddleware`**: Mutasyon istekleri için scoped `IDbContext` üzerinde execution strategy + transaction (detay: middleware kaynak dosyası).
+- **`RequestTransactionMiddleware`**: Mutasyon istekleri için scoped `IDbContext` üzerinde execution strategy + transaction (detay: middleware kaynak dosyası). Her denemede bir `AfterCommitEventScope` açar: commit sonrası kapsamdaki olayları yayınlar (`AfterCommitEventDispatcher`), rollback/hata durumunda atar. `TransactionalUnitOfWorkRunner` aynı davranışı HTTP dışı yollarda uygular. Bkz. [Agents.MessageBroker.md](Agents.MessageBroker.md) §4.1.1.
 - **Geliştirme**: `UseMigrationsEndPoint()`
 - **`UseStaticFiles`**
 

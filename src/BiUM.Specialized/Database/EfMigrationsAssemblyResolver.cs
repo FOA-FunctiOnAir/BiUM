@@ -47,12 +47,14 @@ public static class EfMigrationsAssemblyResolver
 
     public static string? GetActiveMigrationsAssemblyName(IConfiguration configuration, bool bolt)
     {
-        if (!ShouldUseMigrations(configuration, bolt))
+        var assemblyName = GetMigrationsAssemblyName(configuration, bolt);
+
+        if (string.IsNullOrWhiteSpace(assemblyName))
         {
             return null;
         }
 
-        return GetMigrationsAssemblyName(configuration, bolt);
+        return TryLoadAssembly(assemblyName) is null ? null : assemblyName;
     }
 
     private static Assembly? TryLoadAssembly(string assemblyName)

@@ -20,6 +20,7 @@ using BiUM.Specialized.Services.Crud;
 using BiUM.Specialized.Services.DynamicApi;
 using BiUM.Specialized.Services.DynamicExporter;
 using BiUM.Specialized.Services.PlatformIntegration;
+using BiUM.Specialized.Services.ServiceCatalog;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -61,6 +62,8 @@ public static partial class ApplicationExtensions
 
         builder.Services.Configure<BiMailOptions>(builder.Configuration.GetSection(BiMailOptions.Name));
 
+        builder.Services.Configure<EntityChangeEventOptions>(builder.Configuration.GetSection(EntityChangeEventOptions.Name));
+
         builder.Services.AddScoped<EntitySaveChangesInterceptor>();
 
         builder.Services.AddHttpClient();
@@ -89,6 +92,7 @@ public static partial class ApplicationExtensions
         builder.Services.AddScoped<ITransactionalUnitOfWorkRunner, TransactionalUnitOfWorkRunner>();
         builder.Services.AddScoped<IHttpClientsService, HttpClientService>();
         builder.Services.AddTransient<ITranslationService, TranslationService>();
+        builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 
         return builder;
     }

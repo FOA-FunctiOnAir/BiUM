@@ -52,11 +52,11 @@ Exact names may vary (`AddDomain*` vs `Add*ApplicationServices`); the **idea** i
 
 ### 3.1 Service identity (compound / multi-segment names)
 
-When a microservice name has **more than one logical segment** (e.g. bounded context + feature, as in `Education.Coach` or `HumanResources.Absence`), align these consistently:
+When a microservice name has **more than one logical segment** (e.g. bounded context + feature, as in solution `BiApp.Education.Coach`), align these consistently:
 
-| Artifact | Convention | Example (`Education.Coach`) |
+| Artifact | Convention | Example (`BiApp.Education.Coach`) |
 |----------|------------|-------------------------------|
-| **`BiAppOptions.Domain`** | PascalCase segments separated by **`.`** | `Education.Coach` |
+| **`BiAppOptions.Domain`** | PascalCase segments **joined without a separator** (no dot). The lower-case value is the service's own RabbitMQ exchange, `EntityChangesCommitted.Domain` and the migrations assembly segment (`BiApp.{Domain}.Migrations.*`). | `EducationCoach`, `EducationAssessment` |
 | **`HttpClientsOptions.Domains` / `BiGrpcOptions.Domains` keys** | Segments joined with **`-`**, lowercase | `education-coach` |
 | **`[BiUMRoute("...")]`** (`BiUM.Specialized`) | Lowercase segments separated by **`/`** (URL segment under `/api/`). Resolves to `/api/{segments}/[controller]/[action]`. | `[BiUMRoute("education/coach")]` |
 | **PostgreSQL database name** (and similar identifiers) | Segments joined with **underscore `_`**, lowercase | `education_coach` |

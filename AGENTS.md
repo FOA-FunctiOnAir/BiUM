@@ -57,6 +57,7 @@ graph TD
 - [Agents.RequestPipeline.md](Agents.RequestPipeline.md) — `UseInfrastructure`, `UseSpecialized`, request transaction, exception and rollback behavior.
 - [Agents.MessageBroker.md](Agents.MessageBroker.md) — `AddBiUMRabbitMqClients`, `RabbitMQOptions:Default` + optional named brokers, `IRabbitMQClient` publish path, headers, correlation on messages.
 - [Agents.Redis.md](Agents.Redis.md) — `AddBiUMRedisClients`, `RedisOptions:Default` + optional keyed clients, `IRedisClient` / `RedisClient`, `Enable` davranışı.
+- [Agents.ServiceCatalog.md](Agents.ServiceCatalog.md) — `/api/base/ServiceCatalog/*` (endpoint listesi, manifest, Configuration'a preview/apply), `[ServiceCatalog]` attribute.
 
 ### `src/` Modules
 
@@ -67,7 +68,7 @@ graph TD
     - `Database/`: `IRepository`, `IUnitOfWork`; `Database/Native/`: `INativeDatabase`, `NativeSqlCommand`, `NativeSqlQuery<T>`, `NativeBulkMerge<TRow>`, `NativeRangePartitionSet`, `NativeSchemaMigration`.
     - `PlatformIntegration/`: `IPlatformEventHandler` (per `EventCode` handlers for `PlatformIntegrationEvent`).
     - `Observability/`: `ServiceCallMetricAttribute` — `[ServiceCallMetric(false)]` on a controller/action stops `ServiceCallMetricsMiddleware` from publishing `ServiceCalledEvent` for that endpoint (see [Agents.RequestPipeline.md](Agents.RequestPipeline.md)).
-    - `MessageBroker/`: `IEventBus`; `EventAttribute.ConsumerConcurrency` controls per-event consumer parallelism/prefetch.
+    - `MessageBroker/`: `IEventBus`; `EventAttribute.ConsumerConcurrency` controls per-event consumer parallelism/prefetch. `AfterCommitEventScope` (ambient after-commit queue owned by `RequestTransactionMiddleware` / `TransactionalUnitOfWorkRunner`); `Events/EntityChangesCommittedEvent` (one message per committed transaction, consumed by AiAssistant; `EntityChangeEvents` options). See [Agents.MessageBroker.md](Agents.MessageBroker.md) §4.1.1–4.1.2.
     - `Logging/`: Logging interfaces.
 
 - **`BiUM.Infrastructure`**: Concrete implementations of Core.

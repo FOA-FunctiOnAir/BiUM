@@ -21,6 +21,7 @@ await scope.ServiceProvider.InitialiseNativeDatabases();
 
 - `AddBiUMNativeDatabase` (`BiUM.Specialized/Database/Native/NativeDatabaseServiceCollectionExtensions.cs`): `Databases:<Name>` okunur; pooling’li keyed `NpgsqlDataSource`, keyed **`INativeDatabase`**, migration listesi ve `native-database-<name>` health check’i (tag `ready`) kaydedilir. Aynı isim ikinci kez eklenmez.
 - Tüketim: `[FromKeyedServices("Readings")] INativeDatabase readingsDatabase`.
+- **Başka servisin veritabanını salt okumak** için `AddBiUMReadOnlyNativeDatabase(configuration, name, maxPoolSize = 10)`: aynı keyed `NpgsqlDataSource` + `INativeDatabase`, bağlantıya `-c default_transaction_read_only=on` eklenir; `NativeDatabaseRegistration`, migration ve health check **kaydedilmez** (`InitialiseNativeDatabases` bu kaydı atlar, hedef DB'ye yazmaz). Örnek: AiAssistant'ın Configuration/Parameters/Assessment bilgi kaynakları.
 - `InitialiseNativeDatabases()`: her kayıt için veritabanı yoksa oluşturur (`postgres` bakım DB’sine bağlanıp `CREATE DATABASE`, paralel pod’larda `DuplicateDatabase` yutulur), ardından migration’ları uygular.
 - Npgsql OpenTelemetry izleme (`AddNpgsql()`) native komutları da kapsar. 2 sn’yi aşan komutlar `Warning` loglanır.
 - Native komutlar **istek transaction’ına (`RequestTransactionMiddleware`) dahil değildir**; her çağrı kendi bağlantısı/transaction’ı ile çalışır.

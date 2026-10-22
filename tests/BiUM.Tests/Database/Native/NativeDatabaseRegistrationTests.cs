@@ -47,6 +47,21 @@ public sealed class NativeDatabaseRegistrationTests
     }
 
     [Fact]
+    public void AddBiUMReadOnlyNativeDatabase_registers_read_only_source_without_initialiser_or_migrations()
+    {
+        var services = CreateServices();
+
+        services.AddBiUMReadOnlyNativeDatabase(BuildConfig(), DatabaseName);
+
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredKeyedService<INativeDatabase>(DatabaseName).Name.Should().Be(DatabaseName);
+        provider.GetRequiredKeyedService<Npgsql.NpgsqlDataSource>(DatabaseName).ConnectionString.Should().Contain("default_transaction_read_only=on");
+        provider.GetServices<NativeSchemaMigration>().Should().BeEmpty();
+        services.Should().NotContain(descriptor => descriptor.ServiceType == typeof(NativeDatabaseInitialiser));
+    }
+
+    [Fact]
     public void AddBiUMNativeDatabase_collects_only_migrations_of_the_same_database()
     {
         var services = CreateServices();

@@ -15,5 +15,15 @@ public partial class Ids
         {
             public static Guid Id = Guid.Parse("01a05cf2-c627-7994-a7d2-31ab0d3993d8");
         }
+
+        public static class PreviewInternalService
+        {
+            public static Guid Id = Guid.Parse("01a162ee-4335-722a-b9a4-b924ec99ef36");
+        }
+
+        public static class ApplyInternalService
+        {
+            public static Guid Id = Guid.Parse("01a162ee-4340-717b-b44d-64494c7d7828");
+        }
     }
 }

@@ -45,16 +45,7 @@ public static class NativeDatabaseServiceCollectionExtensions
 
         var connectionString = connectionStringBuilder.ConnectionString;
 
-        services.AddKeyedSingleton(name, (serviceProvider, _) =>
-            new NpgsqlDataSourceBuilder(connectionString)
-                .UseLoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>())
-                .Build());
-
-        services.AddKeyedSingleton<INativeDatabase>(name, (serviceProvider, key) =>
-            new NpgsqlNativeDatabase(
-                (string)key!,
-                serviceProvider.GetRequiredKeyedService<NpgsqlDataSource>(key),
-                serviceProvider.GetRequiredService<ILogger<NpgsqlNativeDatabase>>()));
+        AddNativeDataSource(services, name, connectionString);
 
         services.AddSingleton(new NativeDatabaseRegistration(name, connectionString));
 
@@ -82,6 +73,59 @@ public static class NativeDatabaseServiceCollectionExtensions
             tags: ["ready"]));
 
         return services;
+    }
+
+    public static IServiceCollection AddBiUMReadOnlyNativeDatabase(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string name,
+        int maxPoolSize = 10)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        if (services.Any(descriptor => descriptor.IsKeyedService && Equals(descriptor.ServiceKey, name) && descriptor.ServiceType == typeof(INativeDatabase)))
+        {
+            return services;
+        }
+
+        var databaseOptions = configuration.GetDatabaseOptions(name);
+
+        if (databaseOptions.Type != DatabaseTypes.PostgreSQL)
+        {
+            throw new NotSupportedException($"Native database {name} supports only {DatabaseTypes.PostgreSQL}; configured type is {databaseOptions.Type}.");
+        }
+
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuration.GetRequiredDatabaseConnectionString(name))
+        {
+            Pooling = true,
+            MinPoolSize = 0,
+            MaxPoolSize = maxPoolSize,
+            KeepAlive = 30
+        };
+
+        connectionStringBuilder.Options = string.IsNullOrWhiteSpace(connectionStringBuilder.Options)
+            ? ReadOnlySessionOption
+            : $"{connectionStringBuilder.Options} {ReadOnlySessionOption}";
+
+        AddNativeDataSource(services, name, connectionStringBuilder.ConnectionString);
+
+        return services;
+    }
+
+    private const string ReadOnlySessionOption = "-c default_transaction_read_only=on";
+
+    private static void AddNativeDataSource(IServiceCollection services, string name, string connectionString)
+    {
+        services.AddKeyedSingleton(name, (serviceProvider, _) =>
+            new NpgsqlDataSourceBuilder(connectionString)
+                .UseLoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>())
+                .Build());
+
+        services.AddKeyedSingleton<INativeDatabase>(name, (serviceProvider, key) =>
+            new NpgsqlNativeDatabase(
+                (string)key!,
+                serviceProvider.GetRequiredKeyedService<NpgsqlDataSource>(key),
+                serviceProvider.GetRequiredService<ILogger<NpgsqlNativeDatabase>>()));
     }
 
     public static Task InitialiseNativeDatabases(this IServiceProvider serviceProvider, CancellationToken cancellationToken = default)

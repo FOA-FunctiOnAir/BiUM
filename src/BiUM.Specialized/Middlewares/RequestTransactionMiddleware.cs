@@ -1,5 +1,7 @@
 using BiUM.Core.Compensation;
 using BiUM.Core.Database;
+using BiUM.Core.MessageBroker;
+using BiUM.Core.MessageBroker.RabbitMQ;
 using BiUM.Specialized.Common.API;
 using BiUM.Specialized.Database;
 using BiUM.Specialized.Services.Compensation;
@@ -46,6 +48,8 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
 
         await strategy.ExecuteAsync(async () =>
         {
+            var afterCommitScope = AfterCommitEventScope.BeginOwned();
+
             try
             {
                 await next(context);
@@ -64,6 +68,8 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                         await transaction.DisposeAsync();
                     }
 
+                    afterCommitScope?.Discard();
+
                     await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
                     return;
@@ -80,6 +86,10 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                     await transaction.CommitAsync(context.RequestAborted);
                     await transaction.DisposeAsync();
                 }
+
+                await AfterCommitEventDispatcher.FlushAsync(afterCommitScope, context.RequestServices.GetService<IRabbitMQClient>(), logger);
+
+                afterCommitScope?.End();
 
                 await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
@@ -127,9 +137,15 @@ public sealed class RequestTransactionMiddleware(RequestDelegate next)
                     await transaction.DisposeAsync();
                 }
 
+                afterCommitScope?.Discard();
+
                 await PublishPendingCompensationFinalizedEventAsync(context, logger);
 
                 throw;
+            }
+            finally
+            {
+                afterCommitScope?.End();
             }
         });
     }

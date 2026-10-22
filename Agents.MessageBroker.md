@@ -143,6 +143,21 @@ Bazen çalışan süreç **`BiAppOptions.Domain`** dışında bir mikroservisin 
 
 Hedef mikroserviste tüketim: ilgili event tipinde **`[Event]` boş**, **`StartConsumingAsync`** ile Seçenek **1** dinleyicisi (`{subscriberDomain}.{hedef_domain}.{event_snake}` kuyruk).
 
+## 4.1.1. Commit sonrası yayın (`PublishAfterCommitAsync`, `AfterCommitEventScope`)
+
+- **Compensation oturumu varsa** (`CorrelationContext.CompensationSessionId`): olay `__PENDING_EVENT` tablosuna yazılır, commit sonrası `ICompensationService.DispatchPendingEventsAsync` yayınlar (değişmedi).
+- **Oturum yoksa ve ambient `AfterCommitEventScope.Current` varsa**: olay bellekteki kapsama eklenir; kapsamın sahibi commit sonrası yayınlar, rollback/hata olursa atar.
+- **Kapsam yoksa**: anında yayın.
+- Kapsamın sahipleri: `RequestTransactionMiddleware` (HTTP mutasyonları) ve `TransactionalUnitOfWorkRunner` (RabbitMQ handler, MagicOnion, seed). Kapsam `AsyncLocal` ile alt çağrılara akar; iç içe çağrıda (`BeginOwned()` → `null`) dış kapsam kullanılır. Yayın `AfterCommitEventDispatcher.FlushAsync` ile yapılır (hata loglanır, istek etkilenmez).
+- `EntitySaveChangesInterceptor` entity olaylarını (`AddCreated/Updated/DeletedEvent`), `AuditLogEvent`'i ve `EntityChangesCommittedEvent`'i kapsam varsa kapsama bırakır; kapsam yoksa eskisi gibi `SavedChanges` anında yayınlar. Rollback edilen isteklerin olayları ve audit kayıtları artık yayınlanmaz.
+- Bellek kuyruğu kalıcı değildir: commit ile yayın arasında süreç düşerse olay kaybolur (knowledge senkronunda gece tam senkron bu boşluğu kapatır).
+
+## 4.1.2. `EntityChangesCommittedEvent`
+
+- `[Event(Exchange = "aiassistant")]` (Seçenek 3, tüketici AiAssistant). Commit edilen transaction başına **tek** mesaj: `Domain` (`BiAppOptions.Domain`), `TenantId`, `Changes[{ Table, Operation (Created/Updated/Deleted), Ids[] }]`. Tablo adı EF metadata'sından (`GetTableName()`); soft delete `Deleted` olarak gelir. Çeviri tabloları (`ITranslationBaseEntity`, ör. `FIELD_TRANSLATION`) her zaman `Updated` ve **`Ids` = ana kaydın `RECORD_ID`'si** ile gelir (çevirinin kendi Id'si değil).
+- Yapılandırma: `EntityChangeEvents:Enable` (varsayılan `true`), `EntityChangeEvents:ExcludedTables` (yüksek frekanslı tablolar). `__PENDING_EVENT` her zaman hariç.
+- EF dışı yazımlar (`INativeDatabase`, SQL script) olay üretmez.
+
 ## 4.2. Tüketici eşzamanlılığı (`ConsumerConcurrency`)
 
 - `[Event(Exchange = "x", ConsumerConcurrency = 16)]`: `StartConsumingAsync` bu event için kanalı `CreateChannelOptions(consumerDispatchConcurrency: N)` ile açar ve `BasicQos(prefetchCount: N)` uygular; pod başına aynı anda N mesaj işlenir.

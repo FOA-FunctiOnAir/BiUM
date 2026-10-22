@@ -70,6 +70,8 @@ Migration projeleri mikroservis repo kökündeki **`add-migration.ps1`** ile laz
 
 **Startup:** `DbContextInitialiser` / `BoltDbContextInitialiser` migration assembly yüklü ve en az bir `Migration` sınıfı varsa yalnızca **`MigrateAsync`** çalıştırır; aksi halde **`EnsureCreatedAsync`** (mevcut ortamlar kırılmadan kademeli geçiş).
 
+**Migrations assembly kaydı:** `GetActiveMigrationsAssemblyName` migration projesi derlenip yüklenebiliyorsa (henüz `Migration` sınıfı olmasa bile) `MigrationsAssembly(...)` ayarlar; böylece ilk migration (`Initial`) da `dotnet ef` ile hedef projeye üretilebilir. Migrate / EnsureCreated kararı ayrı olarak `ShouldUseMigrations` (en az bir `Migration` sınıfı) ile verilir.
+
 **Üretim:** `.\add-migration.ps1 MigrationName` — Postgres ve MSSQL için aynı isimle main migration; `AddBolt` varsa Bolt context için de aynı isimle dört proje güncellenir.
 
 Kaynak: `BiUM.Specialized/Database/EfMigrationsAssemblyResolver.cs`, `EfDatabaseInitialiser.cs`, repo kökü `add-migration.ps1`.

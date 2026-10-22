@@ -141,6 +141,15 @@ internal sealed class RabbitMQClient : IRabbitMQClient, IAsyncDisposable
 
         if (sessionId is null || sessionId == Guid.Empty)
         {
+            var afterCommitScope = AfterCommitEventScope.Current;
+
+            if (afterCommitScope is not null)
+            {
+                afterCommitScope.Enqueue(message);
+
+                return;
+            }
+
             await PublishCoreAsync(message, cancellationToken);
 
             return;

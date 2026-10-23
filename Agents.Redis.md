@@ -7,7 +7,7 @@ Bu belge, **`IRedisClient`** kaydı ve **`RedisOptions`** yapılandırmasını *
 - **`IRedisClient`**: `BiUM.Core/Caching/Redis/IRedisClient.cs` — anahtar tabanlı `Get`/`Add`/`Replace`/`Remove`, koşullu silme/değiştirme (Lua), süre bilgisi.
   - **`AddIfNotExistsAsync<T>(key, value, expiresIn)`**: `SET NX PX` — dağıtık kilit için (dönüş `true` = alındı).
   - **`AddAllAsync<T>(items, expiresIn)`**: çok sayıda anahtarı tek batch ile yazar (ör. canlı değerler).
-  - **`RemoveIfEqualsAsync` / `ReplaceIfEqualsAsync`**: `RedisScripts` içindeki `KEYS`/`ARGV` script’leri ham `ScriptEvaluateAsync(script, keys, values)` ile çalıştırılır (eski `LuaScript.Prepare` çağrısı parametreleri script’e geçirmiyordu ve koşullu silme hiç çalışmıyordu). Karşılaştırma `ToRedisValue` ile yapılır: string dışındaki tipler JSON olarak saklandığından kilit token’ı için `Guid` kullanın.
+  - **`RemoveIfEqualsAsync` / `ReplaceIfEqualsAsync`**: `RedisScripts` içindeki `KEYS`/`ARGV` script’leri ham `ScriptEvaluateAsync(script, keys, values)` ile çalıştırılır (eski `LuaScript.Prepare` çağrısı parametreleri script’e geçirmiyordu ve koşullu silme hiç çalışmıyordu). `RemoveIfEqualsAsync` beklenen değeri `AddAsync`/`AddIfNotExistsAsync` ile aynı biçimde (`JsonSerializer.Serialize`) karşılaştırır; string token'lar da (`"abc"` olarak saklanır) eşleşir. `ReplaceIfEqualsAsync` hâlâ `ToRedisValue` kullanır. Kilit token'ı için `Guid` önerilir.
 - Uygulama: **`RedisClient`** — `BiUM.Infrastructure/Services/Caching/Redis/RedisClient.cs` (StackExchange.Redis `IConnectionMultiplexer` / `IDatabase`).
 - DTO tipleri: `BiUM.Contract` altında `CacheItem<T>` vb.
 

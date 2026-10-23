@@ -392,7 +392,7 @@ public class RedisClient : IRedisClient
             throw new ArgumentNullException(nameof(key), "Key cannot be null or empty.");
         }
 
-        var expectedValue = expected.ToRedisValue();
+        RedisValue expectedValue = JsonSerializer.Serialize(expected);
         var redisResult = await _database.ScriptEvaluateAsync(RedisScripts.RemoveIfEqualScript, [(RedisKey)key], [expectedValue]);
         var result = (int)redisResult;
 

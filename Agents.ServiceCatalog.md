@@ -9,8 +9,9 @@ Mikroservisin kendi HTTP endpoint'lerini Configuration'daki servis kataloğuna (
 | `GetEndpoints` | GET | Katalog adayı endpoint listesi (metot, url, controller, action, `[ServiceCatalog]` adı/açıklaması) |
 | `GetManifest` | GET | `httpMethod` + `url` için manifest (Configuration'a gitmeden) |
 | `Preview` | POST | `{ httpMethod, url }` → manifest üretir, Configuration `PreviewInternalService` servisini `CallService(Ids.Service.PreviewInternalService.Id)` ile (`{ Manifest }`) çağırır, Configuration cevabını (`JsonElement`) aynen döner |
-| `Apply` | POST | `{ httpMethod, url, decisions }` → manifesti **yeniden** üretir, Configuration `ApplyInternalService` servisini `CallService(Ids.Service.ApplyInternalService.Id)` ile (`{ Manifest, Decisions }`) çağırır; `decisions` biçimi Configuration'a aittir |
+| `Apply` | POST | `{ httpMethod, url, decisions }` → manifesti **yeniden** üretir, Configuration `ApplyInternalService` servisini `CallService(Ids.Service.ApplyInternalService.Id)` ile (`{ Manifest, Decisions }`) çağırır; `decisions` biçimi Configuration'a aittir (önizlemeden dönen `previewId` `decisions.previewId` olarak gönderilir) |
 
+- Configuration'da önizleme bir arka plan işidir: `Preview` cevabı `previewId` + `previewStatus` (`Running`/`Completed`) içerir; AI eşleşmesi tamamlanınca güncel önizleme Configuration `GET /api/configuration/Service/GetServicePreview?id=…` ile okunur (ayrıntı: BiApp.Configuration `Agents.PlatformCatalog.md`). BiUM tarafında değişiklik yoktur; cevap ve `decisions` olduğu gibi taşınır.
 - Configuration URL ile çağrılır (`IHttpClientsService.Post`, `HttpClientsOptions.Domains["configuration"]`); servis kataloğunda kayıt gerekmez.
 - `BiAppOptions.Environment == Production` iken `Preview`/`Apply` `service_catalog_disabled_in_production` döner.
 - Yetki Configuration tarafındadır (correlation context ile kullanıcı/tenant gider).

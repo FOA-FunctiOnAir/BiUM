@@ -50,7 +50,7 @@ public class HttpClientsOptions
         }
 
         if (segments[0].Equals("base", StringComparison.InvariantCultureIgnoreCase)
-            && Domains?.TryGetValue(microserviceRootPath, out var microserviceBaseUrl) is true)
+            && Domains?.TryGetValue(ToDomainKey(microserviceRootPath), out var microserviceBaseUrl) is true)
         {
             return $"{microserviceBaseUrl}{url}";
         }
@@ -63,6 +63,35 @@ public class HttpClientsOptions
         }
 
         throw new InvalidOperationException($"{segments[0]} not found in Domains");
+    }
+
+    public static bool IsBaseUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return false;
+        }
+
+        var segments = GetApiSegments(url);
+
+        return segments is { Length: > 0 } && segments[0].Equals("base", StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public static string ToDomainKey(string? microserviceRootPath)
+    {
+        if (string.IsNullOrWhiteSpace(microserviceRootPath))
+        {
+            return string.Empty;
+        }
+
+        var path = microserviceRootPath.Trim().Trim('/');
+
+        if (path.StartsWith("api/", StringComparison.InvariantCultureIgnoreCase))
+        {
+            path = path[4..];
+        }
+
+        return path.Trim('/').Replace('/', '-').Replace('.', '-').ToLowerInvariant();
     }
 
     // Returns path segments after /api/, or null if /api/ not found.

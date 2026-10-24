@@ -76,4 +76,76 @@ public interface IHttpClientsService
         Dictionary<string, dynamic>? parameters = null,
         bool external = false,
         CancellationToken cancellationToken = default);
+
+    Task<ApiResponse> CallService(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> CallService<TResponse>(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PaginatedApiResponse<TResponse>> CallPaginatedService<TResponse>(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> Get<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<string>> GetContent(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse> Post(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiResponse<TResponse>> Post<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default);
 }

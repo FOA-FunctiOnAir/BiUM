@@ -12,6 +12,9 @@ public static class CacheKeys
 
             public static string Service(Guid id) => $"{Prefix}:service:{id}";
             public const string ServicePattern = $"{Prefix}:service:*";
+
+            public static string Microservice(Guid id) => $"{Prefix}:microservice:{id}";
+            public const string MicroservicePattern = $"{Prefix}:microservice:*";
         }
     }
 

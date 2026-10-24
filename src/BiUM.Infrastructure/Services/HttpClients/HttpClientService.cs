@@ -171,7 +171,80 @@ public class HttpClientService : IHttpClientsService
             cancellationToken: cancellationToken);
     }
 
-    public async Task<ApiResponse<TResponse>> Get<TResponse>(
+    public async Task<ApiResponse> CallService(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await CallServiceBase<Void>(
+            serviceId: serviceId,
+            parameters: parameters,
+            selectedIds: selectedIds,
+            excludedIds: excludedIds,
+            q: q,
+            pageStart: pageStart,
+            pageSize: pageSize,
+            returnValue: false,
+            targetMicroserviceId: targetMicroserviceId,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<ApiResponse<TResponse>> CallService<TResponse>(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return (ApiResponse<TResponse>)await CallServiceBase<TResponse>(
+            serviceId: serviceId,
+            parameters: parameters,
+            selectedIds: selectedIds,
+            excludedIds: excludedIds,
+            q: q,
+            pageStart: pageStart,
+            pageSize: pageSize,
+            returnValue: true,
+            targetMicroserviceId: targetMicroserviceId,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<PaginatedApiResponse<TResponse>> CallPaginatedService<TResponse>(
+        Guid serviceId,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        IReadOnlyList<Guid>? selectedIds = null,
+        IReadOnlyList<Guid>? excludedIds = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return (PaginatedApiResponse<TResponse>)await CallServiceBase<TResponse>(
+            serviceId: serviceId,
+            parameters: parameters,
+            selectedIds: selectedIds,
+            excludedIds: excludedIds,
+            q: q,
+            pageStart: pageStart,
+            pageSize: pageSize,
+            returnValue: true,
+            paginatedResponse: true,
+            targetMicroserviceId: targetMicroserviceId,
+            cancellationToken: cancellationToken);
+    }
+
+    public Task<ApiResponse<TResponse>> Get<TResponse>(
         string url,
         Dictionary<string, dynamic>? parameters = null,
         bool external = false,
@@ -179,6 +252,115 @@ public class HttpClientService : IHttpClientsService
         int? pageStart = null,
         int? pageSize = null,
         CancellationToken cancellationToken = default)
+    {
+        return GetCore<TResponse>(url, null, parameters, external, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<ApiResponse<TResponse>> Get<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetCore<TResponse>(url, targetMicroserviceId, parameters, false, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetPaginatedCore<TResponse>(url, null, parameters, external, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetPaginatedCore<TResponse>(url, targetMicroserviceId, parameters, false, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<ApiResponse<string>> GetContent(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetContentCore(url, null, parameters, external, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<ApiResponse<string>> GetContent(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        string? q = null,
+        int? pageStart = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetContentCore(url, targetMicroserviceId, parameters, false, q, pageStart, pageSize, cancellationToken);
+    }
+
+    public Task<ApiResponse> Post(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        CancellationToken cancellationToken = default)
+    {
+        return PostCore(url, null, parameters, external, cancellationToken);
+    }
+
+    public Task<ApiResponse> Post(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        return PostCore(url, targetMicroserviceId, parameters, false, cancellationToken);
+    }
+
+    public Task<ApiResponse<TResponse>> Post<TResponse>(
+        string url,
+        Dictionary<string, dynamic>? parameters = null,
+        bool external = false,
+        CancellationToken cancellationToken = default)
+    {
+        return PostCore<TResponse>(url, null, parameters, external, cancellationToken);
+    }
+
+    public Task<ApiResponse<TResponse>> Post<TResponse>(
+        string url,
+        Guid targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        return PostCore<TResponse>(url, targetMicroserviceId, parameters, false, cancellationToken);
+    }
+
+    private async Task<ApiResponse<TResponse>> GetCore<TResponse>(
+        string url,
+        Guid? targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters,
+        bool external,
+        string? q,
+        int? pageStart,
+        int? pageSize,
+        CancellationToken cancellationToken)
     {
         var originalUrl = url;
         string? finalUrl = null;
@@ -189,7 +371,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            url = _httpClientOptions.GetFullUrl(url);
+            url = await ResolveUrlAsync(url, targetMicroserviceId, cancellationToken);
 
             var httpClient = GetHttpClient(url);
 
@@ -240,14 +422,15 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<PaginatedApiResponse<TResponse>> GetPaginated<TResponse>(
+    private async Task<PaginatedApiResponse<TResponse>> GetPaginatedCore<TResponse>(
         string url,
-        Dictionary<string, dynamic>? parameters = null,
-        bool external = false,
-        string? q = null,
-        int? pageStart = null,
-        int? pageSize = null,
-        CancellationToken cancellationToken = default)
+        Guid? targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters,
+        bool external,
+        string? q,
+        int? pageStart,
+        int? pageSize,
+        CancellationToken cancellationToken)
     {
         var originalUrl = url;
         string? finalUrl = null;
@@ -258,7 +441,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            url = _httpClientOptions.GetFullUrl(url);
+            url = await ResolveUrlAsync(url, targetMicroserviceId, cancellationToken);
 
             var httpClient = GetHttpClient(url);
 
@@ -309,14 +492,15 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<ApiResponse<string>> GetContent(
+    private async Task<ApiResponse<string>> GetContentCore(
         string url,
-        Dictionary<string, dynamic>? parameters = null,
-        bool external = false,
-        string? q = null,
-        int? pageStart = null,
-        int? pageSize = null,
-        CancellationToken cancellationToken = default)
+        Guid? targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters,
+        bool external,
+        string? q,
+        int? pageStart,
+        int? pageSize,
+        CancellationToken cancellationToken)
     {
         var originalUrl = url;
         string? finalUrl = null;
@@ -327,7 +511,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            url = _httpClientOptions.GetFullUrl(url);
+            url = await ResolveUrlAsync(url, targetMicroserviceId, cancellationToken);
 
             var httpClient = GetHttpClient(url);
 
@@ -377,11 +561,12 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<ApiResponse> Post(
+    private async Task<ApiResponse> PostCore(
         string url,
-        Dictionary<string, dynamic>? parameters = null,
-        bool external = false,
-        CancellationToken cancellationToken = default)
+        Guid? targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters,
+        bool external,
+        CancellationToken cancellationToken)
     {
         var originalUrl = url;
         string? finalUrl = null;
@@ -392,7 +577,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            url = _httpClientOptions.GetFullUrl(url);
+            url = await ResolveUrlAsync(url, targetMicroserviceId, cancellationToken);
 
             finalUrl = url;
 
@@ -441,11 +626,12 @@ public class HttpClientService : IHttpClientsService
         }
     }
 
-    public async Task<ApiResponse<TResponse>> Post<TResponse>(
+    private async Task<ApiResponse<TResponse>> PostCore<TResponse>(
         string url,
-        Dictionary<string, dynamic>? parameters = null,
-        bool external = false,
-        CancellationToken cancellationToken = default)
+        Guid? targetMicroserviceId,
+        Dictionary<string, dynamic>? parameters,
+        bool external,
+        CancellationToken cancellationToken)
     {
         var originalUrl = url;
         string? finalUrl = null;
@@ -456,7 +642,7 @@ public class HttpClientService : IHttpClientsService
 
         try
         {
-            url = _httpClientOptions.GetFullUrl(url);
+            url = await ResolveUrlAsync(url, targetMicroserviceId, cancellationToken);
 
             finalUrl = url;
 
@@ -516,6 +702,7 @@ public class HttpClientService : IHttpClientsService
         int? pageSize = null,
         bool returnValue = true,
         bool paginatedResponse = false,
+        Guid? targetMicroserviceId = null,
         CancellationToken cancellationToken = default)
     {
         string? serviceUrl = null;
@@ -566,6 +753,15 @@ public class HttpClientService : IHttpClientsService
 
             var isExternal = service.Type == Ids.Parameter.ServiceType.Values.External;
 
+            if (isExternal && targetMicroserviceId is not null)
+            {
+                throw new InvalidOperationException("A target microservice cannot be used with an external service.");
+            }
+
+            var targetRootPath = targetMicroserviceId is { } microserviceId
+                ? await GetMicroserviceRootPathAsync(microserviceId, cancellationToken)
+                : null;
+
             parameters = CloneParameters(parameters);
 
             parameters = AddSearchAndPagination(parameters, q, pageStart, pageSize, selectedIds, excludedIds);
@@ -573,7 +769,7 @@ public class HttpClientService : IHttpClientsService
             var (rFinalUrl, rHttpMethod, response) =
                 isExternal
                     ? await ExecuteExternalCallAsync(service, parameters, cancellationToken)
-                    : await ExecuteInternalCallAsync(service, parameters, cancellationToken);
+                    : await ExecuteInternalCallAsync(service, parameters, targetRootPath, cancellationToken);
 
             elapsed = Stopwatch.GetElapsedTime(startTimestamp);
 
@@ -632,12 +828,17 @@ public class HttpClientService : IHttpClientsService
     private async Task<(string, HttpMethod, HttpResponseMessage)> ExecuteInternalCallAsync(
         ServiceDto service,
         Dictionary<string, dynamic>? parameters,
+        string? targetRootPath,
         CancellationToken cancellationToken = default)
     {
         string? url;
         string? finalUrl;
 
-        if (service.Type == Ids.Parameter.ServiceType.Values.Crud ||
+        if (targetRootPath is not null)
+        {
+            url = GetTargetMicroserviceUrl(targetRootPath, service.Url);
+        }
+        else if (service.Type == Ids.Parameter.ServiceType.Values.Crud ||
             service.Type == Ids.Parameter.ServiceType.Values.DynamicApi)
         {
             if (string.IsNullOrEmpty(service.MicroserviceRootPath))
@@ -791,6 +992,125 @@ public class HttpClientService : IHttpClientsService
         httpClient.Timeout = Timeout;
 
         return httpClient;
+    }
+
+    private async Task<string> ResolveUrlAsync(string url, Guid? targetMicroserviceId, CancellationToken cancellationToken)
+    {
+        if (targetMicroserviceId is not { } microserviceId)
+        {
+            return _httpClientOptions.GetFullUrl(url);
+        }
+
+        var rootPath = await GetMicroserviceRootPathAsync(microserviceId, cancellationToken);
+
+        return GetTargetMicroserviceUrl(rootPath, url);
+    }
+
+    private string GetTargetMicroserviceUrl(string rootPath, string url)
+    {
+        if (!HttpClientsOptions.IsBaseUrl(url))
+        {
+            throw new InvalidOperationException($"A target microservice can only be used with /api/base urls. Url={url}");
+        }
+
+        return _httpClientOptions.GetFullUrl(rootPath, url);
+    }
+
+    private async Task<string> GetMicroserviceRootPathAsync(Guid microserviceId, CancellationToken cancellationToken)
+    {
+        const string getMicroserviceUrl = "/api/configuration/Microservice/GetMicroservice";
+
+        var cacheKey = CacheKeys.HttpClientService.Configuration.Microservice(microserviceId);
+
+        if (_inMemoryClient is not null)
+        {
+            try
+            {
+                var l1 = await _inMemoryClient.GetAsync<MicroserviceDto>(cacheKey).ConfigureAwait(false);
+
+                if (!string.IsNullOrWhiteSpace(l1.Value?.RootPath))
+                {
+                    return l1.Value.RootPath;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "InMemory cache read failed for microservice info MicroserviceId={MicroserviceId}", microserviceId);
+            }
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                var l2 = await _redisClient.GetAsync<MicroserviceDto>(cacheKey).ConfigureAwait(false);
+
+                if (!string.IsNullOrWhiteSpace(l2.Value?.RootPath))
+                {
+                    await AddMicroserviceToMemoryAsync(cacheKey, l2.Value);
+
+                    return l2.Value.RootPath;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Redis cache read failed for microservice info MicroserviceId={MicroserviceId}", microserviceId);
+            }
+        }
+
+        var parameters = AddSearchAndPagination(new([new("Id", microserviceId.ToString())]));
+        var finalUrl = AppendParametersAsQueryString(_httpClientOptions.GetFullUrl(getMicroserviceUrl), parameters);
+        var request = CreateRequestMessage(HttpMethod.Get, finalUrl);
+
+        TryAddCorrelationContext(request);
+
+        var response = await GetHttpClient(finalUrl).SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        var result = await TryDeserializeApiResponse<MicroserviceDto>(
+            response,
+            external: false,
+            isSuccessful: response.IsSuccessStatusCode,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        LogHttpClientFailureIfNeeded(nameof(GetMicroserviceRootPathAsync), HttpMethod.Get, finalUrl, response, result, null, FormatOutboundRequestForLog(HttpMethod.Get, finalUrl, parameters));
+
+        if (!result.Success || string.IsNullOrWhiteSpace(result.Value?.RootPath))
+        {
+            throw new InvalidOperationException($"Root path of microservice {microserviceId} could not be resolved.");
+        }
+
+        if (_redisClient is not null)
+        {
+            try
+            {
+                await _redisClient.AddAsync(cacheKey, result.Value, ServiceInfoL2CacheTtl).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Redis cache write failed for microservice info MicroserviceId={MicroserviceId}", microserviceId);
+            }
+        }
+
+        await AddMicroserviceToMemoryAsync(cacheKey, result.Value);
+
+        return result.Value.RootPath;
+    }
+
+    private async Task AddMicroserviceToMemoryAsync(string cacheKey, MicroserviceDto microservice)
+    {
+        if (_inMemoryClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _inMemoryClient.AddAsync(cacheKey, microservice, ServiceInfoL1CacheTtl).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InMemory cache write failed for microservice info {CacheKey}", cacheKey);
+        }
     }
 
     private async Task<ApiResponse<ServiceDto>> GetServiceInfoAsync(Guid serviceId, CancellationToken cancellationToken)

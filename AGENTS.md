@@ -48,7 +48,7 @@ graph TD
 - [Agents.DynamicApi.md](Agents.DynamicApi.md) — `DomainDynamicApi` metadata vs runtime handler, Roslyn compile, `DynamicApiController`.
 - [Agents.PlatformIntegration.md](Agents.PlatformIntegration.md) — `IPlatformActionExecutor`, event definitions, `ctx.Events`, scheduler legacy bridge.
 - [Agents.DynamicExporter.md](Agents.DynamicExporter.md) — async Excel export jobs, background worker, user-scoped requests.
-- [Agents.HttpClientService.md](Agents.HttpClientService.md) — `IHttpClientsService` / `HttpClientService`, URL resolution, correlation header.
+- [Agents.HttpClientService.md](Agents.HttpClientService.md) — `IHttpClientsService` / `HttpClientService`, URL resolution (root path → `ToDomainKey`), target-microservice overloads for `/api/base` services, correlation header.
 - [Agents.Compensation.md](Agents.Compensation.md) — compensation session, snapshots, `CompensatableApi` / `CompensatableApiActionFilter`, `CompensationSessionFinalized` event.
 - [Agents.CorrelationContext.md](Agents.CorrelationContext.md) — `CorrelationContext` model, `x-correlation-context`, serializer, accessor.
 - [Agents.EncryptedData.md](Agents.EncryptedData.md) — `[EncryptedData]`, EF value converter, `BaseDbContext` + `BiAppOptions.EncryptionKey`.

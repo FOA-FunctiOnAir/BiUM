@@ -16,7 +16,7 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
 - Bölüm adı: `HttpClientsOptions` (`BiUM.Core/Common/Configs/HttpClientsOptions.cs`).
 - **`BaseUrl`**, **`Environment`**, isteğe bağlı **`Domains`**: `/api/{servisAnahtarı}/...` biçimindeki iç URL’ler, `Domains` sözlüğüyle gerçek taban adreslere çözülür.
 - **`LogSuccessfulHttpRequests`** (varsayılan `false`): `true` iken başarılı outbound çağrılarda `LogInformation` ile operasyon adı, HTTP metodu, URL (512 karaktere kadar, sonra kısaltılır) ve süre (ms) yazılır (`Get`, `Post`, `CallService`, `GetServiceInfoAsync`).
-- İç servis tipi **Crud** veya **DynamicApi** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. Bkz. [Agents.DynamicApi.md](Agents.DynamicApi.md).
+- İç servis tipi **Crud** veya **DynamicApi** için `GetFullUrl(microserviceRootPath, url)` ile mikroservis kök yolu + `base` anahtarı kullanılır; kök yol `HttpClientsOptions.ToDomainKey` ile `Domains` anahtarına çevrilir (boşluk ve `/api/` öneki atılır, `/` ve `.` → `-`, küçük harf; `education/assessment` → `education-assessment`); diğer iç çağrılarda `GetFullUrl(url)` yeterlidir. Bkz. [Agents.DynamicApi.md](Agents.DynamicApi.md).
 - Eşleşmeyen servis anahtarı: `InvalidOperationException`.
 
 ## 3. API yüzeyi
@@ -27,6 +27,10 @@ Bu belge, FOA servislerinin birbirini **HTTP** üzerinden çağırması için Bi
   `CallService` ile aynı imza ve çağrı akışı; yanıt gövdesi **`PaginatedApiResponse<TResponse>`** olarak deserialize edilir (`totalCount`, `pageNumber`, `totalPages` korunur). Parametre proxy’si gibi downstream sayfalı uçları iletmek için kullanın (ör. **BiApp.Parameters** `GetFwParameterValues` endpoint dalı).
 - **`Get` / `GetPaginated<TResponse>` / `GetContent` / `Post` / `Post<TResponse>(string url, ...)`** — çağrı öncesi parametre sözlüğü klonlanır; `PageStart` / `PageSize` / `Q` her istekte indexer ile güncellenir (Dynamic Export sayfalama döngüsünde paylaşılan sözlük bozulmaz).  
   Doğrudan URL; `external` bayrağı yanıtın `ApiResponse` JSON’u mu yoksa ham T mi olduğunu ayırt etmek için kullanılır.
+- **Hedef mikroservis overload'ları** — sekiz public metodun hepsinde ikinci parametre `Guid targetMicroserviceId` olan bir overload vardır (`CallService(serviceId, targetMicroserviceId, …)`, `Get<T>(url, targetMicroserviceId, …)`, `Post(url, targetMicroserviceId, …)` …). Katalogda bir kez (ör. "UI Framework" altında) kayıtlı `/api/base/...` servislerini (DomainCrud, DynamicApi, DomainTranslation, ServiceCatalog) belirli bir mikroservise göndermek içindir:
+  - Hedefin kök yolu Configuration `GET /api/configuration/Microservice/GetMicroservice?Id=…` ile alınır; L1 (2 dk) + Redis (1 gün) önbellek: `CacheKeys.HttpClientService.Configuration.Microservice(id)`.
+  - Adres `HttpClientsOptions.GetFullUrl(rootPath, url)` → `Domains[ToDomainKey(rootPath)] + url`.
+  - Yalnız `/api/base/...` url'leri kabul edilir (`HttpClientsOptions.IsBaseUrl`); başka url veya dış (External) servis → `InvalidOperationException` (hata `ApiResponse` mesajı olarak döner). URL overload'larında `external` parametresi yoktur.
 
 **Ortak davranış**
 

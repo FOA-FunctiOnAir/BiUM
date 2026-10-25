@@ -38,6 +38,27 @@ public sealed class ServiceCatalogTypeDescriberTests
         properties.Single(p => p.Name == "tagIds").Should().Match<ServiceCatalogPropertyDto>(p => p.ClrType == ServiceCatalogClrTypes.Guid && p.IsArray);
     }
 
+    private sealed class SampleListDto : BiUM.Infrastructure.Common.Models.BaseDto
+    {
+        public string Code { get; set; } = string.Empty;
+    }
+
+    private sealed class SampleExamDto
+    {
+        public bool Test { get; set; }
+    }
+
+    [Fact]
+    public void DescribeMembers_ShouldSkipBiUMBaseTestProperty_ButKeepOwnTestProperty()
+    {
+        var listProperties = ServiceCatalogTypeDescriber.DescribeMembers(typeof(SampleListDto), ServiceCatalogPropertySources.Response).Select(p => p.Name).ToList();
+        var examProperties = ServiceCatalogTypeDescriber.DescribeMembers(typeof(SampleExamDto), ServiceCatalogPropertySources.Body).Select(p => p.Name).ToList();
+
+        listProperties.Should().Contain(["code", "id", "createdBy", "active"]);
+        listProperties.Should().NotContain("test");
+        examProperties.Should().Equal("test");
+    }
+
     [Fact]
     public void DescribeMembers_ShouldStopOnRecursiveTypes()
     {

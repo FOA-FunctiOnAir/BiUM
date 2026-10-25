@@ -15,6 +15,9 @@ namespace BiUM.Specialized.Services.ServiceCatalog;
 internal static class ServiceCatalogTypeDescriber
 {
     private const int MaxDepth = 4;
+    private static readonly HashSet<string> BiUMAssemblies = new(StringComparer.Ordinal) { "BiUM.Contract", "BiUM.Core", "BiUM.Infrastructure", "BiUM.Specialized", "BiUM.Bolt" };
+
+    private static readonly HashSet<string> IgnoredBasePropertyNames = new(StringComparer.Ordinal) { "Test" };
 
     private static readonly NullabilityInfoContext NullabilityContext = new();
 
@@ -121,7 +124,7 @@ internal static class ServiceCatalogTypeDescriber
 
         var properties = type
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.GetIndexParameters().Length == 0 && p.GetCustomAttribute<JsonIgnoreAttribute>() is null)
+            .Where(p => p.CanRead && p.GetIndexParameters().Length == 0 && p.GetCustomAttribute<JsonIgnoreAttribute>() is null && !IsIgnoredBaseProperty(p))
             .Select(p => Describe(
                 p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? p.Name,
                 p.PropertyType,
@@ -134,6 +137,13 @@ internal static class ServiceCatalogTypeDescriber
         visited.Remove(type);
 
         return properties;
+    }
+
+    public static bool IsIgnoredBaseProperty(PropertyInfo? property)
+    {
+        return property is not null &&
+            IgnoredBasePropertyNames.Contains(property.Name) &&
+            BiUMAssemblies.Contains(property.DeclaringType?.Assembly.GetName().Name ?? string.Empty);
     }
 
     private static bool IsNullable(PropertyInfo property)

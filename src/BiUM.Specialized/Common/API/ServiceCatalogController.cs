@@ -33,7 +33,7 @@ public class ServiceCatalogController : ApiControllerBase
     }
 
     [HttpPost]
-    public async Task<ApiResponse<JsonElement>> Preview([FromBody] ServiceCatalogPreviewCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ServiceCatalogPreviewStartedDto>> Preview([FromBody] ServiceCatalogPreviewCommand command, CancellationToken cancellationToken)
     {
         return await _serviceCatalogService.PreviewAsync(command, cancellationToken);
     }

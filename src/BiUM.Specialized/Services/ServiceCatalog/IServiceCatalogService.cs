@@ -11,7 +11,7 @@ public interface IServiceCatalogService
 
     Task<ApiResponse<ServiceCatalogManifestDto>> GetManifestAsync(string? httpMethod, string? url, CancellationToken cancellationToken);
 
-    Task<ApiResponse<JsonElement>> PreviewAsync(ServiceCatalogPreviewCommand command, CancellationToken cancellationToken);
+    Task<ApiResponse<ServiceCatalogPreviewStartedDto>> PreviewAsync(ServiceCatalogPreviewCommand command, CancellationToken cancellationToken);
 
     Task<ApiResponse<JsonElement>> ApplyAsync(ServiceCatalogApplyCommand command, CancellationToken cancellationToken);
 }

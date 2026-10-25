@@ -8,7 +8,7 @@ Mikroservisin kendi HTTP endpoint'lerini Configuration'daki servis kataloğuna (
 |--------|-------|-------|
 | `GetEndpoints` | GET | Sayfalı (`PaginatedApiResponse<ServiceCatalogEndpointDto>`) katalog adayı endpoint listesi. Sorgu (`ServiceCatalogEndpointsQuery`): `HttpMethod` (tam eşleşme), `Url` (içerir), `Q` (url ve manifestteki girdi/çıktı property adları, alt property'ler dahil), `SortBy` (`url` varsayılan, `controllerName`, `actionName`, `name`, `httpMethod`), `SortDirection`, `PageStart` (0), `PageSize` (20, en çok 100), `MicroserviceId` (ekran formundan; Configuration'a iletilir). Her kayıt: metot, url, controller, action, `[ServiceCatalog]` adı/açıklaması + durum: `Registered`, `ServiceId`, `ServiceHttpMethod` (katalogdaki servisin HTTP tipi; uçtaki metottan farklıysa ekranda gösterilir), `PreviewStatus` (`Running`/`Completed`), `PreviewId`, `PreviewRequestedAt` |
 | `GetManifest` | GET | `httpMethod` + `url` için manifest (Configuration'a gitmeden) |
-| `Preview` | POST | `{ httpMethod, url }` → manifest üretir, Configuration `PreviewInternalService` servisini `CallService(Ids.Service.PreviewInternalService.Id)` ile (`{ Manifest }`) çağırır, Configuration cevabını (`JsonElement`) aynen döner |
+| `Preview` | POST | `{ httpMethod, url }` → manifest üretir, Configuration `PreviewInternalService` servisini `CallService(Ids.Service.PreviewInternalService.Id)` ile (`{ Manifest }`) çağırır ve yalnızca `{ previewId, previewStatus }` (`ServiceCatalogPreviewStartedDto`) döner; önizlemenin içeriği Configuration `GetServicePreview?id=…` ile okunur |
 | `Apply` | POST | Yalnızca `{ previewId }`. Önizleme Configuration `GetServicePreview` servisinden `CallService(Ids.Service.GetServicePreview.Id, { Id })` ile okunur (bulunamazsa Configuration mesajı aynen döner), önizlemedeki metot + url ile manifest **yeniden** üretilir (uç bu ms'te yoksa `service_catalog_endpoint_not_found`) ve `ApplyInternalService` servisine `CallService(Ids.Service.ApplyInternalService.Id)` ile `{ Manifest, Decisions: { PreviewId } }` gönderilir. Kararlar yalnızca önizlemeden gelir; düzenleme yoktur |
 
 - Configuration'da önizleme bir arka plan işidir: `Preview` cevabı `previewId` + `previewStatus` (`Running`/`Completed`) içerir; AI eşleşmesi tamamlanınca güncel önizleme Configuration `GET /api/configuration/Service/GetServicePreview?id=…` ile okunur (ayrıntı: BiApp.Configuration `Agents.PlatformCatalog.md`). BiUM tarafında değişiklik yoktur; cevap ve `decisions` olduğu gibi taşınır.
@@ -23,6 +23,7 @@ Mikroservisin kendi HTTP endpoint'lerini Configuration'daki servis kataloğuna (
 
 - API Explorer (`IApiDescriptionGroupCollectionProvider`) üzerindeki `ControllerActionDescriptor`'lar.
 - Hariç: `/api/base/*`, `[ServiceCatalog(false)]` (controller veya action), `[ApiExplorerSettings(IgnoreApi = true)]`.
+- BiUM kütüphane tiplerinde (`BaseDto`, `BaseCommand`, `BaseEntity`, `BaseEntityEvent`; assembly `BiUM.Contract/Core/Infrastructure/Specialized/Bolt`) tanımlı `Test` alanı manifeste girmez (`ServiceCatalogTypeDescriber.IsIgnoredBaseProperty`); ms'in kendi tipinde tanımlı `Test` alanı girer.
 - `[ServiceCatalog(Name = "…", Description = "…")]` (`BiUM.Core.Common.Attributes`) önerilen ad/açıklamayı manifeste ekler.
 
 ## 3. Manifest (`ServiceCatalogManifestDto`)

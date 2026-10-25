@@ -223,9 +223,9 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
         return response;
     }
 
-    public async Task<ApiResponse<JsonElement>> PreviewAsync(ServiceCatalogPreviewCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ServiceCatalogPreviewStartedDto>> PreviewAsync(ServiceCatalogPreviewCommand command, CancellationToken cancellationToken)
     {
-        return EnsureValue(await SendToConfigurationAsync(Ids.Service.PreviewInternalService.Id, command.HttpMethod, command.Url, null, cancellationToken));
+        return await SendToConfigurationAsync<ServiceCatalogPreviewStartedDto>(Ids.Service.PreviewInternalService.Id, command.HttpMethod, command.Url, null, cancellationToken);
     }
 
     public async Task<ApiResponse<JsonElement>> ApplyAsync(ServiceCatalogApplyCommand command, CancellationToken cancellationToken)
@@ -256,7 +256,7 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 
         var decisions = new Dictionary<string, dynamic> { { "PreviewId", previewId } };
 
-        return EnsureValue(await SendToConfigurationAsync(Ids.Service.ApplyInternalService.Id, preview.Value.HttpMethod, preview.Value.Url, decisions, cancellationToken));
+        return EnsureValue(await SendToConfigurationAsync<JsonElement>(Ids.Service.ApplyInternalService.Id, preview.Value.HttpMethod, preview.Value.Url, decisions, cancellationToken));
     }
 
     private bool IsProduction() => string.Equals(BiAppOptions.Environment, BiAppEnvironments.Production, StringComparison.OrdinalIgnoreCase);
@@ -271,14 +271,14 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
         return response;
     }
 
-    private async Task<ApiResponse<JsonElement>> SendToConfigurationAsync(
+    private async Task<ApiResponse<TResponse>> SendToConfigurationAsync<TResponse>(
         Guid serviceId,
         string? httpMethod,
         string? url,
         Dictionary<string, dynamic>? decisions,
         CancellationToken cancellationToken)
     {
-        var response = new ApiResponse<JsonElement>();
+        var response = new ApiResponse<TResponse>();
 
         if (IsProduction())
         {
@@ -306,7 +306,7 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
             parameters.Add("Decisions", decisions);
         }
 
-        return await _httpClientsService.CallService<JsonElement>(serviceId: serviceId, parameters: parameters, cancellationToken: cancellationToken);
+        return await _httpClientsService.CallService<TResponse>(serviceId: serviceId, parameters: parameters, cancellationToken: cancellationToken);
     }
 
     private ServiceCatalogManifestDto BuildManifest(ApiDescription description, ControllerActionDescriptor action)
@@ -347,6 +347,11 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
             var source = MapSource(parameter.Source);
 
             if (source is null || parameter.Type is null)
+            {
+                continue;
+            }
+
+            if (ServiceCatalogTypeDescriber.IsIgnoredBaseProperty(parameter.ModelMetadata?.ContainerType?.GetProperty(parameter.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)))
             {
                 continue;
             }

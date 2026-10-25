@@ -176,6 +176,13 @@ public class ServiceCatalogApplyCommand
     public Guid? PreviewId { get; set; }
 }
 
+public class ServiceCatalogPreviewStartedDto
+{
+    public Guid? PreviewId { get; set; }
+
+    public string? PreviewStatus { get; set; }
+}
+
 public class ServiceCatalogPreviewInfoDto
 {
     public Guid? PreviewId { get; set; }

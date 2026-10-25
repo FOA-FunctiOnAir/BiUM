@@ -284,14 +284,22 @@ public sealed class ServiceCatalogEndpointsTests
     }
 
     [Fact]
-    public async Task Preview_ShouldSendManifestWithoutDecisions()
+    public async Task Preview_ShouldSendManifestWithoutDecisions_AndReturnOnlyIdAndStatus()
     {
         var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
+        var previewId = Guid.NewGuid();
         var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
 
-        SetupConfiguration(http, new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement), calls);
+        http
+            .Setup(item => item.CallService<ServiceCatalogPreviewStartedDto>(It.IsAny<Guid>(), It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback((Guid id, Dictionary<string, dynamic>? parameters, IReadOnlyList<Guid>? _, IReadOnlyList<Guid>? _, string? _, int? _, int? _, CancellationToken _) => calls.Add((id, parameters)))
+            .ReturnsAsync(new ApiResponse<ServiceCatalogPreviewStartedDto>(new ServiceCatalogPreviewStartedDto { PreviewId = previewId, PreviewStatus = "Running" }));
 
-        await service.PreviewAsync(new ServiceCatalogPreviewCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail" }, CancellationToken.None);
+        var response = await service.PreviewAsync(new ServiceCatalogPreviewCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail" }, CancellationToken.None);
+
+        response.Value!.PreviewId.Should().Be(previewId);
+        response.Value.PreviewStatus.Should().Be("Running");
+        JsonSerializer.Serialize(response.Value, JsonOptions).Should().Be($"{{\"previewId\":\"{previewId}\",\"previewStatus\":\"Running\"}}");
 
         var (serviceId, parameters) = calls.Single();
 

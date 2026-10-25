@@ -50,7 +50,7 @@ graph TD
 - [Agents.DynamicExporter.md](Agents.DynamicExporter.md) — async Excel export jobs, background worker, user-scoped requests.
 - [Agents.HttpClientService.md](Agents.HttpClientService.md) — `IHttpClientsService` / `HttpClientService`, URL resolution (root path → `ToDomainKey`), target-microservice overloads for `/api/base` services, correlation header.
 - [Agents.Compensation.md](Agents.Compensation.md) — compensation session, snapshots, `CompensatableApi` / `CompensatableApiActionFilter`, `CompensationSessionFinalized` event.
-- [Agents.CorrelationContext.md](Agents.CorrelationContext.md) — `CorrelationContext` model, `x-correlation-context`, serializer, accessor.
+- [Agents.CorrelationContext.md](Agents.CorrelationContext.md) — `CorrelationContext` model, `x-correlation-context`, serializer, accessor; user time zone (§6b): `UserTimeZone`, `IDateTimeService` user-time members, `[UserTime]` JSON attribute.
 - [Agents.EncryptedData.md](Agents.EncryptedData.md) — `[EncryptedData]`, EF value converter, `BaseDbContext` + `BiAppOptions.EncryptionKey`.
 - [Agents.Database.md](Agents.Database.md) — `Databases` config (`Databases:Default` + named entries), `AddDatabase`, providers, retry, health checks, `IDbContext` registration.
 - [Agents.NativeDatabase.md](Agents.NativeDatabase.md) — `AddBiUMNativeDatabase`, keyed `INativeDatabase`, typed native SQL statements, bulk COPY merge, range partitions, versioned native migrations.

@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.MessageBroker;
+using BiUM.Core.Common.Attributes;
 using System;
 using System.Collections.Generic;
 
@@ -52,6 +53,8 @@ public class ServiceCatalogEndpointDto
 {
     public required string HttpMethod { get; set; }
 
+    public Guid HttpType { get; set; }
+
     public required string Url { get; set; }
 
     public required string ControllerName { get; set; }
@@ -66,12 +69,13 @@ public class ServiceCatalogEndpointDto
 
     public Guid? ServiceId { get; set; }
 
-    public string? ServiceHttpMethod { get; set; }
+    public Guid? ServiceHttpType { get; set; }
 
     public string? PreviewStatus { get; set; }
 
     public Guid? PreviewId { get; set; }
 
+    [UserTime]
     public DateTime? PreviewRequestedAt { get; set; }
 }
 
@@ -81,7 +85,7 @@ public record ServiceCatalogEndpointsQuery : IBaseQuery
 
     public string? Url { get; init; }
 
-    public string? HttpMethod { get; init; }
+    public Guid? HttpType { get; init; }
 
     public string? Q { get; init; }
 
@@ -113,7 +117,7 @@ public class ServiceCatalogEndpointStatusDto
 
     public Guid? ServiceId { get; set; }
 
-    public string? ServiceHttpMethod { get; set; }
+    public Guid? ServiceHttpType { get; set; }
 
     public string? PreviewStatus { get; set; }
 

@@ -43,11 +43,9 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 
         var descriptions = GetCatalogDescriptions();
 
-        if (!string.IsNullOrWhiteSpace(query.HttpMethod))
+        if (query.HttpType is { } httpType)
         {
-            var httpMethod = query.HttpMethod.Trim();
-
-            descriptions = descriptions.Where(d => string.Equals(d.Description.HttpMethod, httpMethod, StringComparison.OrdinalIgnoreCase));
+            descriptions = descriptions.Where(d => ToHttpType(d.Description.HttpMethod) == httpType);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Url))
@@ -73,6 +71,7 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
             return new ServiceCatalogEndpointDto
             {
                 HttpMethod = d.Description.HttpMethod!.ToUpperInvariant(),
+                HttpType = ToHttpType(d.Description.HttpMethod) ?? Guid.Empty,
                 Url = GetUrl(d.Description),
                 ControllerName = d.Action.ControllerName,
                 ActionName = d.Action.ActionName,
@@ -108,6 +107,18 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
             }
         }
     }
+
+    private static Guid? ToHttpType(string? httpMethod) => (httpMethod ?? string.Empty).ToUpperInvariant() switch
+    {
+        "GET" => Ids.Parameter.HttpType.Values.Get,
+        "POST" => Ids.Parameter.HttpType.Values.Post,
+        "PUT" => Ids.Parameter.HttpType.Values.Put,
+        "PATCH" => Ids.Parameter.HttpType.Values.Patch,
+        "DELETE" => Ids.Parameter.HttpType.Values.Delete,
+        "HEAD" => Ids.Parameter.HttpType.Values.Head,
+        "OPTIONS" => Ids.Parameter.HttpType.Values.Options,
+        _ => null
+    };
 
     private static ServiceCatalogEndpointsQuery NormalizePaging(ServiceCatalogEndpointsQuery query)
     {
@@ -182,7 +193,7 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 
                 endpoint.Registered = status.Registered;
                 endpoint.ServiceId = status.ServiceId;
-                endpoint.ServiceHttpMethod = status.ServiceHttpMethod;
+                endpoint.ServiceHttpType = status.ServiceHttpType;
                 endpoint.PreviewStatus = status.PreviewStatus;
                 endpoint.PreviewId = status.PreviewId;
                 endpoint.PreviewRequestedAt = status.PreviewRequestedAt;

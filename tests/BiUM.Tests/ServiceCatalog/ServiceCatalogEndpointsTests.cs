@@ -321,7 +321,7 @@ public sealed class ServiceCatalogEndpointsTests
 
             return new ApiResponse<List<ServiceCatalogEndpointStatusDto>>(
             [
-                new() { HttpMethod = "GET", Url = "/api/sample/Item21/GetItems", Registered = true, ServiceId = serviceId, ServiceHttpMethod = "POST" },
+                new() { HttpMethod = "GET", Url = "/api/sample/Item21/GetItems", Registered = true, ServiceId = serviceId, ServiceHttpType = Ids.Parameter.HttpType.Values.Post },
                 new() { HttpMethod = "GET", Url = "/API/SAMPLE/ITEM22/GETITEMS", Registered = false, PreviewStatus = "Running", PreviewId = previewId }
             ]);
         });
@@ -336,7 +336,8 @@ public sealed class ServiceCatalogEndpointsTests
 
         response.Value![0].Registered.Should().BeTrue();
         response.Value[0].ServiceId.Should().Be(serviceId);
-        response.Value[0].ServiceHttpMethod.Should().Be("POST");
+        response.Value[0].ServiceHttpType.Should().Be(Ids.Parameter.HttpType.Values.Post);
+        response.Value[0].HttpType.Should().Be(Ids.Parameter.HttpType.Values.Get);
         response.Value[1].Registered.Should().BeFalse();
         response.Value[1].PreviewStatus.Should().Be("Running");
         response.Value[1].PreviewId.Should().Be(previewId);
@@ -360,21 +361,26 @@ public sealed class ServiceCatalogEndpointsTests
     }
 
     [Fact]
-    public async Task GetEndpointsAsync_ShouldFilterByHttpMethodAndUrl()
+    public async Task GetEndpointsAsync_ShouldFilterByHttpTypeAndUrl()
     {
         var (service, _, _) = Create(3, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]),
             DetailDescription("POST", "api/sample/Detail/SaveDetail"),
             DetailDescription("GET", "api/sample/Detail/GetDetail"));
 
-        var posts = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { HttpMethod = "post" }, CancellationToken.None);
+        var posts = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { HttpType = Ids.Parameter.HttpType.Values.Post }, CancellationToken.None);
 
         posts.Value!.Select(e => e.Url).Should().Equal("/api/sample/Detail/SaveDetail");
+        posts.Value![0].HttpType.Should().Be(Ids.Parameter.HttpType.Values.Post);
+
+        var none = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { HttpType = Guid.NewGuid() }, CancellationToken.None);
+
+        none.TotalCount.Should().Be(0);
 
         var details = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { Url = "/detail/" }, CancellationToken.None);
 
         details.Value!.Select(e => e.HttpMethod).Should().BeEquivalentTo(["GET", "POST"]);
 
-        var getDetail = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { Url = "detail", HttpMethod = "GET" }, CancellationToken.None);
+        var getDetail = await service.GetEndpointsAsync(new ServiceCatalogEndpointsQuery { Url = "detail", HttpType = Ids.Parameter.HttpType.Values.Get }, CancellationToken.None);
 
         getDetail.Value!.Should().ContainSingle().Which.Url.Should().Be("/api/sample/Detail/GetDetail");
     }

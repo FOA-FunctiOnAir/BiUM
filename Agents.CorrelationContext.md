@@ -46,6 +46,14 @@ Outbound HTTP istemcisi aynı sözleşmeyi kullanır; bkz. [Agents.HttpClientSer
 
 - Dinamik CRUD satır **`TENANT_ID`** doldurumu ve tanım düzlemi yetkileri `CorrelationContext.TenantId` ile ilişkilidir; bkz. [Agents.Crud.md](Agents.Crud.md).
 
+## 6b. Kullanıcı saat dilimi (`TimeZoneId`)
+
+- `CorrelationContext.TimeZoneId` (IANA, ör. `Europe/Istanbul`); Gateway web isteklerinde şimdilik sabit `Europe/Istanbul` doldurur. DB'de zamanlar UTC tutulur; dönüşüm yalnızca kullanıcıya giden/gelen değerlerde yapılır.
+- Ortak yardımcı: `BiUM.Core.Common.Utils.UserTimeZone` — `Resolve(id)` (önbellekli; boş/geçersiz id → `null` = UTC), `ToUserTime(utc, zone)` (duvar saati, `Kind = Unspecified`), `ToUtc(userTime, zone)` (yaz saati boşluğundaki geçersiz saatler ileri kaydırılır), `ToUserOffset`. `Configure(accessor)` `UseSpecialized` içinde (`CorrelationContextTimeZone.Configure`) çağrılır.
+- **`IDateTimeService`** (`BiUM.Infrastructure.Common.Services`): mevcut `Now` / `Today` / `TimeNow` / `Offset*` UTC'dir (audit ve sistem zamanları). Kullanıcı saati için: `UserTimeZone` (`TimeZoneInfo`, yoksa UTC), `UserNow`, `UserToday`, `ToUserTime(DateTime utc)`, `ToUserTime(DateTimeOffset)`, `ToUtc(DateTime userTime)` (ör. ekrandan gelen tarih filtresi).
+- **`[UserTime]`** (`BiUM.Core.Common.Attributes`): UTC tutulan `DateTime` / `DateTime?` / `DateTimeOffset` / `DateTimeOffset?` alanı cevaba kullanıcının **ofsetsiz duvar saati** olarak yazılır (`"2026-10-25T18:44:12"`, web bunu olduğu gibi gösterir); istekte ofsetsiz değer kullanıcının saati sayılıp UTC'ye çevrilir, `Z`/ofsetli değer olduğu gibi an kabul edilir. `TimeZoneId` yoksa değer UTC (`…Z`) yazılır. Yalnızca işaretli alanları etkiler; ms'ler arası DTO'larda (ör. Configuration'dan dönen durum DTO'su) kullanılmaz.
+- `BaseDto.CreatedAt` / `UpdatedAt` (`CorrelationContextTimeZone`, AutoMapper `AfterMap` ve `PopulateAuditFields`) aynı yardımcıyı kullanır.
+
 ## 7. AI ajanları için
 
 Model alanı veya header adı değişirse Gateway ve tüm istemcilerle uyum için bu dosya, `HeaderKeys` ve [Agents.HttpClientService.md](Agents.HttpClientService.md) güncellenmelidir.

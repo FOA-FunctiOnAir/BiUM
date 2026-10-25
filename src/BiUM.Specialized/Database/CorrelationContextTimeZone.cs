@@ -1,4 +1,5 @@
 using BiUM.Core.Authorization;
+using BiUM.Core.Common.Utils;
 using BiUM.Infrastructure.Common.Models;
 using System;
 using System.Collections.Generic;
@@ -12,21 +13,12 @@ internal static class CorrelationContextTimeZone
     public static void Configure(ICorrelationContextAccessor accessor)
     {
         _accessor = accessor;
+        UserTimeZone.Configure(accessor);
     }
 
     public static DateTimeOffset ConvertToLocal(DateOnly date, TimeOnly time)
     {
-        var utcDt = new DateTime(date, time, DateTimeKind.Utc);
-        var tzId = _accessor?.CorrelationContext?.TimeZoneId;
-
-        if (string.IsNullOrEmpty(tzId))
-        {
-            return new DateTimeOffset(utcDt);
-        }
-
-        var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-
-        return TimeZoneInfo.ConvertTimeFromUtc(utcDt, tz);
+        return UserTimeZone.ToUserOffset(new DateTime(date, time, DateTimeKind.Utc), UserTimeZone.Resolve(_accessor?.CorrelationContext?.TimeZoneId));
     }
 
     public static DateTimeOffset? ConvertToLocalOrNull(DateOnly? date, TimeOnly? time)

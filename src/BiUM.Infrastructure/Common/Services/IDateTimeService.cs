@@ -10,4 +10,12 @@ public interface IDateTimeService
     public DateOnly OffsetToday { get; }
     public TimeOnly TimeNow { get; }
     public TimeOnly OffsetTimeNow { get; }
+
+    public TimeZoneInfo UserTimeZone { get; }
+    public DateTime UserNow { get; }
+    public DateOnly UserToday { get; }
+
+    public DateTime ToUserTime(DateTime utc);
+    public DateTime ToUserTime(DateTimeOffset value);
+    public DateTime ToUtc(DateTime userTime);
 }

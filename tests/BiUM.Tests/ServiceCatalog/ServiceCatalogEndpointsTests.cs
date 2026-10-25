@@ -313,7 +313,7 @@ public sealed class ServiceCatalogEndpointsTests
 
             return new ApiResponse<List<ServiceCatalogEndpointStatusDto>>(
             [
-                new() { HttpMethod = "GET", Url = "/api/sample/Item21/GetItems", Registered = true, ServiceId = serviceId, ServiceName = "Item 21" },
+                new() { HttpMethod = "GET", Url = "/api/sample/Item21/GetItems", Registered = true, ServiceId = serviceId, ServiceHttpMethod = "POST" },
                 new() { HttpMethod = "GET", Url = "/API/SAMPLE/ITEM22/GETITEMS", Registered = false, PreviewStatus = "Running", PreviewId = previewId }
             ]);
         });
@@ -328,6 +328,7 @@ public sealed class ServiceCatalogEndpointsTests
 
         response.Value![0].Registered.Should().BeTrue();
         response.Value[0].ServiceId.Should().Be(serviceId);
+        response.Value[0].ServiceHttpMethod.Should().Be("POST");
         response.Value[1].Registered.Should().BeFalse();
         response.Value[1].PreviewStatus.Should().Be("Running");
         response.Value[1].PreviewId.Should().Be(previewId);

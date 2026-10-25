@@ -182,7 +182,7 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 
                 endpoint.Registered = status.Registered;
                 endpoint.ServiceId = status.ServiceId;
-                endpoint.ServiceName = status.ServiceName;
+                endpoint.ServiceHttpMethod = status.ServiceHttpMethod;
                 endpoint.PreviewStatus = status.PreviewStatus;
                 endpoint.PreviewId = status.PreviewId;
                 endpoint.PreviewRequestedAt = status.PreviewRequestedAt;

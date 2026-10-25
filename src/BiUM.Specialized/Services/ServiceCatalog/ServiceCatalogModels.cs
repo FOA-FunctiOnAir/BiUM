@@ -1,3 +1,5 @@
+using BiUM.Contract.Models.MessageBroker;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -60,6 +62,65 @@ public class ServiceCatalogEndpointDto
     public string? Name { get; set; }
 
     public string? Description { get; set; }
+
+    public bool? Registered { get; set; }
+
+    public Guid? ServiceId { get; set; }
+
+    public string? ServiceName { get; set; }
+
+    public string? PreviewStatus { get; set; }
+
+    public Guid? PreviewId { get; set; }
+
+    public DateTime? PreviewRequestedAt { get; set; }
+}
+
+public record ServiceCatalogEndpointsQuery : IBaseQuery
+{
+    public Guid? MicroserviceId { get; init; }
+
+    public string? Url { get; init; }
+
+    public string? HttpMethod { get; init; }
+
+    public string? Q { get; init; }
+
+    public Dictionary<string, string>? Filters { get; init; }
+
+    public string? SortBy { get; init; }
+
+    public SortDirection? SortDirection { get; init; }
+
+    public int? PageStart { get; init; }
+
+    public int? PageSize { get; init; }
+}
+
+public class ServiceCatalogEndpointKeyDto
+{
+    public required string HttpMethod { get; set; }
+
+    public required string Url { get; set; }
+}
+
+public class ServiceCatalogEndpointStatusDto
+{
+    public string HttpMethod { get; set; } = string.Empty;
+
+    public string Url { get; set; } = string.Empty;
+
+    public bool Registered { get; set; }
+
+    public Guid? ServiceId { get; set; }
+
+    public string? ServiceName { get; set; }
+
+    public string? PreviewStatus { get; set; }
+
+    public Guid? PreviewId { get; set; }
+
+    public DateTime? PreviewRequestedAt { get; set; }
 }
 
 public class ServiceCatalogPropertyDto

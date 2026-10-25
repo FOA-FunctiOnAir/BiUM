@@ -1,5 +1,4 @@
 using BiUM.Contract.Models.Api;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +7,7 @@ namespace BiUM.Specialized.Services.ServiceCatalog;
 
 public interface IServiceCatalogService
 {
-    ApiResponse<IList<ServiceCatalogEndpointDto>> GetEndpoints();
+    Task<PaginatedApiResponse<ServiceCatalogEndpointDto>> GetEndpointsAsync(ServiceCatalogEndpointsQuery query, CancellationToken cancellationToken);
 
     Task<ApiResponse<ServiceCatalogManifestDto>> GetManifestAsync(string? httpMethod, string? url, CancellationToken cancellationToken);
 

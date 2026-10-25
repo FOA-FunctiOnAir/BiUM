@@ -43,7 +43,7 @@ graph TD
 
 - [Agents.Coding.md](Agents.Coding.md) — **C# format and layout**
 - [Agents.MsStructure.md](Agents.MsStructure.md) — **Shared FOA microservice technical layout** (layers, `Program.cs`, BiUM pipeline, persistence/messaging patterns), including **§3.1 service identity**: dotted `BiAppOptions.Domain`, `BiUMRoute` slash segments, `Domains` map keys (`ToLowerInvariant()`), DB names `snake_case`, ordered local domain maps. Business domain per service stays in that service’s `AGENTS.md`.
-- [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md) — **Entity / column / DTO naming**: `BaseEntity.Active` only (no duplicate `IsActive`), boolean and `DateTime` naming (no `IS_` / `Utc` suffixes), translation tables with `Column` (no `TranslationCode` on parent). **Read this before adding or refactoring domain models.**
+- [Agents.DomainModelConventions.md](Agents.DomainModelConventions.md) — **Entity / column / DTO naming**: `BaseEntity.Active` only (no duplicate `IsActive`), boolean and `DateTime` naming (no `IS_` / `Utc` suffixes), translation tables with `Column` (no `TranslationCode` on parent), Created/Updated/Deleted lifecycle events for every entity (§6). **Read this before adding or refactoring domain models.**
 - [Agents.Crud.md](Agents.Crud.md) — `DomainCrud` metadata vs runtime CRUD, tenant rules, `CrudController`.
 - [Agents.DynamicApi.md](Agents.DynamicApi.md) — `DomainDynamicApi` metadata vs runtime handler, Roslyn compile, `DynamicApiController`.
 - [Agents.PlatformIntegration.md](Agents.PlatformIntegration.md) — `IPlatformActionExecutor`, event definitions, `ctx.Events`, scheduler legacy bridge.

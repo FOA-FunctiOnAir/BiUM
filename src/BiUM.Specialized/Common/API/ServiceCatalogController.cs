@@ -2,7 +2,6 @@ using BiUM.Contract.Models.Api;
 using BiUM.Core.Common.Attributes;
 using BiUM.Specialized.Services.ServiceCatalog;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,9 +21,9 @@ public class ServiceCatalogController : ApiControllerBase
     }
 
     [HttpGet]
-    public ApiResponse<IList<ServiceCatalogEndpointDto>> GetEndpoints()
+    public async Task<PaginatedApiResponse<ServiceCatalogEndpointDto>> GetEndpoints([FromQuery] ServiceCatalogEndpointsQuery query, CancellationToken cancellationToken)
     {
-        return _serviceCatalogService.GetEndpoints();
+        return await _serviceCatalogService.GetEndpointsAsync(query, cancellationToken);
     }
 
     [HttpGet]

@@ -18,7 +18,7 @@ public static class MoneyHelper
         var isNegative = amount < 0;
         amount = Math.Abs(amount);
 
-        var intPart = (int)amount;
+        var intPart = (long)decimal.Truncate(amount);
         var decimalPart = (int)((amount - intPart) * 100);
 
         var intPartWords = intPart != 0 ? ConvertIntegerToWords(intPart) + $" {currencyName}" : "";
@@ -38,7 +38,7 @@ public static class MoneyHelper
         return isNegative ? "Eksi " + result : result;
     }
 
-    private static string ConvertIntegerToWords(int number)
+    private static string ConvertIntegerToWords(long number)
     {
         if (number == 0)
         {
@@ -46,9 +46,15 @@ public static class MoneyHelper
         }
 
         var words = "";
-        var millions = number / 1000000;
-        var thousands = number % 1000000 / 1000;
-        var hundreds = number % 1000;
+        var billions = number / 1000000000;
+        var millions = (int)(number % 1000000000 / 1000000);
+        var thousands = (int)(number % 1000000 / 1000);
+        var hundreds = (int)(number % 1000);
+
+        if (billions > 0)
+        {
+            words += ConvertIntegerToWords(billions) + " Milyar ";
+        }
 
         if (millions > 0)
         {

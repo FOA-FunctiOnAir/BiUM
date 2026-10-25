@@ -6,13 +6,14 @@ Mikroservisin kendi HTTP endpoint'lerini Configuration'daki servis kataloğuna (
 
 | Action | Metot | Görev |
 |--------|-------|-------|
-| `GetEndpoints` | GET | Katalog adayı endpoint listesi (metot, url, controller, action, `[ServiceCatalog]` adı/açıklaması) |
+| `GetEndpoints` | GET | Sayfalı (`PaginatedApiResponse<ServiceCatalogEndpointDto>`) katalog adayı endpoint listesi. Sorgu (`ServiceCatalogEndpointsQuery`): `HttpMethod` (tam eşleşme), `Url` (içerir), `Q` (url ve manifestteki girdi/çıktı property adları, alt property'ler dahil), `SortBy` (`url` varsayılan, `controllerName`, `actionName`, `name`, `httpMethod`), `SortDirection`, `PageStart` (0), `PageSize` (20, en çok 100), `MicroserviceId` (ekran formundan; Configuration'a iletilir). Her kayıt: metot, url, controller, action, `[ServiceCatalog]` adı/açıklaması + durum: `Registered`, `ServiceId`, `ServiceName`, `PreviewStatus` (`Running`/`Completed`), `PreviewId`, `PreviewRequestedAt` |
 | `GetManifest` | GET | `httpMethod` + `url` için manifest (Configuration'a gitmeden) |
 | `Preview` | POST | `{ httpMethod, url }` → manifest üretir, Configuration `PreviewInternalService` servisini `CallService(Ids.Service.PreviewInternalService.Id)` ile (`{ Manifest }`) çağırır, Configuration cevabını (`JsonElement`) aynen döner |
 | `Apply` | POST | `{ httpMethod, url, decisions }` → manifesti **yeniden** üretir, Configuration `ApplyInternalService` servisini `CallService(Ids.Service.ApplyInternalService.Id)` ile (`{ Manifest, Decisions }`) çağırır; `decisions` biçimi Configuration'a aittir (önizlemeden dönen `previewId` `decisions.previewId` olarak gönderilir) |
 
 - Configuration'da önizleme bir arka plan işidir: `Preview` cevabı `previewId` + `previewStatus` (`Running`/`Completed`) içerir; AI eşleşmesi tamamlanınca güncel önizleme Configuration `GET /api/configuration/Service/GetServicePreview?id=…` ile okunur (ayrıntı: BiApp.Configuration `Agents.PlatformCatalog.md`). BiUM tarafında değişiklik yoktur; cevap ve `decisions` olduğu gibi taşınır.
-- Configuration URL ile çağrılır (`IHttpClientsService.Post`, `HttpClientsOptions.Domains["configuration"]`); servis kataloğunda kayıt gerekmez.
+- **Durum yalnızca dönülecek sayfa için okunur:** filtre + sıralama + sayfalama bellekte yapılır, ardından sayfadaki uçlar (`{ Domain, MicroserviceId?, Endpoints: [{ HttpMethod, Url }] }`) tek istekle Configuration `GetFwServiceCatalogStatuses` servisine (`CallService(Ids.Service.GetServiceCatalogStatuses.Id)`) gönderilir. Durum filtresi yoktur. Configuration'a ulaşılamazsa sayfa yine döner, durum alanları `null` kalır (uyarı loglanır).
+- `Preview` / `Apply` için kullanıcı aynı `previewId`'yi kullanır: `{ httpMethod, url, decisions: { previewId } }`; yalnızca değiştirdiği kararları (`serviceName`, `properties`) ekler.
 - `BiAppOptions.Environment == Production` iken `Preview`/`Apply` `service_catalog_disabled_in_production` döner.
 - Yetki Configuration tarafındadır (correlation context ile kullanıcı/tenant gider).
 - Mesaj kodları: `service_catalog_endpoint_is_required`, `service_catalog_endpoint_not_found`, `service_catalog_disabled_in_production`.
@@ -35,4 +36,4 @@ Mikroservisin kendi HTTP endpoint'lerini Configuration'daki servis kataloğuna (
 - `BiUM.Specialized/Services/ServiceCatalog/` (`IServiceCatalogService`, `ServiceCatalogService`, `ServiceCatalogTypeDescriber`, `ServiceCatalogModels`)
 - Testler: `tests/BiUM.Tests/ServiceCatalog/`
 
-Configuration çağrıları katalog servis Id'leri ile yapılır (`BiUM.Core.Constants.Ids.Service.PreviewInternalService` / `ApplyInternalService`); SERVICE kayıtları Configuration'da bu Id'lerle tanımlı olmalıdır (dev script: BiApp.Configuration `scripts/insert_services_ai_assessment.sql`).
+Configuration çağrıları katalog servis Id'leri ile yapılır (`BiUM.Core.Constants.Ids.Service.PreviewInternalService` / `ApplyInternalService` / `GetServiceCatalogStatuses`); SERVICE kayıtları Configuration'da bu Id'lerle tanımlı olmalıdır (scriptler: BiApp.Configuration `scripts/insert_services_ai_assessment.sql`, `scripts/insert_services_service_catalog.sql`).

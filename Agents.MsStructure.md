@@ -151,6 +151,8 @@ Do not use `BaseQueryDto<List<>>`, `IQueryHandler`, or `PaginatedApiResponse` fo
 
 When adding or changing **entities**, **EF column mappings**, **DTOs**, and **translation tables**, follow **[Agents.DomainModelConventions.md](Agents.DomainModelConventions.md)** (`BaseEntity.Active` without a duplicate `IsActive`, boolean/`DateTime` naming, translation rows addressed by `Column`, Flow-style EF mapping). This applies to all BiApp services, not only BiUM library code.
 
+Every entity defines `Created` / `Updated` / `Deleted` events (`[Event] [MemoryPackable] partial`, `override` hooks): [Agents.DomainModelConventions.md §6](Agents.DomainModelConventions.md). Services contain no `*.g.cs` files; each type lives in a single `.cs` file.
+
 ## 6. Optional: Bolt
 
 Services that sync metadata or use Bolt registers a second context via **`AddBolt<TBoltContext, TInitialiser>`** and expose **`IBoltDbContext`**. Startup may call **`SyncBolt()`** alongside database initialisation.

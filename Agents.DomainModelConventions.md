@@ -106,7 +106,44 @@ Fallback resolution order at runtime (see `TranslationService.GetTranslation`):
 
 ---
 
-## 6. Agent workflow
+## 6. Entity lifecycle events — every entity defines Created / Updated / Deleted
+
+Every entity in a **BiApp.\*** service defines its three lifecycle events and returns them from `BaseEntity`'s virtual hooks. `EntitySaveChangesInterceptor` calls `AddCreatedEvent` / `AddUpdatedEvent` / `AddDeletedEvent` through `IBaseEntity` on every `SaveChanges` (soft delete counts as delete) and publishes the result after commit.
+
+**Event classes** (`<Service>.Domain/Events/<Entity>CreatedEvent.cs`, `…UpdatedEvent.cs`, `…DeletedEvent.cs`, one type per file):
+
+```csharp
+[Event]
+[MemoryPackable]
+public partial class ApplicationCreatedEvent : TenantBaseEntityEvent, IMapFrom<Application>
+{
+}
+```
+
+- Base: `TenantBaseEntityEvent` for `TenantBaseEntity`, `BaseEntityEvent` for `BaseEntity`. `Id` carries the entity id (mapped from the entity).
+- `[Event]` with an empty `Exchange` (broadcast from the owning service), `[MemoryPackable]` and `partial` are all required; RabbitMQ messages are MemoryPack-serialised (see [Agents.MessageBroker.md](Agents.MessageBroker.md)).
+- Add properties only for fields consumers need; an empty body is valid.
+- Scope: entities deriving from `BaseEntity` / `TenantBaseEntity`. Translation rows (`TranslationBaseEntity`) are not `IBaseEntity` and get no lifecycle events.
+- The fanout exchange name comes from the event type name (`{domain}.{entity}_{kind}_event`). If the service already publishes a hand-written event with the same name (other consumers depend on its schema), do not add the generic one for that kind; keep the existing event (e.g. BiApp.Configuration `AccessPointDeletedEvent`, consumed by Bpmn).
+
+**Entity hooks** — `override`, never `new` (a `new` method hides the hook and is never called through `IBaseEntity`, so no event is produced):
+
+```csharp
+public override IBaseEvent? AddCreatedEvent(IMapper? mapper, IBaseEvent? baseEvent)
+{
+    var createdEvent = mapper?.Map<ApplicationCreatedEvent>(this);
+
+    return base.AddCreatedEvent(mapper, createdEvent);
+}
+```
+
+Same shape for `AddUpdatedEvent` (`…UpdatedEvent`) and `AddDeletedEvent` (`…DeletedEvent`). Reference implementation: BiApp.Configuration `Configuration.Domain/Entities/Application.cs` + `Configuration.Domain/Events/Application*Event.cs`.
+
+**Legacy to fix when touched:** Generator-era `*.g.cs` entity files with `public new IBaseEvent? Add…Event(…) => CreateEvent<…>(mapper)` and event classes without `[MemoryPackable] partial` produce no events. When editing such a service, convert them to the pattern above (and merge/remove the `*.g.cs` files — no `*.g.cs` in services).
+
+---
+
+## 7. Agent workflow
 
 When editing entities or DTOs in any **BiApp.\*** service:
 

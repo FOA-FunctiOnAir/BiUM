@@ -1,4 +1,5 @@
 using BiUM.Contract.Models.Api;
+using BiUM.Contract.Models.MessageBroker;
 using BiUM.Core.Common.Attributes;
 using BiUM.Core.Constants;
 using BiUM.Core.HttpClients;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,8 @@ namespace BiUM.Specialized.Services.ServiceCatalog;
 public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 {
     private const string BaseRoutePrefix = "/api/base/";
+    private const int DefaultPageSize = 20;
+    private const int MaxPageSize = 100;
 
     private readonly IApiDescriptionGroupCollectionProvider _apiDescriptionProvider;
     private readonly IHttpClientsService _httpClientsService;
@@ -31,28 +35,161 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
         _httpClientsService = serviceProvider.GetRequiredService<IHttpClientsService>();
     }
 
-    public ApiResponse<IList<ServiceCatalogEndpointDto>> GetEndpoints()
+    public async Task<PaginatedApiResponse<ServiceCatalogEndpointDto>> GetEndpointsAsync(ServiceCatalogEndpointsQuery query, CancellationToken cancellationToken)
     {
-        var endpoints = GetCatalogDescriptions()
-            .Select(d =>
+        query = NormalizePaging(query);
+
+        var descriptions = GetCatalogDescriptions();
+
+        if (!string.IsNullOrWhiteSpace(query.HttpMethod))
+        {
+            var httpMethod = query.HttpMethod.Trim();
+
+            descriptions = descriptions.Where(d => string.Equals(d.Description.HttpMethod, httpMethod, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Url))
+        {
+            var url = query.Url.Trim();
+
+            descriptions = descriptions.Where(d => GetUrl(d.Description).Contains(url, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Q))
+        {
+            var q = query.Q.Trim();
+
+            descriptions = descriptions.Where(d =>
+                GetUrl(d.Description).Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                GetPropertyNames(d.Description, d.Action).Any(name => name.Contains(q, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        var endpoints = descriptions.Select(d =>
+        {
+            var catalog = GetCatalogAttribute(d.Action);
+
+            return new ServiceCatalogEndpointDto
             {
-                var catalog = GetCatalogAttribute(d.Action);
+                HttpMethod = d.Description.HttpMethod!.ToUpperInvariant(),
+                Url = GetUrl(d.Description),
+                ControllerName = d.Action.ControllerName,
+                ActionName = d.Action.ActionName,
+                Name = catalog?.Name,
+                Description = catalog?.Description
+            };
+        });
 
-                return new ServiceCatalogEndpointDto
+        var filtered = Sort(endpoints, query.SortBy, query.SortDirection).ToList();
+        var page = filtered.Skip(query.PageStart!.Value).Take(query.PageSize!.Value).ToList();
+
+        await FillStatusesAsync(query.MicroserviceId, page, cancellationToken);
+
+        return new PaginatedApiResponse<ServiceCatalogEndpointDto>(query, page, filtered.Count);
+    }
+
+    private IEnumerable<string> GetPropertyNames(ApiDescription description, ControllerActionDescriptor action)
+    {
+        var manifest = BuildManifest(description, action);
+
+        return Flatten(manifest.Parameters).Concat(Flatten(manifest.Response)).Select(p => p.Name);
+    }
+
+    private static IEnumerable<ServiceCatalogPropertyDto> Flatten(IEnumerable<ServiceCatalogPropertyDto> properties)
+    {
+        foreach (var property in properties)
+        {
+            yield return property;
+
+            foreach (var child in Flatten(property.Children))
+            {
+                yield return child;
+            }
+        }
+    }
+
+    private static ServiceCatalogEndpointsQuery NormalizePaging(ServiceCatalogEndpointsQuery query)
+    {
+        var pageStart = query.PageStart is > 0 ? query.PageStart.Value : 0;
+        var pageSize = query.PageSize is > 0 ? Math.Min(query.PageSize.Value, MaxPageSize) : DefaultPageSize;
+
+        return query with { PageStart = pageStart, PageSize = pageSize };
+    }
+
+    private static IEnumerable<ServiceCatalogEndpointDto> Sort(IEnumerable<ServiceCatalogEndpointDto> endpoints, string? sortBy, SortDirection? direction)
+    {
+        Func<ServiceCatalogEndpointDto, string> key = (sortBy ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "controllername" or "controller" => e => e.ControllerName,
+            "actionname" or "action" => e => e.ActionName,
+            "name" => e => e.Name ?? string.Empty,
+            "httpmethod" => e => e.HttpMethod,
+            _ => e => e.Url
+        };
+
+        var ordered = direction == SortDirection.Desc
+            ? endpoints.OrderByDescending(key, StringComparer.OrdinalIgnoreCase)
+            : endpoints.OrderBy(key, StringComparer.OrdinalIgnoreCase);
+
+        return ordered
+            .ThenBy(e => e.Url, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.HttpMethod, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task FillStatusesAsync(Guid? microserviceId, IReadOnlyList<ServiceCatalogEndpointDto> page, CancellationToken cancellationToken)
+    {
+        if (page.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var parameters = new Dictionary<string, dynamic>
+            {
+                { "Domain", BiAppOptions.Domain },
+                { "Endpoints", page.Select(e => new ServiceCatalogEndpointKeyDto { HttpMethod = e.HttpMethod, Url = e.Url }).ToList() }
+            };
+
+            if (microserviceId.HasValue)
+            {
+                parameters.Add("MicroserviceId", microserviceId.Value);
+            }
+
+            var response = await _httpClientsService.CallService<List<ServiceCatalogEndpointStatusDto>>(
+                serviceId: Ids.Service.GetServiceCatalogStatuses.Id,
+                parameters: parameters,
+                cancellationToken: cancellationToken);
+
+            if (!response.Success || response.Value is null)
+            {
+                Logger.LogWarning("Service catalog statuses could not be read: {Messages}", string.Join("; ", response.Messages.Select(m => m.Message)));
+
+                return;
+            }
+
+            var statuses = response.Value
+                .GroupBy(s => (s.HttpMethod.ToUpperInvariant(), s.Url.ToLowerInvariant()))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var endpoint in page)
+            {
+                if (!statuses.TryGetValue((endpoint.HttpMethod.ToUpperInvariant(), endpoint.Url.ToLowerInvariant()), out var status))
                 {
-                    HttpMethod = d.Description.HttpMethod!.ToUpperInvariant(),
-                    Url = GetUrl(d.Description),
-                    ControllerName = d.Action.ControllerName,
-                    ActionName = d.Action.ActionName,
-                    Name = catalog?.Name,
-                    Description = catalog?.Description
-                };
-            })
-            .OrderBy(e => e.Url, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(e => e.HttpMethod, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+                    continue;
+                }
 
-        return new ApiResponse<IList<ServiceCatalogEndpointDto>>(endpoints);
+                endpoint.Registered = status.Registered;
+                endpoint.ServiceId = status.ServiceId;
+                endpoint.ServiceName = status.ServiceName;
+                endpoint.PreviewStatus = status.PreviewStatus;
+                endpoint.PreviewId = status.PreviewId;
+                endpoint.PreviewRequestedAt = status.PreviewRequestedAt;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            Logger.LogWarning(ex, "Service catalog statuses could not be read for {Domain}.", BiAppOptions.Domain);
+        }
     }
 
     public async Task<ApiResponse<ServiceCatalogManifestDto>> GetManifestAsync(string? httpMethod, string? url, CancellationToken cancellationToken)

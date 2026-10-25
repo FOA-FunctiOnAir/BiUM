@@ -1,7 +1,6 @@
 using BiUM.Contract.Models.MessageBroker;
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 
 namespace BiUM.Specialized.Services.ServiceCatalog;
 
@@ -174,9 +173,16 @@ public class ServiceCatalogPreviewCommand
 
 public class ServiceCatalogApplyCommand
 {
-    public string? HttpMethod { get; set; }
+    public Guid? PreviewId { get; set; }
+}
 
-    public string? Url { get; set; }
+public class ServiceCatalogPreviewInfoDto
+{
+    public Guid? PreviewId { get; set; }
 
-    public JsonElement? Decisions { get; set; }
+    public string? PreviewStatus { get; set; }
+
+    public string HttpMethod { get; set; } = string.Empty;
+
+    public string Url { get; set; } = string.Empty;
 }

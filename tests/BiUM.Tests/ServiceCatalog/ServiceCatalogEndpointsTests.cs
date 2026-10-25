@@ -160,47 +160,144 @@ public sealed class ServiceCatalogEndpointsTests
         manifest.Value.Response.Select(p => p.Name).Should().BeEquivalentTo(["id", "gradeLevel"]);
     }
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly Guid PreviewId = Guid.Parse("01a17063-4c44-7dae-9909-393632859b3c");
+
+    private static void SetupPreview(Mock<IHttpClientsService> http, ApiResponse<ServiceCatalogPreviewInfoDto> response, Action<Dictionary<string, dynamic>?>? capture = null)
+    {
+        http
+            .Setup(item => item.CallService<ServiceCatalogPreviewInfoDto>(Ids.Service.GetServicePreview.Id, It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback((Guid _, Dictionary<string, dynamic>? parameters, IReadOnlyList<Guid>? _, IReadOnlyList<Guid>? _, string? _, int? _, int? _, CancellationToken _) => capture?.Invoke(parameters))
+            .ReturnsAsync(response);
+    }
+
+    private static void SetupConfiguration(Mock<IHttpClientsService> http, ApiResponse<JsonElement> response, List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)> calls)
+    {
+        http
+            .Setup(item => item.CallService<JsonElement>(It.IsAny<Guid>(), It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .Callback((Guid id, Dictionary<string, dynamic>? parameters, IReadOnlyList<Guid>? _, IReadOnlyList<Guid>? _, string? _, int? _, int? _, CancellationToken _) => calls.Add((id, parameters)))
+            .ReturnsAsync(response);
+    }
+
+    private static ApiResponse<ServiceCatalogPreviewInfoDto> PreviewInfo(string url) => new(new ServiceCatalogPreviewInfoDto
+    {
+        PreviewId = PreviewId,
+        PreviewStatus = "Completed",
+        HttpMethod = "GET",
+        Url = url
+    });
+
     [Fact]
     public async Task PreviewAndApply_ShouldBeDisabledInProduction()
     {
         var (service, http, _) = Create("Production", 1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
 
         var preview = await service.PreviewAsync(new ServiceCatalogPreviewCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail" }, CancellationToken.None);
-        var apply = await service.ApplyAsync(new ServiceCatalogApplyCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail" }, CancellationToken.None);
+        var apply = await service.ApplyAsync(new ServiceCatalogApplyCommand { PreviewId = PreviewId }, CancellationToken.None);
 
         preview.Messages.Should().Contain(m => m.Code == "service_catalog_disabled_in_production");
         apply.Messages.Should().Contain(m => m.Code == "service_catalog_disabled_in_production");
+        JsonSerializer.Serialize(preview, JsonOptions).Should().Contain("service_catalog_disabled_in_production").And.Contain("\"value\":null");
+        JsonSerializer.Serialize(apply, JsonOptions).Should().Contain("service_catalog_disabled_in_production");
         http.Verify(item => item.CallService<JsonElement>(It.IsAny<Guid>(), It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
+        http.Verify(item => item.CallService<ServiceCatalogPreviewInfoDto>(It.IsAny<Guid>(), It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Apply_ShouldSendManifestAndDecisionsToConfiguration()
+    public async Task Apply_ShouldReadPreviewAndSendRegeneratedManifestWithPreviewIdOnly()
     {
-        Dictionary<string, dynamic>? sent = null;
-        Guid? serviceId = null;
+        Dictionary<string, dynamic>? previewQuery = null;
+        var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
         var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
 
-        http
-            .Setup(item => item.CallService<JsonElement>(It.IsAny<Guid>(), It.IsAny<Dictionary<string, dynamic>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<IReadOnlyList<Guid>?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
-            .Callback((Guid id, Dictionary<string, dynamic>? parameters, IReadOnlyList<Guid>? _, IReadOnlyList<Guid>? _, string? _, int? _, int? _, CancellationToken _) =>
-            {
-                serviceId = id;
-                sent = parameters;
-            })
-            .ReturnsAsync(new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement));
+        SetupPreview(http, PreviewInfo("/api/sample/Detail/GetDetail"), parameters => previewQuery = parameters);
+        SetupConfiguration(http, new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement), calls);
 
-        var decisions = JsonDocument.Parse("{\"previewId\":\"01a17063-4c44-7dae-9909-393632859b3c\"}").RootElement;
+        var response = await service.ApplyAsync(new ServiceCatalogApplyCommand { PreviewId = PreviewId }, CancellationToken.None);
 
-        await service.ApplyAsync(new ServiceCatalogApplyCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail", Decisions = decisions }, CancellationToken.None);
+        response.Success.Should().BeTrue();
+        ((Guid)previewQuery!["Id"]).Should().Be(PreviewId);
+
+        var (serviceId, parameters) = calls.Single();
 
         serviceId.Should().Be(Ids.Service.ApplyInternalService.Id);
-        ((ServiceCatalogManifestDto)sent!["Manifest"]).Url.Should().Be("/api/sample/Detail/GetDetail");
-        ((JsonElement)sent["Decisions"]).GetProperty("previewId").GetString().Should().Be("01a17063-4c44-7dae-9909-393632859b3c");
+        ((ServiceCatalogManifestDto)parameters!["Manifest"]).Url.Should().Be("/api/sample/Detail/GetDetail");
+
+        var decisions = (Dictionary<string, dynamic>)parameters["Decisions"];
+
+        decisions.Keys.Should().Equal("PreviewId");
+        ((Guid)decisions["PreviewId"]).Should().Be(PreviewId);
+    }
+
+    [Fact]
+    public async Task Apply_ShouldForwardPreviewErrors_WithoutCallingApply()
+    {
+        var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
+        var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
+        var notFound = new ApiResponse<ServiceCatalogPreviewInfoDto>();
+
+        notFound.AddMessage(new ResponseMessage { Code = "Configuration.service_catalog_preview_not_found", Message = "not found", Severity = MessageSeverity.Error });
+        SetupPreview(http, notFound);
+        SetupConfiguration(http, new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement), calls);
+
+        var response = await service.ApplyAsync(new ServiceCatalogApplyCommand(), CancellationToken.None);
+
+        response.Success.Should().BeFalse();
+        JsonSerializer.Serialize(response, JsonOptions).Should().Contain("service_catalog_preview_not_found");
+        calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Apply_ShouldRejectPreviewOfAnotherMicroservice()
+    {
+        var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
+        var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
+
+        SetupPreview(http, PreviewInfo("/api/other/Item/GetItems"));
+        SetupConfiguration(http, new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement), calls);
+
+        var response = await service.ApplyAsync(new ServiceCatalogApplyCommand { PreviewId = PreviewId }, CancellationToken.None);
+
+        response.Messages.Should().Contain(m => m.Code == "service_catalog_endpoint_not_found");
+        calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Apply_ShouldReturnConfigurationErrorsAsSerializableResponse()
+    {
+        var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
+        var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
+        var failed = new ApiResponse<JsonElement>();
+
+        failed.AddMessage(new ResponseMessage { Code = "service_catalog_preview_outdated", Message = "outdated", Severity = MessageSeverity.Error });
+        SetupPreview(http, PreviewInfo("/api/sample/Detail/GetDetail"));
+        SetupConfiguration(http, failed, calls);
+
+        var response = await service.ApplyAsync(new ServiceCatalogApplyCommand { PreviewId = PreviewId }, CancellationToken.None);
+
+        response.Success.Should().BeFalse();
+
+        var json = JsonSerializer.Serialize(response, JsonOptions);
+
+        json.Should().Contain("service_catalog_preview_outdated");
+        json.Should().Contain("\"value\":null");
+    }
+
+    [Fact]
+    public async Task Preview_ShouldSendManifestWithoutDecisions()
+    {
+        var calls = new List<(Guid ServiceId, Dictionary<string, dynamic>? Parameters)>();
+        var (service, http, _) = Create(1, _ => new ApiResponse<List<ServiceCatalogEndpointStatusDto>>([]), DetailDescription("GET", "api/sample/Detail/GetDetail"));
+
+        SetupConfiguration(http, new ApiResponse<JsonElement>(JsonDocument.Parse("{}").RootElement), calls);
 
         await service.PreviewAsync(new ServiceCatalogPreviewCommand { HttpMethod = "GET", Url = "/api/sample/Detail/GetDetail" }, CancellationToken.None);
 
+        var (serviceId, parameters) = calls.Single();
+
         serviceId.Should().Be(Ids.Service.PreviewInternalService.Id);
-        sent!.ContainsKey("Decisions").Should().BeFalse();
+        ((ServiceCatalogManifestDto)parameters!["Manifest"]).Url.Should().Be("/api/sample/Detail/GetDetail");
+        parameters.ContainsKey("Decisions").Should().BeFalse();
     }
 
     [Fact]

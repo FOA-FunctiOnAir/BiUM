@@ -30,5 +30,10 @@ public partial class Ids
         {
             public static Guid Id = Guid.Parse("01a1724d-99c1-7a45-b8ed-06e379e910d9");
         }
+
+        public static class GetServicePreview
+        {
+            public static Guid Id = Guid.Parse("01a17258-2950-77cf-8455-69fb71db7769");
+        }
     }
 }

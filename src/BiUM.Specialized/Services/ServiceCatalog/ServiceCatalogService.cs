@@ -25,6 +25,8 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
 
+    private static readonly JsonElement NullElement = JsonDocument.Parse("null").RootElement.Clone();
+
     private readonly IApiDescriptionGroupCollectionProvider _apiDescriptionProvider;
     private readonly IHttpClientsService _httpClientsService;
 
@@ -223,24 +225,62 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
 
     public async Task<ApiResponse<JsonElement>> PreviewAsync(ServiceCatalogPreviewCommand command, CancellationToken cancellationToken)
     {
-        return await SendToConfigurationAsync(Ids.Service.PreviewInternalService.Id, command.HttpMethod, command.Url, null, cancellationToken);
+        return EnsureValue(await SendToConfigurationAsync(Ids.Service.PreviewInternalService.Id, command.HttpMethod, command.Url, null, cancellationToken));
     }
 
     public async Task<ApiResponse<JsonElement>> ApplyAsync(ServiceCatalogApplyCommand command, CancellationToken cancellationToken)
     {
-        return await SendToConfigurationAsync(Ids.Service.ApplyInternalService.Id, command.HttpMethod, command.Url, command.Decisions, cancellationToken);
+        if (IsProduction())
+        {
+            var disabled = new ApiResponse<JsonElement>();
+
+            await AddMessage(disabled, "service_catalog_disabled_in_production", cancellationToken);
+
+            return EnsureValue(disabled);
+        }
+
+        var previewId = command.PreviewId ?? Guid.Empty;
+        var preview = await _httpClientsService.CallService<ServiceCatalogPreviewInfoDto>(
+            serviceId: Ids.Service.GetServicePreview.Id,
+            parameters: new Dictionary<string, dynamic> { { "Id", previewId } },
+            cancellationToken: cancellationToken);
+
+        if (!preview.Success || preview.Value is null)
+        {
+            var failed = new ApiResponse<JsonElement>();
+
+            failed.AddMessage(preview.Messages);
+
+            return EnsureValue(failed);
+        }
+
+        var decisions = new Dictionary<string, dynamic> { { "PreviewId", previewId } };
+
+        return EnsureValue(await SendToConfigurationAsync(Ids.Service.ApplyInternalService.Id, preview.Value.HttpMethod, preview.Value.Url, decisions, cancellationToken));
+    }
+
+    private bool IsProduction() => string.Equals(BiAppOptions.Environment, BiAppEnvironments.Production, StringComparison.OrdinalIgnoreCase);
+
+    private static ApiResponse<JsonElement> EnsureValue(ApiResponse<JsonElement> response)
+    {
+        if (response.Value.ValueKind == JsonValueKind.Undefined)
+        {
+            response.Value = NullElement;
+        }
+
+        return response;
     }
 
     private async Task<ApiResponse<JsonElement>> SendToConfigurationAsync(
         Guid serviceId,
         string? httpMethod,
         string? url,
-        JsonElement? decisions,
+        Dictionary<string, dynamic>? decisions,
         CancellationToken cancellationToken)
     {
         var response = new ApiResponse<JsonElement>();
 
-        if (string.Equals(BiAppOptions.Environment, BiAppEnvironments.Production, StringComparison.OrdinalIgnoreCase))
+        if (IsProduction())
         {
             await AddMessage(response, "service_catalog_disabled_in_production", cancellationToken);
 
@@ -261,9 +301,9 @@ public class ServiceCatalogService : InfrastructureBase, IServiceCatalogService
             { "Manifest", manifestResponse.Value }
         };
 
-        if (decisions is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null })
+        if (decisions is not null)
         {
-            parameters.Add("Decisions", decisions.Value);
+            parameters.Add("Decisions", decisions);
         }
 
         return await _httpClientsService.CallService<JsonElement>(serviceId: serviceId, parameters: parameters, cancellationToken: cancellationToken);

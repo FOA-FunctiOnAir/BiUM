@@ -36,6 +36,7 @@ graph TD
 - **gRPC**: Grpc.AspNetCore
 - **Validation**: FluentValidation
 - **Mapping**: AutoMapper
+- **Package versions**: central (`Directory.Packages.props`, transitive pinning on). Transitive pinning only applies inside BiUM, so packages with known vulnerabilities in older transitive versions are referenced directly to flow to consuming microservices: `MessagePack` (BiUM.Contract, via MagicOnion.Abstractions), `System.Security.Cryptography.Pkcs` and `SQLitePCLRaw.lib.e_sqlite3` (BiUM.Specialized, via EF Core SqlServer / Sqlite).
 
 ## 3. Codebase Structure
 

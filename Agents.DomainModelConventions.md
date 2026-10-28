@@ -143,7 +143,24 @@ Same shape for `AddUpdatedEvent` (`…UpdatedEvent`) and `AddDeletedEvent` (`…
 
 ---
 
-## 7. Agent workflow
+## 7. Parameter value columns — `_TYPE` / `…Type` suffix, not `_ID`
+
+A column that stores a **parameter value** (a `ParameterValue` id from BiApp.Parameters, e.g. status, difficulty, category, direction) is named with the **`Type`** suffix:
+
+| Meaning | Column | C# property |
+|---------|--------|-------------|
+| Status parameter | `STATUS_TYPE` | `StatusType` |
+| Difficulty parameter | `DIFFICULTY_TYPE` | `DifficultyType` |
+| Category parameter | `CATEGORY_TYPE` | `CategoryType` |
+
+- **`_ID` / `…Id`** is used only for references to **rows of another table** (`LESSON_ID`, `TOPIC_ID`, `COUNTRY_ID`, `LANGUAGE_ID`, …).
+- Apply the same name to DTOs, commands and query filters (`Guid? StatusType`).
+- Existing examples: BiApp.Configuration `ServiceParameter.DirectionType`, `Service.HttpType`, `Service.Type`.
+- Legacy `…Id` parameter columns are renamed when the service is touched (new services: migration; old services without migrations: SQL script).
+
+---
+
+## 8. Agent workflow
 
 When editing entities or DTOs in any **BiApp.\*** service:
 

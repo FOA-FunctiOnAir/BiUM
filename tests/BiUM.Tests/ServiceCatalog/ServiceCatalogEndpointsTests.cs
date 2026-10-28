@@ -31,13 +31,13 @@ public sealed class ServiceCatalogEndpointsTests
 
     private sealed class SampleController : ControllerBase
     {
-        public string GetItems() => string.Empty;
+        public static string GetItems() => string.Empty;
 
-        public ApiResponse<SampleDetail> GetDetail() => new();
+        public static ApiResponse<SampleDetail> GetDetail() => new();
     }
 
-    private static readonly MethodInfo SampleAction = typeof(SampleController).GetMethod(nameof(SampleController.GetItems))!;
-    private static readonly MethodInfo DetailAction = typeof(SampleController).GetMethod(nameof(SampleController.GetDetail))!;
+    private static readonly MethodInfo SampleAction = typeof(SampleController).GetMethod(nameof(SampleController.GetItems), BindingFlags.Public | BindingFlags.Static)!;
+    private static readonly MethodInfo DetailAction = typeof(SampleController).GetMethod(nameof(SampleController.GetDetail), BindingFlags.Public | BindingFlags.Static)!;
 
     private static ApiDescription DetailDescription(string httpMethod, string path)
     {

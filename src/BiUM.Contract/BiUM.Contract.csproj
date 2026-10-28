@@ -2,5 +2,6 @@
   <ItemGroup>
     <PackageReference Include="MagicOnion.Abstractions" />
     <PackageReference Include="MemoryPack" />
+    <PackageReference Include="MessagePack" />
   </ItemGroup>
 </Project>
